@@ -22,6 +22,13 @@ enum Diff: Equatable {
         return nil
     }
 
+    var props: Props? {
+        if case .object(let object) = self {
+            return object.props
+        }
+        return nil
+    }
+
     static func value(_ value: Primitives) -> Diff {
         return Diff.value(.init(value: value))
     }
