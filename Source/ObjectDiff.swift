@@ -9,6 +9,7 @@ import Foundation
 
 typealias Props = ReferenceDictionary<String, ReferenceDictionary<String, Diff>>
 class ObjectDiff: Equatable {
+    
     init(objectId: UUID,
          type: CollectionType,
          edits: [Edit]? = nil,

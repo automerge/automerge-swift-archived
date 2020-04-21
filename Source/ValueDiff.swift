@@ -8,6 +8,12 @@
 import Foundation
 
 struct ValueDiff: Equatable {
-  var value: Primitives
-  var datatype: DataType?
+
+    init(value: Primitives, datatype: DataType? = nil) {
+        self.value = value
+        self.datatype = datatype
+    }
+
+    var value: Primitives
+    var datatype: DataType?
 }

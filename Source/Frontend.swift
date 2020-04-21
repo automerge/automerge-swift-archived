@@ -46,7 +46,7 @@ public struct Document<T> {
         self._objectId = ROOT_ID
         self._options = options
         self._conflicts = [:]
-        self._cache = ReferenceDictionary([ROOT_ID.uuidString: ReferenceDictionary<String, Any>([:])])
+        self._cache = [ROOT_ID.uuidString: [:]]
         self.change = nil
         self._state = State(seq: 0, requests: [], version: 0, clock: [:], canUndo: false, canRedo: false)
     }

@@ -21,4 +21,8 @@ enum Diff: Equatable {
         }
         return nil
     }
+
+    static func value(_ value: Primitives) -> Diff {
+        return Diff.value(.init(value: value))
+    }
 }

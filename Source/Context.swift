@@ -63,44 +63,57 @@ public final class Context {
      * primitive value. For string, number, boolean, or null the datatype is omitted.
      */
 
-    func setValue<T>(objectId: UUID, key: String, value: T, insert: Bool? = nil) -> Diff {
-        precondition(!key.isEmpty, "The key of a map entry must not be an empty string")
+    func setValue<T>(objectId: UUID, key: Op.Key, value: T, insert: Bool? = nil) -> Diff {
         switch value {
         case  let value as Double:
-            let operation = Op(action: .set, obj: objectId, key: .string(key), insert: insert, child: nil, value: .number(value), datatype: nil)
+            let operation = Op(action: .set, obj: objectId, key: key, insert: insert, value: .number(value))
             ops.append(operation)
-            return .value(.init(value: .number(value)))
+            return .value(.number(value))
         case  let value as Int:
-            let operation = Op(action: .set, obj: objectId, key: .string(key), insert: insert, child: nil, value: .number(Double(value)), datatype: nil)
+            let operation = Op(action: .set, obj: objectId, key: key, insert: insert, value: .number(Double(value)))
             ops.append(operation)
-            return .value(.init(value: .number(Double(value))))
+            return .value(.number(Double(value)))
+        case let string as String:
+            let operation = Op(action: .set, obj: objectId, key: key, insert: insert, value: .string(string))
+            ops.append(operation)
+            return .value(.string(string))
+        case let character as Character:
+            let operation = Op(action: .set, obj: objectId, key: key, insert: insert, value: .string(String(character)))
+            ops.append(operation)
+            return .value(.string(String(character)))
         case let value as [String: Any]:
             return .object(createNestedObjects(obj: objectId, key: key, value: value, insert: insert))
+        case let array as [Any]:
+            return .object(createNestedObjects(obj: objectId, key: key, value: array, insert: insert))
+        case let text as Text:
+            return .object(createNestedObjects(obj: objectId, key: key, value: text, insert: insert))
+        case let table as Table:
+            return .object(createNestedObjects(obj: objectId, key: key, value: table, insert: insert))
         default:
             fatalError()
         }
     }
 
-//    setValue(objectId, key, value, insert) {
-//      if (!objectId) {
-//        throw new RangeError('setValue needs an objectId')
-//      }
-//      if (key === '') {
-//        throw new RangeError('The key of a map entry must not be an empty string')
-//      }
-//
-//      if (isObject(value) && !(value instanceof Date) && !(value instanceof Counter)) {
-//        // Nested object (map, list, text, or table)
-//        return this.createNestedObjects(objectId, key, value, insert)
-//      } else {
-//        // Date or counter object, or primitive value (number, string, boolean, or null)
-//        const description = this.getValueDescription(value)
-//        const operation = Object.assign({action: 'set', obj: objectId, key}, description)
-//        if (insert) operation.insert = true
-//        this.addOp(operation)
-//        return description
-//      }
-//    }
+    //    setValue(objectId, key, value, insert) {
+    //      if (!objectId) {
+    //        throw new RangeError('setValue needs an objectId')
+    //      }
+    //      if (key === '') {
+    //        throw new RangeError('The key of a map entry must not be an empty string')
+    //      }
+    //
+    //      if (isObject(value) && !(value instanceof Date) && !(value instanceof Counter)) {
+    //        // Nested object (map, list, text, or table)
+    //        return this.createNestedObjects(objectId, key, value, insert)
+    //      } else {
+    //        // Date or counter object, or primitive value (number, string, boolean, or null)
+    //        const description = this.getValueDescription(value)
+    //        const operation = Object.assign({action: 'set', obj: objectId, key}, description)
+    //        if (insert) operation.insert = true
+    //        this.addOp(operation)
+    //        return description
+    //      }
+    //    }
 
     /**
      * Recursively creates Automerge versions of all the objects and nested objects in `value`,
@@ -110,33 +123,48 @@ public final class Context {
      * element. If `key` is null, the ID of the new object is used as key (this construction
      * is used by Automerge.Table).
      */
-    func createNestedObjects(obj: UUID, key: String?, value: [String: Any], insert: Bool? = nil) -> ObjectDiff {
-        precondition(value[OBJECT_ID] == nil, "Cannot create a reference to an existing document object")
+    func createNestedObjects(obj: UUID, key: Op.Key?, value: Any, insert: Bool? = nil) -> ObjectDiff {
         let child = UUID()
-        let key = key ?? child.uuidString
-        let operation = Op(action: .makeMap, obj: obj, key: .string(key), child: child)
-        ops.append(operation)
+        let key = key ?? .string(child.uuidString)
+        switch value {
+        case let object as [String: Any]:
+            precondition(object[OBJECT_ID] == nil, "Cannot create a reference to an existing document object")
+            let operation = Op(action: .makeMap, obj: obj, key: key, child: child)
+            ops.append(operation)
 
-        let props = Props()
-        for nested in value.keys {
-            let valuePatch = setValue(objectId: child, key: nested, value: value[nested], insert: nil)
-            props[nested] = [actorId.uuidString: valuePatch]
+            var props = Props()
+            for nested in object.keys {
+                let valuePatch = setValue(objectId: child, key: .string(nested), value: object[nested], insert: nil)
+                props[nested] = [actorId.uuidString: valuePatch]
+            }
+
+            return ObjectDiff(objectId: child, type: .map, props: props)
+        case let array as Array<Any>:
+            let operation = Op(action: .makeList, obj: obj, key: key, insert: insert, child: child)
+            ops.append(operation)
+            let subpatch = ObjectDiff(objectId: child, type: .list, edits: [], props: [:])
+            insertListItems(subPatch: subpatch, index: 0, values: array, newObject: true)
+
+            return subpatch
+        case let text as Text:
+            let operation = Op(action: .makeText, obj: obj, key: key, insert: insert, child: child)
+            ops.append(operation)
+            let subpatch = ObjectDiff(objectId: child, type: .text, edits: [], props: [:])
+            insertListItems(subPatch: subpatch, index: 0, values: text.elms, newObject: true)
+
+            return subpatch
+        case is Table:
+            //    if (value.count > 0) {
+            //      throw new RangeError('Assigning a non-empty Table object is not supported')
+            //    }
+            let operation = Op(action: .makeTable, obj: obj, key: key, insert: insert, child: child)
+            ops.append(operation)
+            let subpatch = ObjectDiff(objectId: child, type: .table, props: [:])
+
+            return subpatch
+        default:
+            fatalError()
         }
-
-        return ObjectDiff(objectId: child, type: .map, props: props)
-
-        // Create a new map object
-        //    const operation = {action: 'makeMap', obj, key, child}
-        //    if (insert) operation.insert = true
-        //    this.addOp(operation)
-        //
-        //    let props = {}
-        //    for (let nested of Object.keys(value)) {
-        //      const valuePatch = this.setValue(child, nested, value[nested], false)
-        //      props[nested] = {[this.actorId]: valuePatch}
-        //    }
-        //    return {objectId: child, type: 'map', props}
-        //  }
     }
     //createNestedObjects(obj, key, value, insert) {
     //  if (value[OBJECT_ID]) {
@@ -191,6 +219,35 @@ public final class Context {
     //}
 
     /**
+    * Inserts a sequence of new list elements `values` into a list, starting at position `index`.
+    * `newObject` is true if we are creating a new list object, and false if we are updating an
+    * existing one. `subpatch` is the patch for the list object being modified. Mutates
+    * `subpatch` to reflect the sequence of values.
+    */
+    func insertListItems(subPatch: ObjectDiff, index: Int, values: [Any], newObject: Bool) {
+        let list = newObject ? [] : getObject(objectId: subPatch.objectId) as! [Any]
+        precondition(index >= 0 && index <= list.count, "List index \(index) is out of bounds for list of length \(list.count)")
+
+        values.enumerated().forEach({ offset, element in
+            let valuePatch = setValue(objectId: subPatch.objectId, key: .index(index + offset), value: element, insert: true)
+            subPatch.edits?.append(Edit(action: .insert, index: index + offset))
+            subPatch.props?["\(index + offset)"] = [actorId.uuidString: valuePatch]
+        })
+    }
+//    insertListItems(subpatch, index, values, newObject) {
+//      const list = newObject ? [] : this.getObject(subpatch.objectId)
+//      if (index < 0 || index > list.length) {
+//        throw new RangeError(`List index ${index} is out of bounds for list of length ${list.length}`)
+//      }
+//
+//      for (let offset = 0; offset < values.length; offset++) {
+//        const valuePatch = this.setValue(subpatch.objectId, index + offset, values[offset], true)
+//        subpatch.edits.push({action: 'insert', index: index + offset})
+//        subpatch.props[index + offset] = {[this.actorId]: valuePatch}
+//      }
+//    }
+
+    /**
      * Updates the map object at path `path`, setting the property with name
      * `key` to `value`.
      */
@@ -206,7 +263,7 @@ public final class Context {
         // the assignment does not resolve a conflict, do nothing
         if (object[key] as? T) != value {
             applyAt(path: path, callback: { subpatch in
-                let valuePatch = setValue(objectId: objectId, key: key, value: value, insert: nil)
+                let valuePatch = setValue(objectId: objectId, key: .string(key), value: value, insert: nil)
                 subpatch.props?[key] = [actorId.uuidString: valuePatch]
             })
         } else if (object[CONFLICTS] as? [String: [Any]])?[key]?.count ?? 0 > 1 {
@@ -214,26 +271,26 @@ public final class Context {
         }
 
     }
-//    setMapKey(path, key, value) {
-//      if (typeof key !== 'string') {
-//        throw new RangeError(`The key of a map entry must be a string, not ${typeof key}`)
-//      }
-//
-//      const objectId = path.length === 0 ? ROOT_ID : path[path.length - 1].objectId
-//      const object = this.getObject(objectId)
-//      if (object[key] instanceof Counter) {
-//        throw new RangeError('Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.')
-//      }
-//
-//      // If the assigned field value is the same as the existing value, and
-//      // the assignment does not resolve a conflict, do nothing
-//      if (object[key] !== value || Object.keys(object[CONFLICTS][key] || {}).length > 1 || value === undefined) {
-//        this.applyAtPath(path, subpatch => {
-//          const valuePatch = this.setValue(objectId, key, value, false)
-//          subpatch.props[key] = {[this.actorId]: valuePatch}
-//        })
-//      }
-//    }
+    //    setMapKey(path, key, value) {
+    //      if (typeof key !== 'string') {
+    //        throw new RangeError(`The key of a map entry must be a string, not ${typeof key}`)
+    //      }
+    //
+    //      const objectId = path.length === 0 ? ROOT_ID : path[path.length - 1].objectId
+    //      const object = this.getObject(objectId)
+    //      if (object[key] instanceof Counter) {
+    //        throw new RangeError('Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.')
+    //      }
+    //
+    //      // If the assigned field value is the same as the existing value, and
+    //      // the assignment does not resolve a conflict, do nothing
+    //      if (object[key] !== value || Object.keys(object[CONFLICTS][key] || {}).length > 1 || value === undefined) {
+    //        this.applyAtPath(path, subpatch => {
+    //          const valuePatch = this.setValue(objectId, key, value, false)
+    //          subpatch.props[key] = {[this.actorId]: valuePatch}
+    //        })
+    //      }
+    //    }
 
     /**
      * Takes a value and returns an object describing the value (in the format used by patches).
@@ -241,38 +298,76 @@ public final class Context {
     func getValueDescription(value: Any) -> Diff {
         switch value {
         case let double as Double:
-            return .value(.init(value: .number(double), datatype: nil))
+            return .value(.init(value: .number(double)))
+        case let int as Int:
+            return .value(.init(value: .number(Double(int))))
+        case let date as Date:
+            return .value(.init(value: .number(date.timeIntervalSince1970), datatype: .timestamp))
+        case let counter as Counter:
+            return .value(.init(value: .number(counter.value), datatype: .counter))
+        case let _ as NSNull:
+            return .value(.init(value: .null))
+        case let object as [String : String]:
+            guard let objectId = object[OBJECT_ID].map({ UUID(uuidString: $0)! }) else {
+                fatalError("Object \(value) has no objectId")
+            }
+            return .object(.init(objectId: objectId, type: getObjectType(objectId: objectId), edits: nil, props: nil))
         default:
             fatalError()
         }
     }
-//    getValueDescription(value) {
-//      if (!['object', 'boolean', 'number', 'string'].includes(typeof value)) {
-//        throw new TypeError(`Unsupported type of value: ${typeof value}`)
-//      }
-//
-//      if (isObject(value)) {
-//        if (value instanceof Date) {
-//          // Date object, represented as milliseconds since epoch
-//          return {value: value.getTime(), datatype: 'timestamp'}
-//
-//        } else if (value instanceof Counter) {
-//          // Counter object
-//          return {value: value.value, datatype: 'counter'}
-//
-//        } else {
-//          // Nested object (map, list, text, or table)
-//          const objectId = value[OBJECT_ID]
-//          if (!objectId) {
-//            throw new RangeError(`Object ${JSON.stringify(value)} has no objectId`)
-//          }
-//          return {objectId, type: this.getObjectType(objectId)}
-//        }
-//      } else {
-//        // Primitive value (number, string, boolean, or null)
-//        return {value}
-//      }
-//    }
+    //    getValueDescription(value) {
+    //      if (!['object', 'boolean', 'number', 'string'].includes(typeof value)) {
+    //        throw new TypeError(`Unsupported type of value: ${typeof value}`)
+    //      }
+    //
+    //      if (isObject(value)) {
+    //        if (value instanceof Date) {
+    //          // Date object, represented as milliseconds since epoch
+    //          return {value: value.getTime(), datatype: 'timestamp'}
+    //
+    //        } else if (value instanceof Counter) {
+    //          // Counter object
+    //          return {value: value.value, datatype: 'counter'}
+    //
+    //        } else {
+    //          // Nested object (map, list, text, or table)
+    //          const objectId = value[OBJECT_ID]
+    //          if (!objectId) {
+    //            throw new RangeError(`Object ${JSON.stringify(value)} has no objectId`)
+    //          }
+    //          return {objectId, type: this.getObjectType(objectId)}
+    //        }
+    //      } else {
+    //        // Primitive value (number, string, boolean, or null)
+    //        return {value}
+    //      }
+    //    }
+
+    /**
+     * Returns a string that is either 'map', 'table', 'list', or 'text', indicating
+     * the type of the object with ID `objectId`.
+     */
+    func getObjectType(objectId: UUID) -> CollectionType {
+        if objectId == ROOT_ID {
+            return .map
+        }
+        let object = getObject(objectId: objectId)
+        switch object {
+        case let table as Table:
+            return .table
+        default:
+            return .map
+        }
+    }
+    //    getObjectType(objectId) {
+    //      if (objectId === ROOT_ID) return 'map'
+    //      const object = this.getObject(objectId)
+    //      if (object instanceof Text) return 'text'
+    //      if (object instanceof Table) return 'table'
+    //      if (Array.isArray(object)) return 'list'
+    //      return 'map'
+    //    }
 
     /**
      * Returns an object (not proxied) from the cache or updated set, as appropriate.
@@ -283,11 +378,11 @@ public final class Context {
         }
         return object
     }
-//    getObject(objectId) {
-//      const object = this.updated[objectId] || this.cache[objectId]
-//      if (!object) throw new RangeError(``)
-//      return object
-//    }
+    //    getObject(objectId) {
+    //      const object = this.updated[objectId] || this.cache[objectId]
+    //      if (!object) throw new RangeError(``)
+    //      return object
+    //    }
 
     /**
      * Constructs a new patch, calls `callback` with the subpatch at the location `path`,
@@ -298,11 +393,11 @@ public final class Context {
         callback(getSubpatch(patch: patch, path: path))
         applyPatch(patch.diffs, cache[ROOT_ID], updated)
     }
-//    applyAtPath(path, callback) {
-//      let patch = {diffs: {objectId: ROOT_ID, type: 'map'}}
-//      callback(this.getSubpatch(patch, path))
-//      this.applyPatch(patch.diffs, this.cache[ROOT_ID], this.updated)
-//    }
+    //    applyAtPath(path, callback) {
+    //      let patch = {diffs: {objectId: ROOT_ID, type: 'map'}}
+    //      callback(this.getSubpatch(patch, path))
+    //      this.applyPatch(patch.diffs, this.cache[ROOT_ID], this.updated)
+    //    }
 
     /**
      * Recurses along `path` into the patch object `patch`, creating nodes along the way as needed
@@ -321,18 +416,18 @@ public final class Context {
             if subPatch.props?[key] == nil {
                 subPatch.props?[key] = getValuesDescriptions(path: path, object: object, key: key)
             }
-            var nextOpId: UUID?
+            var nextOpId: String?
             let values = subPatch.props![key]!
             for opId in values.keys {
                 if case .object(let object) = values[opId]!, object.objectId == pathElem.objectId {
-                    nextOpId = UUID(uuidString: opId)!
+                    nextOpId = opId
                 }
             }
-            guard let nextOpId2 = nextOpId, case .object(let objectDiff) = values[nextOpId2.uuidString] else {
+            guard let nextOpId2 = nextOpId, case .object(let objectDiff) = values[nextOpId2] else {
                 fatalError("Cannot find path object with objectId \(pathElem.objectId)")
             }
             subPatch = objectDiff
-            object = getPropertyValue(object: object, key: key, opId: nextOpId2.uuidString)
+            object = getPropertyValue(object: object, key: key, opId: nextOpId2)
 
         }
 
@@ -342,54 +437,57 @@ public final class Context {
 
         return subPatch
     }
-//    getSubpatch(patch, path) {
-//      let subpatch = patch.diffs, object = this.getObject(ROOT_ID)
-//
-//      for (let pathElem of path) {
-//        if (!subpatch.props) {
-//          subpatch.props = {}
-//        }
-//        if (!subpatch.props[pathElem.key]) {
-//          subpatch.props[pathElem.key] = this.getValuesDescriptions(path, object, pathElem.key)
-//        }
-//
-//        let nextOpId = null, values = subpatch.props[pathElem.key]
-//        for (let opId of Object.keys(values)) {
-//          if (values[opId].objectId === pathElem.objectId) {
-//            nextOpId = opId
-//          }
-//        }
-//        if (!nextOpId) {
-//          throw new RangeError(``)
-//        }
-//        subpatch = values[nextOpId]
-//        object = this.getPropertyValue(object, pathElem.key, nextOpId)
-//      }
-//
-//      if (!subpatch.props) {
-//        subpatch.props = {}
-//      }
-//      return subpatch
-//    }
+    //    getSubpatch(patch, path) {
+    //      let subpatch = patch.diffs, object = this.getObject(ROOT_ID)
+    //
+    //      for (let pathElem of path) {
+    //        if (!subpatch.props) {
+    //          subpatch.props = {}
+    //        }
+    //        if (!subpatch.props[pathElem.key]) {
+    //          subpatch.props[pathElem.key] = this.getValuesDescriptions(path, object, pathElem.key)
+    //        }
+    //
+    //        let nextOpId = null, values = subpatch.props[pathElem.key]
+    //        for (let opId of Object.keys(values)) {
+    //          if (values[opId].objectId === pathElem.objectId) {
+    //            nextOpId = opId
+    //          }
+    //        }
+    //        if (!nextOpId) {
+    //          throw new RangeError(``)
+    //        }
+    //        subpatch = values[nextOpId]
+    //        object = this.getPropertyValue(object, pathElem.key, nextOpId)
+    //      }
+    //
+    //      if (!subpatch.props) {
+    //        subpatch.props = {}
+    //      }
+    //      return subpatch
+    //    }
 
     /**
      * Returns the value at property `key` of object `object`. In the case of a conflict, returns
      * the value whose assignment operation has the ID `opId`.
      */
     func getPropertyValue(object: Any, key: String, opId: String) -> Any {
-        if object is Table {
+        switch object {
+        case let table as Table:
             fatalError()
-        } else {
+        case let object as [String: Any]:
+            return ((object[CONFLICTS] as! [String: Any])[key] as! [String: Any])[opId]
+        default:
             fatalError()
         }
     }
-//    getPropertyValue(object, key, opId) {
-//      if (object instanceof Table) {
-//        return object.byId(key)
-//      } else {
-//        return object[CONFLICTS][key][opId]
-//      }
-//    }
+    //    getPropertyValue(object, key, opId) {
+    //      if (object instanceof Table) {
+    //        return object.byId(key)
+    //      } else {
+    //        return object[CONFLICTS][key][opId]
+    //      }
+    //    }
 
     /**
      * Builds the values structure describing a single property in a patch. Finds all the values of
@@ -401,11 +499,11 @@ public final class Context {
         case let _ as Table:
             fatalError()
         case let map as [String: Any]:
-            guard let conflicts = map[CONFLICTS] else {
+            guard let conflicts = (map[CONFLICTS] as? [String: Any])?[key] else {
                 fatalError("No children at key \(key) of path \(path)")
             }
-            let typedConflicts = conflicts as! ReferenceDictionary<String, String>
-            let values = ReferenceDictionary<String, Diff>()
+            let typedConflicts = conflicts as! [String: Any]
+            var values = ReferenceDictionary<String, Diff>()
             for opId in typedConflicts.keys {
                 values[opId] = getValueDescription(value: typedConflicts[opId])
             }
@@ -416,27 +514,27 @@ public final class Context {
         }
 
     }
-//    getValuesDescriptions(path, object, key) {
-//      if (object instanceof Table) {
-//        // Table objects don't have conflicts, since rows are identified by their unique objectId
-//        const value = object.byId(key)
-//        if (value) {
-//          return {[key]: this.getValueDescription(value)}
-//        } else {
-//          return {}
-//        }
-//      } else {
-//        // Map, list, or text objects
-//        const conflicts = object[CONFLICTS][key], values = {}
-//        if (!conflicts) {
-//          throw new RangeError(`No children at key ${key} of path ${JSON.stringify(path)}`)
-//        }
-//        for (let opId of Object.keys(conflicts)) {
-//          values[opId] = this.getValueDescription(conflicts[opId])
-//        }
-//        return values
-//      }
-//    }
+    //    getValuesDescriptions(path, object, key) {
+    //      if (object instanceof Table) {
+    //        // Table objects don't have conflicts, since rows are identified by their unique objectId
+    //        const value = object.byId(key)
+    //        if (value) {
+    //          return {[key]: this.getValueDescription(value)}
+    //        } else {
+    //          return {}
+    //        }
+    //      } else {
+    //        // Map, list, or text objects
+    //        const conflicts = object[CONFLICTS][key], values = {}
+    //        if (!conflicts) {
+    //          throw new RangeError(`No children at key ${key} of path ${JSON.stringify(path)}`)
+    //        }
+    //        for (let opId of Object.keys(conflicts)) {
+    //          values[opId] = this.getValueDescription(conflicts[opId])
+    //        }
+    //        return values
+    //      }
+    //    }
 
 }
 
@@ -484,7 +582,7 @@ public final class Context {
 
 func cast(_ obj: Any) -> ReferenceDictionary<String, Any> {
     if let abc = obj as? ReferenceDictionary<String, String> {
-        return ReferenceDictionary(abc.store)
+        return abc
     }
     return obj as! ReferenceDictionary<String, Any>
 }

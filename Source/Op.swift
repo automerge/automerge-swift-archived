@@ -23,7 +23,7 @@ public struct Op: Equatable {
 
     enum Key: Equatable {
         case string(String)
-        case number(Int)
+        case index(Int)
     }
 
     init(action: OpAction, obj: UUID, key: Op.Key, insert: Bool? = nil, child: UUID? = nil, value: Primitives? = nil, datatype: DataType? = nil) {
