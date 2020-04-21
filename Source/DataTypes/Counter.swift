@@ -7,6 +7,6 @@
 
 import Foundation
 
-struct Counter {
+struct Counter: Equatable {
     let value: Double
 }

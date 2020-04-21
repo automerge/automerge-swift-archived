@@ -41,7 +41,7 @@ class ContextTest: XCTestCase {
     }
 
     // should assign a primitive value to a map key
-    func testContext1() {
+    func testContextSetMapKey1() {
         // GIVEN
         let actor = UUID()
         let context = Context(
@@ -68,7 +68,7 @@ class ContextTest: XCTestCase {
     }
 
     // should do nothing if the value was not changed
-    func testContext2() {
+    func testContextSetMapKey2() {
         //Given
         let actor = UUID()
         let context = Context(
@@ -94,7 +94,7 @@ class ContextTest: XCTestCase {
     }
 
     // should allow a conflict to be resolved
-    func testContext3() {
+    func testContextSetMapKey3() {
         //Given
         let actor = UUID()
         let context = Context(
@@ -123,7 +123,7 @@ class ContextTest: XCTestCase {
     }
 
     //should create nested maps
-    func testContext4() {
+    func testContextSetMapKey4() {
         // GIVEN
         let actor = UUID()
         let document = Document<Int>(options: .init(actorId: actor))
@@ -155,7 +155,7 @@ class ContextTest: XCTestCase {
     }
 
     // should perform assignment inside nested maps
-    func testContext5() {
+    func testContextSetMapKey5() {
         let actor = UUID()
         let objectId = UUID()
         let child = [OBJECT_ID: objectId.uuidString]
@@ -198,7 +198,7 @@ class ContextTest: XCTestCase {
     }
 
     // should perform assignment inside conflicted maps
-    func testContext6() {
+    func testContextSetMapKey6() {
         //Given
         let actor = UUID()
         let objectId1 = UUID()
@@ -251,7 +251,7 @@ class ContextTest: XCTestCase {
     }
 
     // should handle conflict values of various types
-    func testContext7() {
+    func testContextSetMapKey7() {
         // Given
         let actor = UUID()
         let objectId = UUID()
@@ -301,7 +301,7 @@ class ContextTest: XCTestCase {
     }
 
     // should create nested lists
-    func testContext8() {
+    func testContextSetMapKey8() {
         let actor = UUID()
         let context = Context(
             actorId: actor,
@@ -340,7 +340,7 @@ class ContextTest: XCTestCase {
     }
 
     // should create nested Text objects
-    func testContext9() {
+    func testContextSetMapKey9() {
         //Given
         let actor = UUID()
         let context = Context(
@@ -380,7 +380,7 @@ class ContextTest: XCTestCase {
     }
 
     // should create nested Table objects
-    func testContext10() {
+    func testContextSetMapKey10() {
         //Given
         let actor = UUID()
         let context = Context(
@@ -411,16 +411,178 @@ class ContextTest: XCTestCase {
         )
     }
 
-//    it('should create nested Table objects', () => {
-//      context.setMapKey([], 'books', new Table(['author', 'title']))
-//      assert(applyPatch.calledOnce)
-//      const objectId = applyPatch.firstCall.args[0].props.books[context.actorId].objectId
-//      assert.deepStrictEqual(applyPatch.firstCall.args[0], {objectId: ROOT_ID, type: 'map', props: {
-//        books: {[context.actorId]: {objectId, type: 'table', props: {}}}
-//      }})
-//      assert.deepStrictEqual(context.ops, [
-//        {obj: ROOT_ID, action: 'makeTable', key: 'books', child: objectId}
-//      ])
-//    })
+    // should allow assignment of Date values
+    func testContextSetMapKey11() {
+        //Given
+        let now = Date()
+        let actor = UUID()
+        let context = Context(
+            actorId: actor,
+            applyPatch: applyPatch.observerDiff,
+            updated: [:],
+            cache: [ROOT_ID.uuidString: [:]],
+            ops: []
+        )
+        // WHEN
+        context.setMapKey(path: [], key: "now", value: now)
+
+        //Then
+        XCTAssertEqual(context.ops, [
+            Op(action: .set, obj: ROOT_ID, key: .string("now"), value: .number(now.timeIntervalSince1970), datatype: .timestamp)
+        ])
+        XCTAssertEqual(applyPatch.callCount, 1)
+        XCTAssertEqual(applyPatch.value, ObjectDiff(
+            objectId: ROOT_ID,
+            type: .map,
+            props: [
+                "now": [
+                    actor.uuidString: .value(.init(value: .number(now.timeIntervalSince1970), datatype: .timestamp))
+                ]
+            ]
+            )
+        )
+    }
+
+    // should allow assignment of Counter values
+    func testContextSetMapKey12() {
+        //Given
+        let counter = Counter(value: 3)
+        let actor = UUID()
+        let context = Context(
+            actorId: actor,
+            applyPatch: applyPatch.observerDiff,
+            updated: [:],
+            cache: [ROOT_ID.uuidString: [:]],
+            ops: []
+        )
+        // WHEN
+        context.setMapKey(path: [], key: "counter", value: counter)
+
+        //Then
+        XCTAssertEqual(context.ops, [
+            Op(action: .set, obj: ROOT_ID, key: .string("counter"), value: .number(3), datatype: .counter)
+        ])
+        XCTAssertEqual(applyPatch.callCount, 1)
+        XCTAssertEqual(applyPatch.value, ObjectDiff(
+            objectId: ROOT_ID,
+            type: .map,
+            props: [
+                "counter": [
+                    actor.uuidString: .value(.init(value: .number(3), datatype: .counter))
+                ]
+            ]
+            )
+        )
+    }
+
+    // should overwrite an existing list element
+    func testListManupulation1() {
+        // Given
+        let listId = UUID()
+        let list: [String: Any] = [
+            LIST_VALUES : ["swallow", "magpie"],
+            OBJECT_ID: listId.uuidString,
+            CONFLICTS:  ["actor1": "swallow", "actor2": "swallow"]
+        ]
+
+        let actor = UUID()
+        let context = Context(
+            actorId: actor,
+            applyPatch: applyPatch.observerDiff,
+            updated: [:],
+            cache: [
+                listId.uuidString: list,
+                ROOT_ID.uuidString: [
+                    OBJECT_ID: ROOT_ID.uuidString,
+                    "birds": list,
+
+                    CONFLICTS: [
+                        "birds": ["actor1": list]
+                    ]
+                ]
+            ]
+        )
+
+        // When
+        context.setListIndexpath(path: [.init(key: .string("birds"), objectId: listId)], index: 0, value: "starling")
+
+        // Then
+        XCTAssertEqual(context.ops, [
+            Op(action: .set, obj: listId, key: .index(0), value: .string("starling"))
+        ])
+        XCTAssertEqual(applyPatch.callCount, 1)
+        XCTAssertEqual(applyPatch.value, ObjectDiff(
+            objectId: ROOT_ID,
+            type: .map,
+            props: [
+                "birds": [
+                    "actor1": .object(.init(objectId: listId,
+                                                    type: .list,
+                                                    props: [
+                                                        "0": [actor.uuidString: .value(.string("starling"))]
+                    ]))
+                ]
+            ]
+            )
+        )
+    }
+
+    // should create nested objects on assignment
+    func testListManupulation2() {
+        // Given
+        let listId = UUID()
+        let list: [String: Any] = [
+            LIST_VALUES : ["swallow", "magpie"],
+            OBJECT_ID: listId.uuidString,
+            CONFLICTS:  ["actor1": "swallow", "actor2": "swallow"]
+        ]
+
+        let actor = UUID()
+        let context = Context(
+            actorId: actor,
+            applyPatch: applyPatch.observerDiff,
+            updated: [:],
+            cache: [
+                listId.uuidString: list,
+                ROOT_ID.uuidString: [
+                    OBJECT_ID: ROOT_ID.uuidString,
+                    "birds": list,
+
+                    CONFLICTS: [
+                        "birds": ["actor1": list]
+                    ]
+                ]
+            ]
+        )
+
+        // When
+        context.setListIndexpath(path: [.init(key: .string("birds"), objectId: listId)], index: 1, value: ["english": "goldfinch", "latin": "carduelis"])
+
+        // Then
+        let nestedId = applyPatch.value!.props!["birds"]!["actor1"]!.props!["1"]![actor]!.objectId!
+        XCTAssertEqual(context.ops, [
+            Op(action: .makeMap, obj: listId, key: .index(1), child: nestedId),
+            Op(action: .set, obj: nestedId, key: .string("english"), value: .string("goldfinch")),
+            Op(action: .set, obj: nestedId, key: .string("latin"), value: .string("carduelis"))
+        ])
+        XCTAssertEqual(applyPatch.callCount, 1)
+        XCTAssertEqual(applyPatch.value, ObjectDiff(
+            objectId: ROOT_ID,
+            type: .map,
+            props: [
+                "birds": [
+                    "actor1": .object(.init(objectId: listId,
+                                                    type: .list,
+                                                    props: [
+                                                        "1": [actor.uuidString: .object(.init(objectId: nestedId, type: .map, props: [
+                                                            "english": [actor.uuidString: .value(.string("goldfinch"))],
+                                                            "latin": [actor.uuidString: .value(.string("carduelis"))]
+                                                        ]))]
+                    ]))
+                ]
+            ]
+            )
+        )
+    }
 
 }

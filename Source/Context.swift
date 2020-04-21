@@ -81,6 +81,14 @@ public final class Context {
             let operation = Op(action: .set, obj: objectId, key: key, insert: insert, value: .string(String(character)))
             ops.append(operation)
             return .value(.string(String(character)))
+        case let date as Date:
+            let operation = Op(action: .set, obj: objectId, key: key, insert: insert, value: .number(date.timeIntervalSince1970), datatype: .timestamp)
+            ops.append(operation)
+            return .value(.init(value: .number(date.timeIntervalSince1970), datatype: .timestamp))
+        case let couter as Counter:
+            let operation = Op(action: .set, obj: objectId, key: key, insert: insert, value: .number(couter.value), datatype: .counter)
+            ops.append(operation)
+            return .value(.init(value: .number(couter.value), datatype: .counter))
         case let value as [String: Any]:
             return .object(createNestedObjects(obj: objectId, key: key, value: value, insert: insert))
         case let array as [Any]:
@@ -219,11 +227,11 @@ public final class Context {
     //}
 
     /**
-    * Inserts a sequence of new list elements `values` into a list, starting at position `index`.
-    * `newObject` is true if we are creating a new list object, and false if we are updating an
-    * existing one. `subpatch` is the patch for the list object being modified. Mutates
-    * `subpatch` to reflect the sequence of values.
-    */
+     * Inserts a sequence of new list elements `values` into a list, starting at position `index`.
+     * `newObject` is true if we are creating a new list object, and false if we are updating an
+     * existing one. `subpatch` is the patch for the list object being modified. Mutates
+     * `subpatch` to reflect the sequence of values.
+     */
     func insertListItems(subPatch: ObjectDiff, index: Int, values: [Any], newObject: Bool) {
         let list = newObject ? [] : getObject(objectId: subPatch.objectId) as! [Any]
         precondition(index >= 0 && index <= list.count, "List index \(index) is out of bounds for list of length \(list.count)")
@@ -234,18 +242,18 @@ public final class Context {
             subPatch.props?["\(index + offset)"] = [actorId.uuidString: valuePatch]
         })
     }
-//    insertListItems(subpatch, index, values, newObject) {
-//      const list = newObject ? [] : this.getObject(subpatch.objectId)
-//      if (index < 0 || index > list.length) {
-//        throw new RangeError(`List index ${index} is out of bounds for list of length ${list.length}`)
-//      }
-//
-//      for (let offset = 0; offset < values.length; offset++) {
-//        const valuePatch = this.setValue(subpatch.objectId, index + offset, values[offset], true)
-//        subpatch.edits.push({action: 'insert', index: index + offset})
-//        subpatch.props[index + offset] = {[this.actorId]: valuePatch}
-//      }
-//    }
+    //    insertListItems(subpatch, index, values, newObject) {
+    //      const list = newObject ? [] : this.getObject(subpatch.objectId)
+    //      if (index < 0 || index > list.length) {
+    //        throw new RangeError(`List index ${index} is out of bounds for list of length ${list.length}`)
+    //      }
+    //
+    //      for (let offset = 0; offset < values.length; offset++) {
+    //        const valuePatch = this.setValue(subpatch.objectId, index + offset, values[offset], true)
+    //        subpatch.edits.push({action: 'insert', index: index + offset})
+    //        subpatch.props[index + offset] = {[this.actorId]: valuePatch}
+    //      }
+    //    }
 
     /**
      * Updates the map object at path `path`, setting the property with name
@@ -254,8 +262,7 @@ public final class Context {
 
     func setMapKey<T: Equatable>(path: [KeyPathElement], key: String, value: T) {
         let objectId = path.isEmpty ? ROOT_ID : path[path.count - 1].objectId
-        let anyObject = getObject(objectId: objectId)
-        let object = cast(anyObject)
+        let object = getObject(objectId: objectId) as! [String: Any]
         if object[key] is Counter {
             fatalError("Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.")
         }
@@ -305,13 +312,14 @@ public final class Context {
             return .value(.init(value: .number(date.timeIntervalSince1970), datatype: .timestamp))
         case let counter as Counter:
             return .value(.init(value: .number(counter.value), datatype: .counter))
-        case let _ as NSNull:
+        case is NSNull:
             return .value(.init(value: .null))
-        case let object as [String : String]:
-            guard let objectId = object[OBJECT_ID].map({ UUID(uuidString: $0)! }) else {
+        case let object as [String : Any]:
+            guard let objectId = object[OBJECT_ID].map({ UUID(uuidString: $0 as! String)! }) else {
                 fatalError("Object \(value) has no objectId")
             }
             return .object(.init(objectId: objectId, type: getObjectType(objectId: objectId), edits: nil, props: nil))
+
         default:
             fatalError()
         }
@@ -354,10 +362,16 @@ public final class Context {
         }
         let object = getObject(objectId: objectId)
         switch object {
-        case let table as Table:
+        case is Table:
             return .table
+        case let object as [String: Any]:
+            if object[LIST_VALUES] != nil {
+                return .list
+            } else {
+                return .map
+            }
         default:
-            return .map
+            fatalError()
         }
     }
     //    getObjectType(objectId) {
@@ -391,7 +405,7 @@ public final class Context {
     func applyAt(path: [KeyPathElement], callback: (ObjectDiff) -> Void) {
         let patch = Patch(clock: [:], version: 0, diffs: ObjectDiff(objectId: ROOT_ID, type: .map))
         callback(getSubpatch(patch: patch, path: path))
-        applyPatch(patch.diffs, cache[ROOT_ID], updated)
+        applyPatch(patch.diffs, cache[ROOT_ID]!, updated)
     }
     //    applyAtPath(path, callback) {
     //      let patch = {diffs: {objectId: ROOT_ID, type: 'map'}}
@@ -494,18 +508,18 @@ public final class Context {
      * property `key` of `object` (there might be multiple values in the case of a conflict), and
      * returns an object that maps operation IDs to descriptions of values.
      */
-    func getValuesDescriptions(path: [KeyPathElement], object: Any, key: String) -> ReferenceDictionary<String, Diff> {
+    func getValuesDescriptions(path: [KeyPathElement], object: Any, key: String) -> [String: Diff] {
         switch object {
-        case let _ as Table:
+        case is Table:
             fatalError()
         case let map as [String: Any]:
             guard let conflicts = (map[CONFLICTS] as? [String: Any])?[key] else {
                 fatalError("No children at key \(key) of path \(path)")
             }
             let typedConflicts = conflicts as! [String: Any]
-            var values = ReferenceDictionary<String, Diff>()
+            var values = [String: Diff]()
             for opId in typedConflicts.keys {
-                values[opId] = getValueDescription(value: typedConflicts[opId])
+                values[opId] = getValueDescription(value: typedConflicts[opId]!)
             }
 
             return values
@@ -535,6 +549,49 @@ public final class Context {
     //        return values
     //      }
     //    }
+
+    /**
+     * Updates the list object at path `path`, replacing the current value at
+     * position `index` with the new value `value`.
+     */
+    func setListIndexpath<T: Equatable>(path: [KeyPathElement], index: Int, value: T) {
+        let objectId = path.isEmpty ? ROOT_ID : path[path.count - 1].objectId
+        let object = getObject(objectId: objectId) as! [String: Any]
+        let list = object[LIST_VALUES] as! [Any]
+        if index == list.count {
+            fatalError()
+        }
+        precondition(!(list[index] is Counter), "Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.")
+        if (list[index] as? T) != value {
+            applyAt(path: path) { subpatch in
+                let valuePatch = setValue(objectId: objectId, key: .index(index), value: value, insert: nil)
+                subpatch.props?["\(index)"] = [actorId.uuidString: valuePatch]
+            }
+        }
+
+    }
+//    setListIndex(path, index, value) {
+//      const objectId = path.length === 0 ? ROOT_ID : path[path.length - 1].objectId
+//      const list = this.getObject(objectId)
+//      if (index === list.length) {
+//        return this.splice(path, index, 0, [value])
+//      }
+//      if (index < 0 || index > list.length) {
+//        throw new RangeError(`List index ${index} is out of bounds for list of length ${list.length}`)
+//      }
+//      if (list[index] instanceof Counter) {
+//        throw new RangeError('Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.')
+//      }
+//
+//      // If the assigned list element value is the same as the existing value, and
+//      // the assignment does not resolve a conflict, do nothing
+//      if (list[index] !== value || Object.keys(list[CONFLICTS][index] || {}).length > 1 || value === undefined) {
+//        this.applyAtPath(path, subpatch => {
+//          const valuePatch = this.setValue(objectId, index, value, false)
+//          subpatch.props[index] = {[this.actorId]: valuePatch}
+//        })
+//      }
+//    }
 
 }
 
@@ -578,11 +635,3 @@ public final class Context {
 ////    return {value}
 ////  }
 ////}
-
-
-func cast(_ obj: Any) -> ReferenceDictionary<String, Any> {
-    if let abc = obj as? ReferenceDictionary<String, String> {
-        return abc
-    }
-    return obj as! ReferenceDictionary<String, Any>
-}
