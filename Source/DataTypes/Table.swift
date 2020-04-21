@@ -6,6 +6,8 @@
 //
 
 import Foundation
-struct Table {
-    
+struct Table: Equatable {
+    init(columns: [String]) {
+        
+    }
 }
