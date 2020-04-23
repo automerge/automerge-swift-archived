@@ -26,7 +26,6 @@ public struct Document<T> {
         var backend: Backend?
     }
 
-//    public let root: [String: Any]
     let _options: Options
     let _objectId: UUID
     let _conflicts: [String: [String: Diff]]

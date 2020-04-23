@@ -97,18 +97,18 @@ func updateMapObject<T>(patch: ObjectDiff, obj: Document<T>, updated: inout [Str
 func applyProperties<T>(props: Props, object: Document<T>, conflicts: [String: [String: Diff]], updated: inout [String: Any]) -> Document<T> {
     fatalError()
 
-    for key in props.keys {
-        var values = [String: Any]()
-        let opIds = props[key]?.keys.sorted(by: lamportCompare)
-        for opId in opIds ?? [] {
-            let subPatch = props[key]![opId]
-            if let conflict = conflicts[key]?[opId] {
-                values[opId] = getValue(diff: subPatch!, cache: conflict, updated: &updated)
-            } else {
-                values[opId] = getValue(diff: subPatch!, cache: nil, updated: &updated)
-            }
-        }
-    }
+//    for key in props.keys {
+//        var values = [String: Any]()
+//        let opIds = props[key]?.keys.sorted(by: lamportCompare)
+//        for opId in opIds ?? [] {
+//            let subPatch = props[key]![opId]
+//            if let conflict = conflicts[key]?[opId] {
+//                values[opId] = getValue(diff: subPatch!, cache: conflict, updated: &updated)
+//            } else {
+//                values[opId] = getValue(diff: subPatch!, cache: nil, updated: &updated)
+//            }
+//        }
+//    }
 }
 
 //function applyProperties(props, object, conflicts, updated) {

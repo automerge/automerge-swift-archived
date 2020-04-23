@@ -11,11 +11,6 @@ import Foundation
 public final class Context {
 
     struct KeyPathElement: Equatable {
-        enum Key: Equatable {
-            case string(String)
-            case number(Int)
-        }
-
         let key: Key
         let objectId: UUID
     }
@@ -63,7 +58,7 @@ public final class Context {
      * primitive value. For string, number, boolean, or null the datatype is omitted.
      */
 
-    func setValue<T>(objectId: UUID, key: Op.Key?, value: T, insert: Bool? = nil) -> Diff {
+    func setValue<T>(objectId: UUID, key: Key?, value: T, insert: Bool? = nil) -> Diff {
         switch value {
         case  let value as Double:
             let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .number(value))
@@ -131,7 +126,7 @@ public final class Context {
      * element. If `key` is null, the ID of the new object is used as key (this construction
      * is used by Automerge.Table).
      */
-    func createNestedObjects(obj: UUID, key: Op.Key?, value: Any, insert: Bool? = nil) -> ObjectDiff {
+    func createNestedObjects(obj: UUID, key: Key?, value: Any, insert: Bool? = nil) -> ObjectDiff {
         let child = UUID()
         let key = key ?? .string(child.uuidString)
         switch value {
@@ -143,7 +138,7 @@ public final class Context {
             var props = Props()
             for nested in object.keys {
                 let valuePatch = setValue(objectId: child, key: .string(nested), value: object[nested], insert: nil)
-                props[nested] = [actorId.uuidString: valuePatch]
+                props[.string(nested)] = [actorId.uuidString: valuePatch]
             }
 
             return ObjectDiff(objectId: child, type: .map, props: props)
@@ -239,7 +234,7 @@ public final class Context {
         values.enumerated().forEach({ offset, element in
             let valuePatch = setValue(objectId: subPatch.objectId, key: .index(index + offset), value: element, insert: true)
             subPatch.edits?.append(Edit(action: .insert, index: index + offset))
-            subPatch.props?["\(index + offset)"] = [actorId.uuidString: valuePatch]
+            subPatch.props?[.index(index + offset)] = [actorId.uuidString: valuePatch]
         })
     }
     //    insertListItems(subpatch, index, values, newObject) {
@@ -326,7 +321,7 @@ public final class Context {
         if (object[key] as? T) != value {
             applyAt(path: path, callback: { subpatch in
                 let valuePatch = setValue(objectId: objectId, key: .string(key), value: value, insert: nil)
-                subpatch.props?[key] = [actorId.uuidString: valuePatch]
+                subpatch.props?[.string(key)] = [actorId.uuidString: valuePatch]
             })
         } else if (object[CONFLICTS] as? [String: [Any]])?[key]?.count ?? 0 > 1 {
 
@@ -492,11 +487,11 @@ public final class Context {
             if subPatch.props == nil {
                 subPatch.props = [:]
             }
-            if subPatch.props?[key] == nil {
-                subPatch.props?[key] = getValuesDescriptions(path: path, object: object, key: key)
+            if subPatch.props?[pathElem.key] == nil {
+                subPatch.props?[pathElem.key] = getValuesDescriptions(path: path, object: object, key: key)
             }
             var nextOpId: String?
-            let values = subPatch.props![key]!
+            let values = subPatch.props![pathElem.key]!
             for opId in values.keys {
                 if case .object(let object) = values[opId]!, object.objectId == pathElem.objectId {
                     nextOpId = opId
@@ -509,7 +504,6 @@ public final class Context {
             object = getPropertyValue(object: object, key: key, opId: nextOpId2)
 
         }
-
         if subPatch.props == nil {
             subPatch.props = [:]
         }
@@ -630,7 +624,7 @@ public final class Context {
         if (list[index] as? T) != value {
             applyAt(path: path) { subpatch in
                 let valuePatch = setValue(objectId: objectId, key: .index(index), value: value, insert: nil)
-                subpatch.props?["\(index)"] = [actorId.uuidString: valuePatch]
+                subpatch.props?[.index(index)] = [actorId.uuidString: valuePatch]
             }
         }
 
@@ -668,7 +662,7 @@ public final class Context {
 
         let valuePatch = setValue(objectId: path[path.count - 1].objectId, key: nil, value: row)
         applyAt(path: path) { subpatch in
-            subpatch.props?[valuePatch.objectId!] = [valuePatch.objectId!.uuidString: valuePatch]
+            subpatch.props?[.string(valuePatch.objectId!.uuidString)] = [valuePatch.objectId!.uuidString: valuePatch]
         }
 
         return valuePatch.objectId!
