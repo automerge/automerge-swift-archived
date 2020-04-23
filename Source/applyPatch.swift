@@ -94,7 +94,7 @@ func updateMapObject<T>(patch: ObjectDiff, obj: Document<T>, updated: inout [Str
  * just a single opId-value mapping.
  */
 
-func applyProperties<T>(props: Props, object: Document<T>, conflicts: ReferenceDictionary<String, ReferenceDictionary<String, Diff>>, updated: inout [String: Any]) -> Document<T> {
+func applyProperties<T>(props: Props, object: Document<T>, conflicts: [String: [String: Diff]], updated: inout [String: Any]) -> Document<T> {
     fatalError()
 
     for key in props.keys {

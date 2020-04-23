@@ -23,7 +23,7 @@ final class Spion<T> {
 
 extension Spion where T == ObjectDiff {
 
-    var observerDiff: (T, Any, ReferenceDictionary<String, Any>) -> Void {
+    var observerDiff: (T, Any, [String: Any]) -> Void {
         return { diff, _, _ in
             self.observer(diff)
         }
@@ -882,65 +882,61 @@ class ContextTest: XCTestCase {
         ))
     }
 
-//    // should delete a table row
-//    func testTableManipulation2() {
-//        let tableId = UUID()
-//        let table: [String: Any] = [
-//            OBJECT_ID: tableId.uuidString,
-//            CONFLICTS: [String: Any](),
-//            "entries": [String: Any]()
-//        ]
-//        let actor = UUID()
-//        let context = Context(
-//            actorId: actor,
-//            applyPatch: applyPatch.observerDiff,
-//            updated: [:],
-//            cache: [
-//                tableId.uuidString: table,
-//                ROOT_ID.uuidString: [
-//                    OBJECT_ID: ROOT_ID.uuidString,
-//                    "books": table,
-//                    CONFLICTS: [
-//                        "books": ["actor1": table]
-//                    ]
-//                ]
-//            ]
-//        )
-//
-//        //When
-//        let rowId = context.addTableRow(path: [.init(key: .string("books"), objectId: tableId)], row: ["author": "Mary Shelley", "title": "Frankenstein"])
-//
-//        // Then
-//        XCTAssertEqual(context.ops, [
-//            Op(action: .makeMap, obj: tableId, key: .string(rowId.uuidString), child: rowId),
-//            Op(action: .set, obj: rowId, key: .string("author"), value: .string("Mary Shelley")),
-//            Op(action: .set, obj: rowId, key: .string("title"), value: .string("Frankenstein"))
-//        ])
-//
-//        XCTAssertEqual(applyPatch.callCount, 1)
-//        XCTAssertEqual(applyPatch.value, ObjectDiff(
-//            objectId: ROOT_ID,
-//            type: .map,
-//            props: [
-//                "books": [
-//                    "actor1": .object(
-//                        .init(objectId: tableId,
-//                              type: .table,
-//                              props: [
-//                                rowId.uuidString: [
-//                                    rowId.uuidString: .object(.init(
-//                                        objectId: rowId,
-//                                        type: .map,
-//                                        props: [
-//                                            "author": [actor.uuidString: .value(.string("Mary Shelley"))],
-//                                            "title": [actor.uuidString: .value(.string("Frankenstein"))]
-//                                    ]))
-//                                ]
-//                        ]))
-//                ]
-//            ]
-//        ))
-//    }
+    // should delete a table row
+    func testTableManipulation2() {
+        let rowId = UUID()
+        let row: [String: Any] = [
+            "author": "Mary Shelley",
+            "title": "Frankenstein",
+            OBJECT_ID: rowId
+        ]
+        let tableId = UUID()
+        let table: [String: Any] = [
+            OBJECT_ID: tableId.uuidString,
+            CONFLICTS: [String: Any](),
+            "entries": [rowId.uuidString: row]
+        ]
+        let actor = UUID()
+        let context = Context(
+            actorId: actor,
+            applyPatch: applyPatch.observerDiff,
+            updated: [:],
+            cache: [
+                tableId.uuidString: table,
+                ROOT_ID.uuidString: [
+                    OBJECT_ID: ROOT_ID.uuidString,
+                    "books": table,
+                    CONFLICTS: [
+                        "books": ["actor1": table]
+                    ]
+                ]
+            ]
+        )
+
+        //When
+        context.deleteTableRow(path: [.init(key: .string("books"), objectId: tableId)], rowId: rowId)
+
+        // Then
+        XCTAssertEqual(context.ops, [
+            Op(action: .del, obj: tableId, key: .string(rowId.uuidString))
+        ])
+
+        XCTAssertEqual(applyPatch.callCount, 1)
+        XCTAssertEqual(applyPatch.value, ObjectDiff(
+            objectId: ROOT_ID,
+            type: .map,
+            props: [
+                "books": [
+                    "actor1": .object(
+                        .init(objectId: tableId,
+                              type: .table,
+                              props: [
+                                rowId.uuidString: [:]
+                        ]))
+                ]
+            ]
+        ))
+    }
 
 //    it('should delete a table row', () => {
 //        const rowId = uuid()
