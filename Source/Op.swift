@@ -21,12 +21,7 @@ enum DataType: Equatable {
 
 public struct Op: Equatable {
 
-    enum Key: Equatable {
-        case string(String)
-        case index(Int)
-    }
-
-    init(action: OpAction, obj: UUID, key: Op.Key, insert: Bool? = nil, child: UUID? = nil, value: Primitives? = nil, datatype: DataType? = nil) {
+    init(action: OpAction, obj: UUID, key: Key, insert: Bool? = nil, child: UUID? = nil, value: Primitives? = nil, datatype: DataType? = nil) {
         self.action = action
         self.obj = obj
         self.key = key
