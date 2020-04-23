@@ -13,6 +13,6 @@ struct Edit: Equatable {
         case remove
     }
 
-  var action: Action
-  var index: Int
+  let action: Action
+  let index: Int
 }

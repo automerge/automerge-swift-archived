@@ -20,18 +20,18 @@ public final class Context {
         let objectId: UUID
     }
 
-    init<T>(doc: Document<T>, actorId: UUID, applyPatch: ((ObjectDiff, Any, ReferenceDictionary<String, Any>) -> Void)?) {
+    init<T>(doc: Document<T>, actorId: UUID, applyPatch: ((ObjectDiff, Any, [String: Any]) -> Void)?) {
         self.cache = doc._cache
-        self.updated = ReferenceDictionary<String, Any>()
+        self.updated = [String: Any]()
         self.actorId = actorId
         self.ops = []
         self.applyPatch = applyPatch!
     }
 
     init(actorId: UUID,
-         applyPatch: @escaping (ObjectDiff, Any, ReferenceDictionary<String, Any>) -> Void,
-         updated: ReferenceDictionary<String, Any>,
-         cache: ReferenceDictionary<String, Any>,
+         applyPatch: @escaping (ObjectDiff, Any, [String: Any]) -> Void,
+         updated: [String: Any],
+         cache: [String: Any],
          ops: [Op] = []
     ) {
         self.actorId = actorId
@@ -42,9 +42,9 @@ public final class Context {
     }
 
     let actorId: UUID
-    let applyPatch: (ObjectDiff, Any, ReferenceDictionary<String, Any>) -> Void
-    var updated: ReferenceDictionary<String, Any>
-    var cache: ReferenceDictionary<String, Any>
+    let applyPatch: (ObjectDiff, Any, [String: Any]) -> Void
+    var updated: [String: Any]
+    var cache: [String: Any]
 
     var idUpdated: Bool {
         return !ops.isEmpty
@@ -693,45 +693,23 @@ public final class Context {
 //      return valuePatch.objectId
 //    }
 
+    /**
+     * Updates the table object at path `path`, deleting the row with ID `rowId`.
+     */
+    func deleteTableRow(path: [KeyPathElement], rowId: UUID) {
+        let objectId =  path[path.count - 1].objectId
+        let table = getObject(objectId: objectId) as! [String: Any]
+        fatalError()
+    }
+//    deleteTableRow(path, rowId) {
+//      const objectId = path[path.length - 1].objectId, table = this.getObject(objectId)
+//
+//      if (table.byId(rowId)) {
+//        this.addOp({action: 'del', obj: objectId, key: rowId})
+//        this.applyAtPath(path, subpatch => {
+//          subpatch.props[rowId] = {}
+//        })
+//      }
+//    }
+
 }
-
-
-
-/////**
-//// * Records an operation to update the object with ID `obj`, setting `key`
-//// * to `value`. Returns an object in which the value has been normalized: if it
-//// * is a reference to another object, `{value: otherObjectId, link: true}` is
-//// * returned; otherwise `{value: primitiveValue, datatype: someType}` is
-//// * returned. The datatype is only present for values that need to be
-//// * interpreted in a special way (timestamps, counters); for primitive types
-//// * (string, number, boolean, null) the datatype property is omitted.
-//// */
-////setValue(obj, key, value) {
-////  if (!['object', 'boolean', 'number', 'string'].includes(typeof value)) {
-////    throw new TypeError(`Unsupported type of value: ${typeof value}`)
-////  }
-////
-////  if (isObject(value)) {
-////    if (value instanceof Date) {
-////      // Date object, translate to timestamp (milliseconds since epoch)
-////      const timestamp = value.getTime()
-////      this.addOp({action: 'set', obj, key, value: timestamp, datatype: 'timestamp'})
-////      return {value: timestamp, datatype: 'timestamp'}
-////
-////    } else if (value instanceof Counter) {
-////      // Counter object, save current value
-////      this.addOp({action: 'set', obj, key, value: value.value, datatype: 'counter'})
-////      return {value: value.value, datatype: 'counter'}
-////
-////    } else {
-////      // Reference to another object
-////      const childId = this.createNestedObjects(value)
-////      this.addOp({action: 'link', obj, key, value: childId})
-////      return {value: childId, link: true}
-////    }
-////  } else {
-////    // Primitive value (number, string, boolean, or null)
-////    this.addOp({action: 'set', obj, key, value})
-////    return {value}
-////  }
-////}

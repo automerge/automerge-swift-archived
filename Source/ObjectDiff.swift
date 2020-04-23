@@ -7,7 +7,7 @@
 
 import Foundation
 
-typealias Props = ReferenceDictionary<String, ReferenceDictionary<String, Diff>>
+typealias Props = [String: [String: Diff]]
 class ObjectDiff: Equatable {
     
     init(objectId: UUID,
@@ -25,7 +25,7 @@ class ObjectDiff: Equatable {
     var objectId: UUID
     var type: CollectionType
     var edits: [Edit]?
-    var props: ReferenceDictionary<String, ReferenceDictionary<String, Diff>>?
+    var props: [String: [String: Diff]]?
 
     static func ==(lhs: ObjectDiff, rhs: ObjectDiff) -> Bool {
         return lhs.objectId == rhs.objectId &&

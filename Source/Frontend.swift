@@ -29,8 +29,8 @@ public struct Document<T> {
 //    public let root: [String: Any]
     let _options: Options
     let _objectId: UUID
-    let _conflicts: ReferenceDictionary<String, ReferenceDictionary<String, Diff>>
-    let _cache: ReferenceDictionary<String, Any>
+    let _conflicts: [String: [String: Diff]]
+    let _cache: [String: Any]
     let _state: State
     let change: Any?
     let backend: Backend = Backend()
