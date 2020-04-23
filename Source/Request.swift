@@ -17,7 +17,8 @@ public struct Request: Equatable {
 
 
     public var requestType: RequestType
-    public var message: String?
+    public var message: String
+    public var time: Date
     public var actor: UUID
     public var seq: Int
     public var version: Int

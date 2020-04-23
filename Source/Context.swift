@@ -63,30 +63,30 @@ public final class Context {
      * primitive value. For string, number, boolean, or null the datatype is omitted.
      */
 
-    func setValue<T>(objectId: UUID, key: Op.Key, value: T, insert: Bool? = nil) -> Diff {
+    func setValue<T>(objectId: UUID, key: Op.Key?, value: T, insert: Bool? = nil) -> Diff {
         switch value {
         case  let value as Double:
-            let operation = Op(action: .set, obj: objectId, key: key, insert: insert, value: .number(value))
+            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .number(value))
             ops.append(operation)
             return .value(.number(value))
         case  let value as Int:
-            let operation = Op(action: .set, obj: objectId, key: key, insert: insert, value: .number(Double(value)))
+            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .number(Double(value)))
             ops.append(operation)
             return .value(.number(Double(value)))
         case let string as String:
-            let operation = Op(action: .set, obj: objectId, key: key, insert: insert, value: .string(string))
+            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .string(string))
             ops.append(operation)
             return .value(.string(string))
         case let character as Character:
-            let operation = Op(action: .set, obj: objectId, key: key, insert: insert, value: .string(String(character)))
+            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .string(String(character)))
             ops.append(operation)
             return .value(.string(String(character)))
         case let date as Date:
-            let operation = Op(action: .set, obj: objectId, key: key, insert: insert, value: .number(date.timeIntervalSince1970), datatype: .timestamp)
+            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .number(date.timeIntervalSince1970), datatype: .timestamp)
             ops.append(operation)
             return .value(.init(value: .number(date.timeIntervalSince1970), datatype: .timestamp))
         case let couter as Counter:
-            let operation = Op(action: .set, obj: objectId, key: key, insert: insert, value: .number(couter.value), datatype: .counter)
+            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .number(couter.value), datatype: .counter)
             ops.append(operation)
             return .value(.init(value: .number(couter.value), datatype: .counter))
         case let value as [String: Any]:
@@ -233,7 +233,7 @@ public final class Context {
      * `subpatch` to reflect the sequence of values.
      */
     func insertListItems(subPatch: ObjectDiff, index: Int, values: [Any], newObject: Bool) {
-        let list = newObject ? [] : getObject(objectId: subPatch.objectId) as! [Any]
+        let list = newObject ? [] : getList(objectId: subPatch.objectId)
         precondition(index >= 0 && index <= list.count, "List index \(index) is out of bounds for list of length \(list.count)")
 
         values.enumerated().forEach({ offset, element in
@@ -254,6 +254,61 @@ public final class Context {
     //        subpatch.props[index + offset] = {[this.actorId]: valuePatch}
     //      }
     //    }
+
+    /**
+     * Updates the list object at path `path`, deleting `deletions` list elements starting from
+     * list index `start`, and inserting the list of new elements `insertions` at that position.
+     */
+    func spice<T: Equatable>(path: [KeyPathElement], start: Int, deletions: Int, insertions: [T]) {
+        let objectId = path.isEmpty ? ROOT_ID : path[path.count - 1].objectId
+        let object = getObject(objectId: objectId) as! [String: Any]
+        let list = object[LIST_VALUES] as! [Any]
+        if (start < 0 || deletions < 0 || start > list.count - deletions) {
+            fatalError("\(deletions) deletions starting at index \(start) are out of bounds for list of length \(list.count)")
+        }
+        if deletions == 0 && insertions.count == 0 {
+            return
+        }
+        let patch = Patch(clock: [:], version: 0, diffs: ObjectDiff(objectId: ROOT_ID, type: .map))
+        let subPatch = getSubpatch(patch: patch, path: path)
+        if subPatch.edits == nil {
+            subPatch.edits = []
+        }
+        if deletions > 0 {
+            (0..<deletions).forEach({ _ in
+                ops.append(Op(action: .del, obj: objectId, key: .index(start)))
+                subPatch.edits?.append(Edit(action: .remove, index: start))
+            })
+        }
+        if insertions.count > 0 {
+            insertListItems(subPatch: subPatch, index: start, values: insertions, newObject: false)
+        }
+        applyPatch(patch.diffs, cache[ROOT_ID]!, updated)
+    }
+//    splice(path, start, deletions, insertions) {
+//      const objectId = path.length === 0 ? ROOT_ID : path[path.length - 1].objectId
+//      let list = this.getObject(objectId)
+//      if (start < 0 || deletions < 0 || start > list.length - deletions) {
+//        throw new RangeError()
+//      }
+//      if (deletions === 0 && insertions.length === 0) return
+//
+//      let patch = {diffs: {objectId: ROOT_ID, type: 'map'}}
+//      let subpatch = this.getSubpatch(patch, path)
+//      if (!subpatch.edits) subpatch.edits = []
+//
+//      if (deletions > 0) {
+//        for (let i = 0; i < deletions; i++) {
+//          this.addOp({action: 'del', obj: objectId, key: start})
+//          subpatch.edits.push({action: 'remove', index: start})
+//        }
+//      }
+//
+//      if (insertions.length > 0) {
+//        this.insertListItems(subpatch, start, insertions, false)
+//      }
+//      this.applyPatch(patch.diffs, this.cache[ROOT_ID], this.updated)
+//    }
 
     /**
      * Updates the map object at path `path`, setting the property with name
@@ -362,11 +417,11 @@ public final class Context {
         }
         let object = getObject(objectId: objectId)
         switch object {
-        case is Table:
-            return .table
         case let object as [String: Any]:
             if object[LIST_VALUES] != nil {
                 return .list
+            } else if object[TABLE_VALUES] != nil{
+                return .table
             } else {
                 return .map
             }
@@ -382,6 +437,16 @@ public final class Context {
     //      if (Array.isArray(object)) return 'list'
     //      return 'map'
     //    }
+
+    /**
+     * Returns an object (not proxied) from the cache or updated set, as appropriate.
+     */
+    private func getList(objectId: UUID) -> [Any] {
+        guard let object = (updated[objectId] ?? cache[objectId]) as? [String: Any] else {
+            fatalError("Target object does not exist: \(objectId)")
+        }
+        return object[LIST_VALUES] as! [Any]
+    }
 
     /**
      * Returns an object (not proxied) from the cache or updated set, as appropriate.
@@ -591,6 +656,41 @@ public final class Context {
 //          subpatch.props[index] = {[this.actorId]: valuePatch}
 //        })
 //      }
+//    }
+
+    /**
+    * Updates the table object at path `path`, adding a new entry `row`.
+    * Returns the objectId of the new row.
+    */
+    func addTableRow(path: [KeyPathElement], row: [String: Any]) -> UUID {
+        precondition(row[OBJECT_ID] == nil, "Cannot reuse an existing object as table row")
+        precondition(row["id"] == nil, "A table row must not have an id property; it is generated automatically")
+
+        let valuePatch = setValue(objectId: path[path.count - 1].objectId, key: nil, value: row)
+        applyAt(path: path) { subpatch in
+            subpatch.props?[valuePatch.objectId!] = [valuePatch.objectId!.uuidString: valuePatch]
+        }
+
+        return valuePatch.objectId!
+    }
+
+
+//    addTableRow(path, row) {
+//      if (!isObject(row) || Array.isArray(row)) {
+//        throw new TypeError('A table row must be an object')
+//      }
+//      if (row[OBJECT_ID]) {
+//        throw new TypeError('Cannot reuse an existing object as table row')
+//      }
+//      if (row.id) {
+//        throw new TypeError('A table row must not have an "id" property; it is generated automatically')
+//      }
+//
+//      const valuePatch = this.setValue(path[path.length - 1].objectId, null, row, false)
+//      this.applyAtPath(path, subpatch => {
+//        subpatch.props[valuePatch.objectId] = {[valuePatch.objectId]: valuePatch}
+//      })
+//      return valuePatch.objectId
 //    }
 
 }
