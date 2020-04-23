@@ -517,9 +517,9 @@ class ContextTest: XCTestCase {
             props: [
                 "birds": [
                     "actor1": .object(.init(objectId: listId,
-                                                    type: .list,
-                                                    props: [
-                                                        "0": [actor.uuidString: .value(.string("starling"))]
+                                            type: .list,
+                                            props: [
+                                                "0": [actor.uuidString: .value(.string("starling"))]
                     ]))
                 ]
             ]
@@ -572,17 +572,388 @@ class ContextTest: XCTestCase {
             props: [
                 "birds": [
                     "actor1": .object(.init(objectId: listId,
-                                                    type: .list,
-                                                    props: [
-                                                        "1": [actor.uuidString: .object(.init(objectId: nestedId, type: .map, props: [
-                                                            "english": [actor.uuidString: .value(.string("goldfinch"))],
-                                                            "latin": [actor.uuidString: .value(.string("carduelis"))]
-                                                        ]))]
+                                            type: .list,
+                                            props: [
+                                                "1": [actor.uuidString: .object(.init(objectId: nestedId, type: .map, props: [
+                                                    "english": [actor.uuidString: .value(.string("goldfinch"))],
+                                                    "latin": [actor.uuidString: .value(.string("carduelis"))]
+                                                ]))]
                     ]))
                 ]
             ]
             )
         )
     }
+
+    // should create nested objects on insertion
+    func testListManupulation3() {
+        // Given
+        let listId = UUID()
+        let list: [String: Any] = [
+            LIST_VALUES : ["swallow", "magpie"],
+            OBJECT_ID: listId.uuidString,
+            CONFLICTS:  ["actor1": "swallow", "actor2": "swallow"]
+        ]
+
+        let actor = UUID()
+        let context = Context(
+            actorId: actor,
+            applyPatch: applyPatch.observerDiff,
+            updated: [:],
+            cache: [
+                listId.uuidString: list,
+                ROOT_ID.uuidString: [
+                    OBJECT_ID: ROOT_ID.uuidString,
+                    "birds": list,
+
+                    CONFLICTS: [
+                        "birds": ["actor1": list]
+                    ]
+                ]
+            ]
+        )
+
+        // When
+        context.spice(path: [.init(key: .string("birds"), objectId: listId)], start: 2, deletions: 0, insertions: [["english": "goldfinch", "latin": "carduelis"]])
+
+        // Then
+        let nestedId = applyPatch.value!.props!["birds"]!["actor1"]!.props!["2"]![actor]!.objectId!
+        XCTAssertEqual(context.ops, [
+            Op(action: .makeMap, obj: listId, key: .index(2), child: nestedId),
+            Op(action: .set, obj: nestedId, key: .string("english"), value: .string("goldfinch")),
+            Op(action: .set, obj: nestedId, key: .string("latin"), value: .string("carduelis"))
+        ])
+
+        XCTAssertEqual(applyPatch.callCount, 1)
+        XCTAssertEqual(applyPatch.value, ObjectDiff(
+            objectId: ROOT_ID,
+            type: .map,
+            props: [
+                "birds": [
+                    "actor1": .object(.init(objectId: listId,
+                                            type: .list,
+                                            edits: [Edit(action: .insert, index: 2)],
+                                            props: [
+                                                "2": [actor.uuidString: .object(.init(objectId: nestedId, type: .map, props: [
+                                                    "english": [actor.uuidString: .value(.string("goldfinch"))],
+                                                    "latin": [actor.uuidString: .value(.string("carduelis"))]
+                                                ]))]
+                    ]))
+                ]
+            ]
+            )
+        )
+    }
+
+    // should support deleting list elements
+    func testListManupulation4() {
+        // Given
+        let listId = UUID()
+        let list: [String: Any] = [
+            LIST_VALUES : ["swallow", "magpie"],
+            OBJECT_ID: listId.uuidString,
+            CONFLICTS:  ["actor1": "swallow", "actor2": "swallow"]
+        ]
+
+        let actor = UUID()
+        let context = Context(
+            actorId: actor,
+            applyPatch: applyPatch.observerDiff,
+            updated: [:],
+            cache: [
+                listId.uuidString: list,
+                ROOT_ID.uuidString: [
+                    OBJECT_ID: ROOT_ID.uuidString,
+                    "birds": list,
+
+                    CONFLICTS: [
+                        "birds": ["actor1": list]
+                    ]
+                ]
+            ]
+        )
+
+        // When
+        context.spice(path: [.init(key: .string("birds"), objectId: listId)], start: 0, deletions: 2, insertions: [String]())
+
+        // Then
+        XCTAssertEqual(context.ops, [
+            Op(action: .del, obj: listId, key: .index(0)),
+            Op(action: .del, obj: listId, key: .index(0))
+        ])
+
+        XCTAssertEqual(applyPatch.callCount, 1)
+        XCTAssertEqual(applyPatch.value, ObjectDiff(
+            objectId: ROOT_ID,
+            type: .map,
+            props: [
+                "birds": [
+                    "actor1": .object(
+                        .init(objectId: listId,
+                              type: .list,
+                              edits: [
+                                Edit(action: .remove, index: 0),
+                                Edit(action: .remove, index: 0)
+                            ],
+                              props: [:]
+                        ))
+                ]
+            ]
+            )
+        )
+    }
+
+    // should support deleting list elements
+    func testListManupulation5() {
+        // Given
+        let listId = UUID()
+        let list: [String: Any] = [
+            LIST_VALUES : ["swallow", "magpie"],
+            OBJECT_ID: listId.uuidString,
+            CONFLICTS:  ["actor1": "swallow", "actor2": "swallow"]
+        ]
+
+        let actor = UUID()
+        let context = Context(
+            actorId: actor,
+            applyPatch: applyPatch.observerDiff,
+            updated: [:],
+            cache: [
+                listId.uuidString: list,
+                ROOT_ID.uuidString: [
+                    OBJECT_ID: ROOT_ID.uuidString,
+                    "birds": list,
+
+                    CONFLICTS: [
+                        "birds": ["actor1": list]
+                    ]
+                ]
+            ]
+        )
+
+        // When
+        context.spice(path: [.init(key: .string("birds"), objectId: listId)], start: 0, deletions: 2, insertions: [String]())
+
+        // Then
+        XCTAssertEqual(context.ops, [
+            Op(action: .del, obj: listId, key: .index(0)),
+            Op(action: .del, obj: listId, key: .index(0))
+        ])
+
+        XCTAssertEqual(applyPatch.callCount, 1)
+        XCTAssertEqual(applyPatch.value, ObjectDiff(
+            objectId: ROOT_ID,
+            type: .map,
+            props: [
+                "birds": [
+                    "actor1": .object(
+                        .init(objectId: listId,
+                              type: .list,
+                              edits: [
+                                Edit(action: .remove, index: 0),
+                                Edit(action: .remove, index: 0)
+                            ],
+                              props: [:]
+                        ))
+                ]
+            ]
+            )
+        )
+    }
+
+    // should support list splicing
+    func testListManupulation6() {
+        // Given
+        let listId = UUID()
+        let list: [String: Any] = [
+            LIST_VALUES : ["swallow", "magpie"],
+            OBJECT_ID: listId.uuidString,
+            CONFLICTS:  ["actor1": "swallow", "actor2": "swallow"]
+        ]
+
+        let actor = UUID()
+        let context = Context(
+            actorId: actor,
+            applyPatch: applyPatch.observerDiff,
+            updated: [:],
+            cache: [
+                listId.uuidString: list,
+                ROOT_ID.uuidString: [
+                    OBJECT_ID: ROOT_ID.uuidString,
+                    "birds": list,
+
+                    CONFLICTS: [
+                        "birds": ["actor1": list]
+                    ]
+                ]
+            ]
+        )
+
+        // When
+        context.spice(path: [.init(key: .string("birds"), objectId: listId)], start: 0, deletions: 1, insertions: ["starling", "goldfinch"])
+
+        // Then
+        XCTAssertEqual(context.ops, [
+            Op(action: .del, obj: listId, key: .index(0)),
+            Op(action: .set, obj: listId, key: .index(0), insert: true, value: .string("starling")),
+            Op(action: .set, obj: listId, key: .index(1), insert: true, value: .string("goldfinch")),
+        ])
+
+        XCTAssertEqual(applyPatch.callCount, 1)
+        XCTAssertEqual(applyPatch.value, ObjectDiff(
+            objectId: ROOT_ID,
+            type: .map,
+            props: [
+                "birds": [
+                    "actor1": .object(
+                        .init(objectId: listId,
+                              type: .list,
+                              edits: [
+                                Edit(action: .remove, index: 0),
+                                Edit(action: .insert, index: 0),
+                                Edit(action: .insert, index: 1)
+                            ],
+                              props: [
+                                "0": [actor.uuidString: .value(.string("starling"))],
+                                "1": [actor.uuidString: .value(.string("goldfinch"))]
+                        ]))
+                ]
+            ]
+        ))
+
+    }
+
+    func testTableManipulation1() {
+        let tableId = UUID()
+        let table: [String: Any] = [
+            OBJECT_ID: tableId.uuidString,
+            CONFLICTS: [String: Any](),
+            "entries": [String: Any]()
+        ]
+        let actor = UUID()
+        let context = Context(
+            actorId: actor,
+            applyPatch: applyPatch.observerDiff,
+            updated: [:],
+            cache: [
+                tableId.uuidString: table,
+                ROOT_ID.uuidString: [
+                    OBJECT_ID: ROOT_ID.uuidString,
+                    "books": table,
+                    CONFLICTS: [
+                        "books": ["actor1": table]
+                    ]
+                ]
+            ]
+        )
+
+        //When
+        let rowId = context.addTableRow(path: [.init(key: .string("books"), objectId: tableId)], row: ["author": "Mary Shelley", "title": "Frankenstein"])
+
+        // Then
+        XCTAssertEqual(context.ops, [
+            Op(action: .makeMap, obj: tableId, key: .string(rowId.uuidString), child: rowId),
+            Op(action: .set, obj: rowId, key: .string("author"), value: .string("Mary Shelley")),
+            Op(action: .set, obj: rowId, key: .string("title"), value: .string("Frankenstein"))
+        ])
+
+        XCTAssertEqual(applyPatch.callCount, 1)
+        XCTAssertEqual(applyPatch.value, ObjectDiff(
+            objectId: ROOT_ID,
+            type: .map,
+            props: [
+                "books": [
+                    "actor1": .object(
+                        .init(objectId: tableId,
+                              type: .table,
+                              props: [
+                                rowId.uuidString: [
+                                    rowId.uuidString: .object(.init(
+                                        objectId: rowId,
+                                        type: .map,
+                                        props: [
+                                            "author": [actor.uuidString: .value(.string("Mary Shelley"))],
+                                            "title": [actor.uuidString: .value(.string("Frankenstein"))]
+                                    ]))
+                                ]
+                        ]))
+                ]
+            ]
+        ))
+    }
+
+//    // should delete a table row
+//    func testTableManipulation2() {
+//        let tableId = UUID()
+//        let table: [String: Any] = [
+//            OBJECT_ID: tableId.uuidString,
+//            CONFLICTS: [String: Any](),
+//            "entries": [String: Any]()
+//        ]
+//        let actor = UUID()
+//        let context = Context(
+//            actorId: actor,
+//            applyPatch: applyPatch.observerDiff,
+//            updated: [:],
+//            cache: [
+//                tableId.uuidString: table,
+//                ROOT_ID.uuidString: [
+//                    OBJECT_ID: ROOT_ID.uuidString,
+//                    "books": table,
+//                    CONFLICTS: [
+//                        "books": ["actor1": table]
+//                    ]
+//                ]
+//            ]
+//        )
+//
+//        //When
+//        let rowId = context.addTableRow(path: [.init(key: .string("books"), objectId: tableId)], row: ["author": "Mary Shelley", "title": "Frankenstein"])
+//
+//        // Then
+//        XCTAssertEqual(context.ops, [
+//            Op(action: .makeMap, obj: tableId, key: .string(rowId.uuidString), child: rowId),
+//            Op(action: .set, obj: rowId, key: .string("author"), value: .string("Mary Shelley")),
+//            Op(action: .set, obj: rowId, key: .string("title"), value: .string("Frankenstein"))
+//        ])
+//
+//        XCTAssertEqual(applyPatch.callCount, 1)
+//        XCTAssertEqual(applyPatch.value, ObjectDiff(
+//            objectId: ROOT_ID,
+//            type: .map,
+//            props: [
+//                "books": [
+//                    "actor1": .object(
+//                        .init(objectId: tableId,
+//                              type: .table,
+//                              props: [
+//                                rowId.uuidString: [
+//                                    rowId.uuidString: .object(.init(
+//                                        objectId: rowId,
+//                                        type: .map,
+//                                        props: [
+//                                            "author": [actor.uuidString: .value(.string("Mary Shelley"))],
+//                                            "title": [actor.uuidString: .value(.string("Frankenstein"))]
+//                                    ]))
+//                                ]
+//                        ]))
+//                ]
+//            ]
+//        ))
+//    }
+
+//    it('should delete a table row', () => {
+//        const rowId = uuid()
+//        const row = {author: 'Mary Shelley', title: 'Frankenstein'}
+//        row[OBJECT_ID] = rowId
+//        table.entries[rowId] = row
+//        context.deleteTableRow([{key: 'books', objectId: tableId}], rowId)
+//        assert(applyPatch.calledOnce)
+//        assert.deepStrictEqual(applyPatch.firstCall.args[0], {objectId: ROOT_ID, type: 'map', props: {
+//          books: {actor1: {objectId: tableId, type: 'table', props: {[rowId]: {}}}}
+//        }})
+//        assert.deepStrictEqual(context.ops, [{obj: tableId, action: 'del', key: rowId}])
+//      })
+//    })
 
 }

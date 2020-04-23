@@ -175,7 +175,8 @@ public struct Document<T> {
             state.seq += 1
 
             let request = Request(requestType: requestType,
-                                  message: options?.message,
+                                  message: options?.message ?? "",
+                                  time: Date(),
                                   actor: self._options.actorId,
                                   seq: state.seq,
                                   version: state.version,
