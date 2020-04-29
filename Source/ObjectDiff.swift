@@ -10,8 +10,8 @@ import Foundation
 typealias Props = [Key: [String: Diff]]
 
 class ObjectDiff: Equatable {
-    
-    init(objectId: UUID,
+
+    init(objectId: String,
          type: CollectionType,
          edits: [Edit]? = nil,
          props: Props? = nil
@@ -22,8 +22,7 @@ class ObjectDiff: Equatable {
         self.props = props
     }
 
-
-    var objectId: UUID
+    var objectId: String
     var type: CollectionType
     var edits: [Edit]?
     var props: Props?

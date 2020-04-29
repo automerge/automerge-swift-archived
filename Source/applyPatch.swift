@@ -13,8 +13,8 @@ import Foundation
  * objectId), if that has not already been done. Returns the updated object.
  */
 
-func interpretPatch<T>(patch: ObjectDiff, obj: Document<T>, updated: inout [String: Any]) -> Document<T> {
-    if patch.props != nil && patch.edits != nil && updated[patch.objectId.uuidString] != nil {
+func interpretPatch(patch: ObjectDiff, obj: [String: Any]?, updated: inout [String: [String: Any]]) -> [String: Any]? {
+    if patch.props != nil && patch.edits != nil && updated[patch.objectId] != nil {
         return obj
     }
     switch patch.type {
@@ -23,11 +23,10 @@ func interpretPatch<T>(patch: ObjectDiff, obj: Document<T>, updated: inout [Stri
     case .table:
         fatalError()
     case .list:
-        fatalError()
+        return updateListObject(patch: patch, obj: obj, updated: &updated)
     case .text:
         fatalError()
     }
-
 }
 
 //function interpretPatch(patch, obj, updated) {
@@ -50,23 +49,96 @@ func interpretPatch<T>(patch: ObjectDiff, obj: Document<T>, updated: inout [Stri
 //}
 
 /**
+ * Updates the list object `obj` according to the modifications described in
+ * `patch`, or creates a new object if `obj` is undefined. Mutates `updated`
+ * to map the objectId to the new object, and returns the new object.
+ */
+func updateListObject(patch: ObjectDiff, obj: [String: Any]?, updated: inout [String: [String: Any]]) -> [String: Any]? {
+    let objectId = patch.objectId
+    if updated[objectId] == nil {
+        updated[objectId] = cloneListObject(originalList: obj, objectId: objectId)
+    }
+    var object = updated[objectId]
+    var list = object![LIST_VALUES] as! [Any?]
+    var conflicts = object![CONFLICTS] as! [Any?]
+    patch.edits?.iterate(
+        insertCallback: { index, insertions in
+            let blanks = Array<Any?>(repeating: nil, count: insertions)
+            list.replaceSubrange(index..<index, with: blanks)
+            conflicts.replaceSubrange(index..<index, with: blanks)
+    },
+        removeCallback: { index, deletions in
+            list.removeSubrange(index..<index + deletions)
+            conflicts.removeSubrange(index..<index + deletions)
+    })
+    var abcd = [String: [String: Any]]()
+    applyProperties(props: patch.props, objectId: objectId, object: &object, conflicts: &abcd, updated: &updated)
+    object![CONFLICTS] = conflicts
+
+    return object
+}
+//function updateListObject(patch, obj, updated) {
+//  const objectId = patch.objectId
+//  if (!updated[objectId]) {
+//    updated[objectId] = cloneListObject(obj, objectId)
+//  }
+//
+//  const list = updated[objectId], conflicts = list[CONFLICTS]
+//
+//  iterateEdits(patch.edits,
+//    (index, insertions) => { // insertion
+//      const blanks = new Array(insertions)
+//      list     .splice(index, 0, ...blanks)
+//      conflicts.splice(index, 0, ...blanks)
+//    },
+//    (index, count) => { // deletion
+//      list     .splice(index, count)
+//      conflicts.splice(index, count)
+//    }
+//  )
+//
+//  applyProperties(patch.props, list, conflicts, updated)
+//  return list
+//}
+
+/**
+ * Creates a writable copy of an immutable list object. If `originalList` is
+ * undefined, creates an empty list with ID `objectId`.
+ */
+func cloneListObject(originalList: [String: Any]?, objectId: String) -> [String: Any] {
+    var originalList = originalList ?? [:]
+    originalList[CONFLICTS] = originalList[CONFLICTS] ?? [[String: [String: Any]]]()
+    originalList[OBJECT_ID] = objectId
+    originalList[LIST_VALUES] = originalList[LIST_VALUES] ?? [Any]()
+
+    return originalList
+}
+//function cloneListObject(originalList, objectId) {
+//  const list = originalList ? originalList.slice() : [] // slice() makes a shallow clone
+//  const conflicts = (originalList && originalList[CONFLICTS]) ? originalList[CONFLICTS].slice() : []
+//  Object.defineProperty(list, OBJECT_ID, {value: objectId})
+//  Object.defineProperty(list, CONFLICTS, {value: conflicts})
+//  return list
+//}
+
+/**
  * Updates the map object `obj` according to the modifications described in
  * `patch`, or creates a new object if `obj` is undefined. Mutates `updated`
  * to map the objectId to the new object, and returns the new object.
  */
 
-func updateMapObject<T>(patch: ObjectDiff, obj: Document<T>, updated: inout [String: Any]) -> Document<T> {
-    let objectId = patch.objectId.uuidString
+func updateMapObject(patch: ObjectDiff, obj: [String: Any]?, updated: inout [String: [String: Any]]) -> [String: Any]? {
+    let objectId = patch.objectId
     if updated[objectId] == nil {
-        updated[objectId] = obj
+        updated[objectId]  = clone(originalObject: obj, objectId: objectId)
     }
 
-    let object = updated[objectId] as! Document<T>
-    guard let props = patch.props else {
-        return object
-    }
+    var object = updated[objectId]
+    var conflicts = object?[CONFLICTS] as! [String: [String: Any]]
+    applyProperties(props: patch.props, objectId: objectId, object: &object, conflicts: &conflicts, updated: &updated)
+    object?[CONFLICTS] = conflicts
 
-    return applyProperties(props: props, object: object, conflicts: object._conflicts, updated: &updated)
+    return object
 }
 
 //function updateMapObject(patch, obj, updated) {
@@ -77,6 +149,25 @@ func updateMapObject<T>(patch: ObjectDiff, obj: Document<T>, updated: inout [Str
 //
 //  const object = updated[objectId]
 //  applyProperties(patch.props, object, object[CONFLICTS], updated)
+//  return object
+//}
+
+/**
+ * Creates a writable copy of an immutable map object. If `originalObject`
+ * is undefined, creates an empty object with ID `objectId`.
+ */
+func clone(originalObject: [String: Any]?, objectId: String) -> [String: Any] {
+    var originalObject = originalObject ?? [:]
+    originalObject[CONFLICTS] = originalObject[CONFLICTS] ??  [String: [String: Any]]()
+    originalObject[OBJECT_ID] = objectId
+
+    return originalObject
+}
+//function cloneMapObject(originalObject, objectId) {
+//  const object    = copyObject(originalObject)
+//  const conflicts = copyObject(originalObject ? originalObject[CONFLICTS] : undefined)
+//  Object.defineProperty(object, OBJECT_ID, {value: objectId})
+//  Object.defineProperty(object, CONFLICTS, {value: conflicts})
 //  return object
 //}
 
@@ -94,21 +185,33 @@ func updateMapObject<T>(patch: ObjectDiff, obj: Document<T>, updated: inout [Str
  * just a single opId-value mapping.
  */
 
-func applyProperties<T>(props: Props, object: Document<T>, conflicts: [String: [String: Diff]], updated: inout [String: Any]) -> Document<T> {
-    fatalError()
-
-//    for key in props.keys {
-//        var values = [String: Any]()
-//        let opIds = props[key]?.keys.sorted(by: lamportCompare)
-//        for opId in opIds ?? [] {
-//            let subPatch = props[key]![opId]
-//            if let conflict = conflicts[key]?[opId] {
-//                values[opId] = getValue(diff: subPatch!, cache: conflict, updated: &updated)
-//            } else {
-//                values[opId] = getValue(diff: subPatch!, cache: nil, updated: &updated)
-//            }
-//        }
-//    }
+func applyProperties(props: Props?,
+                     objectId: String,
+                     object: inout [String: Any]?,
+                     conflicts: inout [String: [String: Any]],
+                     updated: inout [String: [String: Any]]) {
+    guard let props = props else {
+        return
+    }
+    for key in props.keys {
+        guard case .string(let stringKey) = key else {
+            fatalError("Index is not allowed")
+        }
+        var values = [String: Any]()
+        let opIds = props[key]?.keys.sorted(by: lamportCompare)
+        for opId in opIds ?? [] {
+            let subPatch = props[key]![opId]
+            values[opId] = getValue(patch: subPatch!, object: conflicts[stringKey]?[opId] as? [String: Any], updated: &updated)
+        }
+        if opIds?.count == 0 {
+            object?[stringKey] = nil
+            conflicts[stringKey] = nil
+        } else {
+            object?[stringKey] = values[opIds![0]]
+            updated[objectId]?[stringKey] = values[opIds![0]]
+            conflicts[stringKey] = values
+        }
+    }
 }
 
 //function applyProperties(props, object, conflicts, updated) {
@@ -156,41 +259,40 @@ func  lamportCompare(ts1: String, ts2: String) -> Bool {
 //}
 
 /**
- * Reconstructs the value from the diff object `diff`.
+ * Reconstructs the value from the patch object `patch`.
  */
-func getValue(diff: Diff, cache: Diff?, updated: inout [String: Any]) -> Any? {
-    if case .value(let valueDiff) = diff, case .string(let stringValue) = valueDiff.value, diff.link {
-        fatalError()
-//        return updated[stringValue] ?? cache?[stringValue]!
-    } else if case .value(let valueDiff) = diff, case .number(let seconds) = valueDiff.value, valueDiff.datatype == .timestamp {
-        return Date(timeIntervalSince1970: seconds)
-    } else if case .value(let valueDiff) = diff, case .number(let count) = valueDiff.value, valueDiff.datatype == .counter {
-        return Counter(value: count)
-    } else if case .value(let valueDiff) = diff, case .number(let number) = valueDiff.value {
-        return number
-    } else if case .value(let valueDiff) = diff, case .string(let string) = valueDiff.value {
-        return string
-    } else if case .value(let valueDiff) = diff, case .bool(let bool) = valueDiff.value {
-        return bool
-    } else if case .value(let valueDiff) = diff, case .null = valueDiff.value {
-        return nil
-    }
 
-    fatalError()
+func getValue(patch: Diff, object: [String: Any]?, updated: inout [String: [String: Any]]) -> Any? {
+    switch patch {
+    case .object(let objectDiff):
+        if let object = object, (object[OBJECT_ID] as? String) != patch.objectId {
+            return interpretPatch(patch: objectDiff, obj: nil, updated: &updated)
+        } else {
+            return interpretPatch(patch: objectDiff, obj: object, updated: &updated)
+        }
+    case .value(let valueDiff):
+        return valueDiff.value
+    }
 }
-//function getValue(diff, cache, updated) {
-//  if (diff.link) {
-//    // Reference to another object; fetch it from the cache
-//    return updated[diff.value] || cache[diff.value]
-//  } else if (diff.datatype === 'timestamp') {
+
+//function getValue(patch, object, updated) {
+//  if (patch.objectId) {
+//    // If the objectId of the existing object does not match the objectId in the patch,
+//    // that means the patch is replacing the object with a new one made from scratch
+//    if (object && object[OBJECT_ID] !== patch.objectId) {
+//      object = undefined
+//    }
+//    return interpretPatch(patch, object, updated)
+//  } else if (patch.datatype === 'timestamp') {
 //    // Timestamp: value is milliseconds since 1970 epoch
-//    return new Date(diff.value)
-//  } else if (diff.datatype === 'counter') {
-//    return new Counter(diff.value)
-//  } else if (diff.datatype !== undefined) {
-//    throw new TypeError(`Unknown datatype: ${diff.datatype}`)
+//    return new Date(patch.value)
+//  } else if (patch.datatype === 'counter') {
+//    return new Counter(patch.value)
+//  } else if (patch.datatype !== undefined) {
+//    throw new TypeError(`Unknown datatype: ${patch.datatype}`)
 //  } else {
 //    // Primitive value (number, string, boolean, or null)
-//    return diff.value
+//    return patch.value
 //  }
 //}
+

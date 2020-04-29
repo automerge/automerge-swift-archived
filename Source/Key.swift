@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum Key: Equatable, Hashable {
+public enum Key: Equatable, Hashable {
 
     case string(String)
     case index(Int)
@@ -15,14 +15,14 @@ enum Key: Equatable, Hashable {
 
 extension Key: ExpressibleByStringLiteral {
 
-    init(stringLiteral value: String) {
+    public init(stringLiteral value: String) {
         self = .string(value)
     }
 
 }
 
 extension Key: ExpressibleByIntegerLiteral {
-    init(integerLiteral value: Int) {
+    public init(integerLiteral value: Int) {
         self = .index(value)
     }
 }

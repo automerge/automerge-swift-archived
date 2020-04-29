@@ -12,6 +12,19 @@ enum Primitives: Equatable {
     case number(Double)
     case bool(Bool)
     case null
+
+    var value: Any? {
+        switch self {
+        case .string(let stringValue):
+            return stringValue
+        case .number(let numberValue):
+            return numberValue
+        case .bool(let boolValue):
+            return boolValue
+        case .null:
+            return nil
+        }
+    }
 }
 
 enum DataType: Equatable {
@@ -21,7 +34,7 @@ enum DataType: Equatable {
 
 public struct Op: Equatable {
 
-    init(action: OpAction, obj: UUID, key: Key, insert: Bool? = nil, child: UUID? = nil, value: Primitives? = nil, datatype: DataType? = nil) {
+    init(action: OpAction, obj: String, key: Key, insert: Bool? = nil, child: String? = nil, value: Primitives? = nil, datatype: DataType? = nil) {
         self.action = action
         self.obj = obj
         self.key = key
@@ -32,10 +45,10 @@ public struct Op: Equatable {
     }
 
     var action: OpAction
-    var obj: UUID
+    var obj: String
     var key: Key
     var insert: Bool?
-    var child: UUID?
+    var child: String?
     var value: Primitives?
     var datatype: DataType?
 }

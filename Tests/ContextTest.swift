@@ -23,9 +23,10 @@ final class Spion<T> {
 
 extension Spion where T == ObjectDiff {
 
-    var observerDiff: (T, Any, [String: Any]) -> Void {
+    var observerDiff: (T, [String: Any]?, inout [String: [String: Any]]) -> [String: Any]? {
         return { diff, _, _ in
             self.observer(diff)
+            return [:]
         }
     }
 
@@ -48,7 +49,7 @@ class ContextTest: XCTestCase {
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
             updated: [:],
-            cache: [ROOT_ID.uuidString: [:]],
+            cache: [ROOT_ID: [:]],
             ops: []
         )
 
@@ -76,9 +77,9 @@ class ContextTest: XCTestCase {
             applyPatch: applyPatch.observerDiff,
             updated: [:],
             cache: [
-                ROOT_ID.uuidString: [
+                ROOT_ID: [
                     "goldfinches": 3,
-                    OBJECT_ID: ROOT_ID.uuidString,
+                    OBJECT_ID: ROOT_ID,
                     CONFLICTS: ["goldfinches": ["actor1": 3]]
                 ]
             ],
@@ -102,9 +103,9 @@ class ContextTest: XCTestCase {
             applyPatch: applyPatch.observerDiff,
             updated: [:],
             cache: [
-                ROOT_ID.uuidString: [
+                ROOT_ID: [
                     "goldfinches": 5,
-                    OBJECT_ID: ROOT_ID.uuidString,
+                    OBJECT_ID: ROOT_ID,
                     CONFLICTS: ["goldfinches": ["actor1": 3, "actor2": 5]]
                 ]
             ],
@@ -126,8 +127,13 @@ class ContextTest: XCTestCase {
     func testContextSetMapKey4() {
         // GIVEN
         let actor = UUID()
-        let document = Document<Int>(options: .init(actorId: actor))
-        let context = Context(doc: document, actorId: actor, applyPatch: applyPatch.observerDiff)
+        let context = Context(
+            actorId: actor,
+            applyPatch: applyPatch.observerDiff,
+            updated: [:],
+            cache: [ROOT_ID: [:]],
+            ops: []
+        )
 
         // WHEN
         context.setMapKey(path: [], key: "birds", value: ["goldfinches": 3])
@@ -157,15 +163,15 @@ class ContextTest: XCTestCase {
     // should perform assignment inside nested maps
     func testContextSetMapKey5() {
         let actor = UUID()
-        let objectId = UUID()
-        let child = [OBJECT_ID: objectId.uuidString]
+        let objectId = UUID().uuidString
+        let child = [OBJECT_ID: objectId]
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
             updated: [:],
             cache: [
-                objectId.uuidString: child,
-                ROOT_ID.uuidString: [
+                objectId: child,
+                ROOT_ID: [
                     OBJECT_ID: ROOT_ID,
                     CONFLICTS: [
                         "birds": ["actor1": child]
@@ -201,18 +207,18 @@ class ContextTest: XCTestCase {
     func testContextSetMapKey6() {
         //Given
         let actor = UUID()
-        let objectId1 = UUID()
-        let child1 = [OBJECT_ID: objectId1.uuidString]
-        let objectId2 = UUID()
-        let child2 = [OBJECT_ID: objectId2.uuidString]
+        let objectId1 = UUID().uuidString
+        let child1 = [OBJECT_ID: objectId1]
+        let objectId2 = UUID().uuidString
+        let child2 = [OBJECT_ID: objectId2]
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
             updated: [:],
             cache: [
-                objectId1.uuidString: child1,
-                objectId2.uuidString: child2,
-                ROOT_ID.uuidString: [
+                objectId1: child1,
+                objectId2: child2,
+                ROOT_ID: [
                     OBJECT_ID: ROOT_ID,
                     "birds": child2,
                     CONFLICTS: [
@@ -254,16 +260,16 @@ class ContextTest: XCTestCase {
     func testContextSetMapKey7() {
         // Given
         let actor = UUID()
-        let objectId = UUID()
-        let child = [OBJECT_ID: objectId.uuidString]
+        let objectId = UUID().uuidString
+        let child = [OBJECT_ID: objectId]
         let dateValue = Date()
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
             updated: [:],
             cache: [
-                objectId.uuidString: child,
-                ROOT_ID.uuidString: [
+                objectId: child,
+                ROOT_ID: [
                     OBJECT_ID: ROOT_ID,
                     CONFLICTS: [
                         "values": [
@@ -307,7 +313,7 @@ class ContextTest: XCTestCase {
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
             updated: [:],
-            cache: [ROOT_ID.uuidString: [:]],
+            cache: [ROOT_ID: [:]],
             ops: []
         )
         // WHEN
@@ -347,7 +353,7 @@ class ContextTest: XCTestCase {
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
             updated: [:],
-            cache: [ROOT_ID.uuidString: [:]],
+            cache: [ROOT_ID: [:]],
             ops: []
         )
         // WHEN
@@ -387,7 +393,7 @@ class ContextTest: XCTestCase {
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
             updated: [:],
-            cache: [ROOT_ID.uuidString: [:]],
+            cache: [ROOT_ID: [:]],
             ops: []
         )
         // WHEN
@@ -420,7 +426,7 @@ class ContextTest: XCTestCase {
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
             updated: [:],
-            cache: [ROOT_ID.uuidString: [:]],
+            cache: [ROOT_ID: [:]],
             ops: []
         )
         // WHEN
@@ -452,7 +458,7 @@ class ContextTest: XCTestCase {
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
             updated: [:],
-            cache: [ROOT_ID.uuidString: [:]],
+            cache: [ROOT_ID: [:]],
             ops: []
         )
         // WHEN
@@ -478,10 +484,10 @@ class ContextTest: XCTestCase {
     // should overwrite an existing list element
     func testListManupulation1() {
         // Given
-        let listId = UUID()
+        let listId = UUID().uuidString
         let list: [String: Any] = [
             LIST_VALUES : ["swallow", "magpie"],
-            OBJECT_ID: listId.uuidString,
+            OBJECT_ID: listId,
             CONFLICTS:  ["actor1": "swallow", "actor2": "swallow"]
         ]
 
@@ -491,9 +497,9 @@ class ContextTest: XCTestCase {
             applyPatch: applyPatch.observerDiff,
             updated: [:],
             cache: [
-                listId.uuidString: list,
-                ROOT_ID.uuidString: [
-                    OBJECT_ID: ROOT_ID.uuidString,
+                listId: list,
+                ROOT_ID: [
+                    OBJECT_ID: ROOT_ID,
                     "birds": list,
 
                     CONFLICTS: [
@@ -530,10 +536,10 @@ class ContextTest: XCTestCase {
     // should create nested objects on assignment
     func testListManupulation2() {
         // Given
-        let listId = UUID()
+        let listId = UUID().uuidString
         let list: [String: Any] = [
             LIST_VALUES : ["swallow", "magpie"],
-            OBJECT_ID: listId.uuidString,
+            OBJECT_ID: listId,
             CONFLICTS:  ["actor1": "swallow", "actor2": "swallow"]
         ]
 
@@ -543,9 +549,9 @@ class ContextTest: XCTestCase {
             applyPatch: applyPatch.observerDiff,
             updated: [:],
             cache: [
-                listId.uuidString: list,
-                ROOT_ID.uuidString: [
-                    OBJECT_ID: ROOT_ID.uuidString,
+                listId: list,
+                ROOT_ID: [
+                    OBJECT_ID: ROOT_ID,
                     "birds": list,
 
                     CONFLICTS: [
@@ -588,10 +594,10 @@ class ContextTest: XCTestCase {
     // should create nested objects on insertion
     func testListManupulation3() {
         // Given
-        let listId = UUID()
+        let listId = UUID().uuidString
         let list: [String: Any] = [
             LIST_VALUES : ["swallow", "magpie"],
-            OBJECT_ID: listId.uuidString,
+            OBJECT_ID: listId,
             CONFLICTS:  ["actor1": "swallow", "actor2": "swallow"]
         ]
 
@@ -601,9 +607,9 @@ class ContextTest: XCTestCase {
             applyPatch: applyPatch.observerDiff,
             updated: [:],
             cache: [
-                listId.uuidString: list,
-                ROOT_ID.uuidString: [
-                    OBJECT_ID: ROOT_ID.uuidString,
+                listId: list,
+                ROOT_ID: [
+                    OBJECT_ID: ROOT_ID,
                     "birds": list,
 
                     CONFLICTS: [
@@ -648,10 +654,10 @@ class ContextTest: XCTestCase {
     // should support deleting list elements
     func testListManupulation4() {
         // Given
-        let listId = UUID()
+        let listId = UUID().uuidString
         let list: [String: Any] = [
             LIST_VALUES : ["swallow", "magpie"],
-            OBJECT_ID: listId.uuidString,
+            OBJECT_ID: listId,
             CONFLICTS:  ["actor1": "swallow", "actor2": "swallow"]
         ]
 
@@ -661,9 +667,9 @@ class ContextTest: XCTestCase {
             applyPatch: applyPatch.observerDiff,
             updated: [:],
             cache: [
-                listId.uuidString: list,
-                ROOT_ID.uuidString: [
-                    OBJECT_ID: ROOT_ID.uuidString,
+                listId: list,
+                ROOT_ID: [
+                    OBJECT_ID: ROOT_ID,
                     "birds": list,
 
                     CONFLICTS: [
@@ -706,10 +712,10 @@ class ContextTest: XCTestCase {
     // should support deleting list elements
     func testListManupulation5() {
         // Given
-        let listId = UUID()
+        let listId = UUID().uuidString
         let list: [String: Any] = [
             LIST_VALUES : ["swallow", "magpie"],
-            OBJECT_ID: listId.uuidString,
+            OBJECT_ID: listId,
             CONFLICTS:  ["actor1": "swallow", "actor2": "swallow"]
         ]
 
@@ -719,9 +725,9 @@ class ContextTest: XCTestCase {
             applyPatch: applyPatch.observerDiff,
             updated: [:],
             cache: [
-                listId.uuidString: list,
-                ROOT_ID.uuidString: [
-                    OBJECT_ID: ROOT_ID.uuidString,
+                listId: list,
+                ROOT_ID: [
+                    OBJECT_ID: ROOT_ID,
                     "birds": list,
 
                     CONFLICTS: [
@@ -764,10 +770,10 @@ class ContextTest: XCTestCase {
     // should support list splicing
     func testListManupulation6() {
         // Given
-        let listId = UUID()
+        let listId = UUID().uuidString
         let list: [String: Any] = [
             LIST_VALUES : ["swallow", "magpie"],
-            OBJECT_ID: listId.uuidString,
+            OBJECT_ID: listId,
             CONFLICTS:  ["actor1": "swallow", "actor2": "swallow"]
         ]
 
@@ -777,9 +783,9 @@ class ContextTest: XCTestCase {
             applyPatch: applyPatch.observerDiff,
             updated: [:],
             cache: [
-                listId.uuidString: list,
-                ROOT_ID.uuidString: [
-                    OBJECT_ID: ROOT_ID.uuidString,
+                listId: list,
+                ROOT_ID: [
+                    OBJECT_ID: ROOT_ID,
                     "birds": list,
 
                     CONFLICTS: [
@@ -824,9 +830,9 @@ class ContextTest: XCTestCase {
     }
 
     func testTableManipulation1() {
-        let tableId = UUID()
+        let tableId = UUID().uuidString
         let table: [String: Any] = [
-            OBJECT_ID: tableId.uuidString,
+            OBJECT_ID: tableId,
             CONFLICTS: [String: Any](),
             "entries": [String: Any]()
         ]
@@ -836,9 +842,9 @@ class ContextTest: XCTestCase {
             applyPatch: applyPatch.observerDiff,
             updated: [:],
             cache: [
-                tableId.uuidString: table,
-                ROOT_ID.uuidString: [
-                    OBJECT_ID: ROOT_ID.uuidString,
+                tableId: table,
+                ROOT_ID: [
+                    OBJECT_ID: ROOT_ID,
                     "books": table,
                     CONFLICTS: [
                         "books": ["actor1": table]
@@ -852,7 +858,7 @@ class ContextTest: XCTestCase {
 
         // Then
         XCTAssertEqual(context.ops, [
-            Op(action: .makeMap, obj: tableId, key: .string(rowId.uuidString), child: rowId),
+            Op(action: .makeMap, obj: tableId, key: .string(rowId), child: rowId),
             Op(action: .set, obj: rowId, key: .string("author"), value: .string("Mary Shelley")),
             Op(action: .set, obj: rowId, key: .string("title"), value: .string("Frankenstein"))
         ])
@@ -867,8 +873,8 @@ class ContextTest: XCTestCase {
                         .init(objectId: tableId,
                               type: .table,
                               props: [
-                                .string(rowId.uuidString): [
-                                    rowId.uuidString: .object(.init(
+                                .string(rowId): [
+                                    rowId: .object(.init(
                                         objectId: rowId,
                                         type: .map,
                                         props: [
@@ -903,8 +909,8 @@ class ContextTest: XCTestCase {
 //            updated: [:],
 //            cache: [
 //                tableId.uuidString: table,
-//                ROOT_ID.uuidString: [
-//                    OBJECT_ID: ROOT_ID.uuidString,
+//                ROOT_ID: [
+//                    OBJECT_ID: ROOT_ID,
 //                    "books": table,
 //                    CONFLICTS: [
 //                        "books": ["actor1": table]

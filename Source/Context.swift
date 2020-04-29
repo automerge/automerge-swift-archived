@@ -12,20 +12,20 @@ public final class Context {
 
     struct KeyPathElement: Equatable {
         let key: Key
-        let objectId: UUID
+        let objectId: String
     }
 
-    init<T>(doc: Document<T>, actorId: UUID, applyPatch: ((ObjectDiff, Any, [String: Any]) -> Void)?) {
-        self.cache = doc._cache
-        self.updated = [String: Any]()
+    init<T>(doc: Document<T>, actorId: UUID) {
+        self.cache = doc.cache
+        self.updated = [String: [String: Any]]()
         self.actorId = actorId
         self.ops = []
-        self.applyPatch = applyPatch!
+        self.applyPatch = interpretPatch
     }
 
     init(actorId: UUID,
-         applyPatch: @escaping (ObjectDiff, Any, [String: Any]) -> Void,
-         updated: [String: Any],
+         applyPatch: @escaping (ObjectDiff, [String: Any]?, inout [String: [String: Any]]) -> [String: Any]?,
+         updated: [String: [String: Any]],
          cache: [String: Any],
          ops: [Op] = []
     ) {
@@ -37,9 +37,10 @@ public final class Context {
     }
 
     let actorId: UUID
-    let applyPatch: (ObjectDiff, Any, [String: Any]) -> Void
-    var updated: [String: Any]
+    let applyPatch: (ObjectDiff, [String: Any]?, inout [String: [String: Any]]) -> [String: Any]?
+    var updated: [String: [String: Any]]
     var cache: [String: Any]
+    var instantiateObject: (() -> Void)!
 
     var idUpdated: Bool {
         return !ops.isEmpty
@@ -58,7 +59,7 @@ public final class Context {
      * primitive value. For string, number, boolean, or null the datatype is omitted.
      */
 
-    func setValue<T>(objectId: UUID, key: Key?, value: T, insert: Bool? = nil) -> Diff {
+    func setValue<T>(objectId: String, key: Key?, value: T, insert: Bool? = nil) -> Diff {
         switch value {
         case  let value as Double:
             let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .number(value))
@@ -126,9 +127,9 @@ public final class Context {
      * element. If `key` is null, the ID of the new object is used as key (this construction
      * is used by Automerge.Table).
      */
-    func createNestedObjects(obj: UUID, key: Key?, value: Any, insert: Bool? = nil) -> ObjectDiff {
-        let child = UUID()
-        let key = key ?? .string(child.uuidString)
+    func createNestedObjects(obj: String, key: Key?, value: Any, insert: Bool? = nil) -> ObjectDiff {
+        let child = UUID().uuidString
+        let key = key ?? .string(child)
         switch value {
         case let object as [String: Any]:
             precondition(object[OBJECT_ID] == nil, "Cannot create a reference to an existing document object")
@@ -278,7 +279,7 @@ public final class Context {
         if insertions.count > 0 {
             insertListItems(subPatch: subPatch, index: start, values: insertions, newObject: false)
         }
-        applyPatch(patch.diffs, cache[ROOT_ID]!, updated)
+        cache[ROOT_ID] = applyPatch(patch.diffs, cache[ROOT_ID]! as! [String: Any], &updated)
     }
 //    splice(path, start, deletions, insertions) {
 //      const objectId = path.length === 0 ? ROOT_ID : path[path.length - 1].objectId
@@ -310,6 +311,26 @@ public final class Context {
      * `key` to `value`.
      */
 
+    func setMapKey<T>(path: [KeyPathElement], key: String, value: T) {
+        let objectId = path.isEmpty ? ROOT_ID : path[path.count - 1].objectId
+        let object = getObject(objectId: objectId) as! [String: Any]
+        if object[key] is Counter {
+            fatalError("Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.")
+        }
+        // If the assigned field value is the same as the existing value, and
+        // the assignment does not resolve a conflict, do nothing
+        applyAt(path: path, callback: { subpatch in
+            let valuePatch = setValue(objectId: objectId, key: .string(key), value: value, insert: nil)
+            subpatch.props?[.string(key)] = [actorId.uuidString: valuePatch]
+        })
+
+    }
+
+    /**
+     * Updates the map object at path `path`, setting the property with name
+     * `key` to `value`.
+     */
+
     func setMapKey<T: Equatable>(path: [KeyPathElement], key: String, value: T) {
         let objectId = path.isEmpty ? ROOT_ID : path[path.count - 1].objectId
         let object = getObject(objectId: objectId) as! [String: Any]
@@ -324,7 +345,7 @@ public final class Context {
                 subpatch.props?[.string(key)] = [actorId.uuidString: valuePatch]
             })
         } else if (object[CONFLICTS] as? [String: [Any]])?[key]?.count ?? 0 > 1 {
-
+            fatalError()
         }
 
     }
@@ -365,7 +386,7 @@ public final class Context {
         case is NSNull:
             return .value(.init(value: .null))
         case let object as [String : Any]:
-            guard let objectId = object[OBJECT_ID].map({ UUID(uuidString: $0 as! String)! }) else {
+            guard let objectId = object[OBJECT_ID] as? String else {
                 fatalError("Object \(value) has no objectId")
             }
             return .object(.init(objectId: objectId, type: getObjectType(objectId: objectId), edits: nil, props: nil))
@@ -406,7 +427,7 @@ public final class Context {
      * Returns a string that is either 'map', 'table', 'list', or 'text', indicating
      * the type of the object with ID `objectId`.
      */
-    func getObjectType(objectId: UUID) -> CollectionType {
+    func getObjectType(objectId: String) -> CollectionType {
         if objectId == ROOT_ID {
             return .map
         }
@@ -436,7 +457,7 @@ public final class Context {
     /**
      * Returns an object (not proxied) from the cache or updated set, as appropriate.
      */
-    private func getList(objectId: UUID) -> [Any] {
+    private func getList(objectId: String) -> [Any] {
         guard let object = (updated[objectId] ?? cache[objectId]) as? [String: Any] else {
             fatalError("Target object does not exist: \(objectId)")
         }
@@ -446,8 +467,10 @@ public final class Context {
     /**
      * Returns an object (not proxied) from the cache or updated set, as appropriate.
      */
-    private func getObject(objectId: UUID) -> Any {
-        guard let object = updated[objectId] ?? cache[objectId] else {
+    func getObject(objectId: String) -> Any {
+        let updatedObject = updated[objectId]
+        let cachedObject = cache[objectId]
+        guard let object = updatedObject ?? cachedObject else {
             fatalError("Target object does not exist: \(objectId)")
         }
         return object
@@ -465,7 +488,7 @@ public final class Context {
     func applyAt(path: [KeyPathElement], callback: (ObjectDiff) -> Void) {
         let patch = Patch(clock: [:], version: 0, diffs: ObjectDiff(objectId: ROOT_ID, type: .map))
         callback(getSubpatch(patch: patch, path: path))
-        applyPatch(patch.diffs, cache[ROOT_ID]!, updated)
+        cache[ROOT_ID] = applyPatch(patch.diffs, cache[ROOT_ID] as! [String: Any], &updated)
     }
     //    applyAtPath(path, callback) {
     //      let patch = {diffs: {objectId: ROOT_ID, type: 'map'}}
@@ -656,13 +679,13 @@ public final class Context {
     * Updates the table object at path `path`, adding a new entry `row`.
     * Returns the objectId of the new row.
     */
-    func addTableRow(path: [KeyPathElement], row: [String: Any]) -> UUID {
+    func addTableRow(path: [KeyPathElement], row: [String: Any]) -> String {
         precondition(row[OBJECT_ID] == nil, "Cannot reuse an existing object as table row")
         precondition(row["id"] == nil, "A table row must not have an id property; it is generated automatically")
 
         let valuePatch = setValue(objectId: path[path.count - 1].objectId, key: nil, value: row)
         applyAt(path: path) { subpatch in
-            subpatch.props?[.string(valuePatch.objectId!.uuidString)] = [valuePatch.objectId!.uuidString: valuePatch]
+            subpatch.props?[.string(valuePatch.objectId!)] = [valuePatch.objectId!: valuePatch]
         }
 
         return valuePatch.objectId!

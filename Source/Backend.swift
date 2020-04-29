@@ -7,9 +7,12 @@
 
 import Foundation
 
-struct Backend {
+protocol Backend {
 
-    func applyLocalChange(request: Request) -> (Backend, Patch) {
-        fatalError("unimplemented")
-    }
+    func applyLocalChange(request: Request) -> (Backend, Patch)
+    
 }
+
+
+
+
