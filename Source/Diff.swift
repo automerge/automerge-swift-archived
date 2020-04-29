@@ -15,7 +15,7 @@ enum Diff: Equatable {
         fatalError()
     }
 
-    var objectId: UUID? {
+    var objectId: String? {
         if case .object(let object) = self {
             return object.objectId
         }

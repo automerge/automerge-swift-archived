@@ -36,14 +36,18 @@ let package = Package(
         .macOS(.v10_10)
     ],
     products: [
-        .library(
-            name: "Automerge",
-            targets: ["Automerge"])
+           .library(
+               name: "Automerge",
+               targets: ["Automerge"])
+       ],
+    dependencies: [
+        .package(url: "https://github.com/Azoy/Echo.git", from: "0.0.1")
     ],
+
     targets: [
         .target(
             name: "Automerge",
-            dependencies: [],
+            dependencies: ["Echo"],
             path: "Source"),
         .testTarget(
             name: "AutomergeTests",

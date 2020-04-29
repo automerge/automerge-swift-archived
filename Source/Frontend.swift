@@ -6,13 +6,11 @@
 //
 
 import Foundation
-
-let ROOT_ID = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
-
-public struct Document<T> {
+public struct Document<T: Codable> {
 
     public struct Options {
         let actorId: UUID
+        let backend: Backend?
     }
 
     struct State {
@@ -26,30 +24,36 @@ public struct Document<T> {
         var backend: Backend?
     }
 
-    let _options: Options
-    let _objectId: UUID
-    let _conflicts: [String: [String: Diff]]
-    let _cache: [String: Any]
-    let _state: State
-    let change: Any?
-    let backend: Backend = Backend()
+    let options: Options
+    let state: State
+    var root: [String: Any]
+    var change: Bool = false
 
+    public init(options: Options) {
+        self.options = options
+        self.root = [
+            OBJECT_ID: ROOT_ID,
+            CONFLICTS: [String: Any]()
+        ]
+        self.root[CACHE] = [ROOT_ID: root]
+        self.state = State(seq: 0, requests: [], version: 0, clock: [:], canUndo: false, canRedo: false, backend: options.backend)
+    }
 
-//    public init(root: [String: Any], options: Options) {
-//        self = Document<T>(options: options).change(options: ChangeOptions(message: "Initialization", undoable: true), execute: { context in
-////            context.set(value: options, keyPath: "")
+//    public init(obj: T, options: Options) {
+//        self = Document(options: options).change(execute: { doc in
+//
 //        }).0
 //    }
 
-    public init(options: Options) {
-        self._objectId = ROOT_ID
-        self._options = options
-        self._conflicts = [:]
-        self._cache = [ROOT_ID.uuidString: [:]]
-        self.change = nil
-        self._state = State(seq: 0, requests: [], version: 0, clock: [:], canUndo: false, canRedo: false)
+    init(root: [String: Any], state: State, options: Options) {
+        self.options = options
+        self.root = root
+        self.state = state
     }
 
+    var cache: [String: Any] {
+        root[CACHE] as! [String: Any]
+    }
 
 
     //function init(options) {
@@ -80,16 +84,16 @@ public struct Document<T> {
     /**
      * Returns a new document object initialized with the given state.
      */
-//    function from(initialState, options) {
-//      return change(init(options), 'Initialization', doc => Object.assign(doc, initialState))
-//    }
+    //    function from(initialState, options) {
+    //      return change(init(options), 'Initialization', doc => Object.assign(doc, initialState))
+    //    }
 
     /**
      * Returns the Automerge actor ID of the given document.
      */
-    var actorId: UUID {
-        return _options.actorId
-    }
+    //    var actorId: UUID {
+    //        return _options.actorId
+    //    }
 
     //    function getActorId(doc) {
     //      return doc[STATE].actorId || doc[OPTIONS].actorId
@@ -112,12 +116,12 @@ public struct Document<T> {
      * is the change request to send to the backend. If nothing was actually
      * changed, returns the original `doc` and a `null` change request.
      */
-    public func change(options: ChangeOptions? = nil, execute: (Context) -> Void) -> (Document<T>, Request?) {
-        if change != nil {
+    public func change(options: ChangeOptions? = nil, execute: (MapProxy<T>) -> Void) -> (Document<T>, Request?) {
+        if change {
             fatalError("Calls to Automerge.change cannot be nested")
         }
-        let context = Context(doc: self, actorId: _options.actorId, applyPatch: nil)
-        execute(context)
+        let context = Context(doc: self, actorId: self.options.actorId)
+        execute(.rootProxy(contex: context))
         if context.idUpdated {
             return makeChange(requestType: .change, context: context, options: options)
         } else {
@@ -167,27 +171,30 @@ public struct Document<T> {
      * string describing the change.
      */
     func makeChange(requestType: Request.RequestType,
-                    context: Context,
+                    context: Context?,
                     options: ChangeOptions?) -> (Document<T>, Request?
         ) {
-            var state = self._state
+            var state = self.state
             state.seq += 1
 
             let request = Request(requestType: requestType,
                                   message: options?.message ?? "",
                                   time: Date(),
-                                  actor: self._options.actorId,
+                                  actor: self.options.actorId,
                                   seq: state.seq,
                                   version: state.version,
-                                  ops: context.ops,
+                                  ops: context?.ops ?? [],
                                   undoable: options?.undoable ?? true
             )
 
-            let(newBackend, patch) = backend.applyLocalChange(request: request)
-            state.backend = newBackend
+            if let backend = self.options.backend {
+                let(newBackend, patch) = backend.applyLocalChange(request: request)
+                state.backend = newBackend
 
-            return (applyPatchToDoc(patch: patch, state: state, fromBackend: false), request)
-
+                return (applyPatchToDoc(patch: patch, state: state, fromBackend: false), request)
+            } else {
+                fatalError()
+            }
     }
 
 
@@ -237,12 +244,15 @@ public struct Document<T> {
      * change from the frontend.
      */
     func applyPatchToDoc(patch: Patch, state: State, fromBackend: Bool) -> Document<T> {
-        fatalError("")
-        var updated = [String: Any]()
-        interpretPatch(patch: patch.diffs, obj: self, updated: &updated)
+        var updated = [String: [String: Any]]()
+        let newRoot = interpretPatch(patch: patch.diffs, obj: root, updated: &updated)
 
+        if fromBackend {
+            fatalError()
+        }
+
+        return Document(root: newRoot!, state: state, options: options)
     }
-
 
     //    function applyPatchToDoc(doc, patch, state, fromBackend) {
     //      const actor = getActorId(doc)
@@ -262,11 +272,51 @@ public struct Document<T> {
     //      return updateRootObject(doc, updated, state)
     //    }
 
+    /**
+     * Takes a set of objects that have been updated (in `updated`) and an updated state object
+     * `state`, and returns a new immutable document root object based on `doc` that reflects
+     * those updates.
+     */
+    func updateRootObject(updated: inout [String: [String: Any]], state: State) {
+        
+    }
+    //    function updateRootObject(doc, updated, state) {
+    //      let newDoc = updated[ROOT_ID]
+    //      if (!newDoc) {
+    //        newDoc = cloneRootObject(doc[CACHE][ROOT_ID])
+    //        updated[ROOT_ID] = newDoc
+    //      }
+    //      Object.defineProperty(newDoc, OPTIONS,  {value: doc[OPTIONS]})
+    //      Object.defineProperty(newDoc, CACHE,    {value: updated})
+    //      Object.defineProperty(newDoc, STATE,    {value: state})
+    //
+    //      if (doc[OPTIONS].freeze) {
+    //        for (let objectId of Object.keys(updated)) {
+    //          if (updated[objectId] instanceof Table) {
+    //            updated[objectId]._freeze()
+    //          } else if (updated[objectId] instanceof Text) {
+    //            Object.freeze(updated[objectId].elems)
+    //            Object.freeze(updated[objectId])
+    //          } else {
+    //            Object.freeze(updated[objectId])
+    //            Object.freeze(updated[objectId][CONFLICTS])
+    //          }
+    //        }
+    //      }
+    //
+    //      for (let objectId of Object.keys(doc[CACHE])) {
+    //        if (!updated[objectId]) {
+    //          updated[objectId] = doc[CACHE][objectId]
+    //        }
+    //      }
+    //
+    //      if (doc[OPTIONS].freeze) {
+    //        Object.freeze(updated)
+    //      }
+    //      return newDoc
+    //    }
+
 }
 
-func canUndo(document: Any) -> Bool {
-    #warning("unimplemented")
-    return false
-}
 
 

@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "Echo",
+        "repositoryURL": "https://github.com/Azoy/Echo.git",
+        "state": {
+          "branch": null,
+          "revision": "8a536c35b154ba090aa490029e8ee9e77dd9ea99",
+          "version": "0.0.1"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
