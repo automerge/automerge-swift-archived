@@ -26,7 +26,7 @@ public final class Context {
     init(actorId: UUID,
          applyPatch: @escaping (ObjectDiff, [String: Any]?, inout [String: [String: Any]]) -> [String: Any]?,
          updated: [String: [String: Any]],
-         cache: [String: Any],
+         cache: [String: [String: Any]],
          ops: [Op] = []
     ) {
         self.actorId = actorId
@@ -39,7 +39,7 @@ public final class Context {
     let actorId: UUID
     let applyPatch: (ObjectDiff, [String: Any]?, inout [String: [String: Any]]) -> [String: Any]?
     var updated: [String: [String: Any]]
-    var cache: [String: Any]
+    var cache: [String: [String: Any]]
     var instantiateObject: (() -> Void)!
 
     var idUpdated: Bool {
@@ -127,7 +127,7 @@ public final class Context {
      * element. If `key` is null, the ID of the new object is used as key (this construction
      * is used by Automerge.Table).
      */
-    func createNestedObjects(obj: String, key: Key?, value: Any, insert: Bool? = nil) -> ObjectDiff {
+    private func createNestedObjects(obj: String, key: Key?, value: Any, insert: Bool? = nil) -> ObjectDiff {
         let child = UUID().uuidString
         let key = key ?? .string(child)
         switch value {
@@ -257,7 +257,7 @@ public final class Context {
      */
     func spice<T: Equatable>(path: [KeyPathElement], start: Int, deletions: Int, insertions: [T]) {
         let objectId = path.isEmpty ? ROOT_ID : path[path.count - 1].objectId
-        let object = getObject(objectId: objectId) as! [String: Any]
+        let object = getObject(objectId: objectId)
         let list = object[LIST_VALUES] as! [Any]
         if (start < 0 || deletions < 0 || start > list.count - deletions) {
             fatalError("\(deletions) deletions starting at index \(start) are out of bounds for list of length \(list.count)")
@@ -279,7 +279,7 @@ public final class Context {
         if insertions.count > 0 {
             insertListItems(subPatch: subPatch, index: start, values: insertions, newObject: false)
         }
-        cache[ROOT_ID] = applyPatch(patch.diffs, cache[ROOT_ID]! as! [String: Any], &updated)
+        cache[ROOT_ID] = applyPatch(patch.diffs, cache[ROOT_ID]!, &updated)
     }
 //    splice(path, start, deletions, insertions) {
 //      const objectId = path.length === 0 ? ROOT_ID : path[path.length - 1].objectId
@@ -313,7 +313,7 @@ public final class Context {
 
     func setMapKey<T>(path: [KeyPathElement], key: String, value: T) {
         let objectId = path.isEmpty ? ROOT_ID : path[path.count - 1].objectId
-        let object = getObject(objectId: objectId) as! [String: Any]
+        let object = getObject(objectId: objectId)
         if object[key] is Counter {
             fatalError("Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.")
         }
@@ -333,7 +333,7 @@ public final class Context {
 
     func setMapKey<T: Equatable>(path: [KeyPathElement], key: String, value: T) {
         let objectId = path.isEmpty ? ROOT_ID : path[path.count - 1].objectId
-        let object = getObject(objectId: objectId) as! [String: Any]
+        let object = getObject(objectId: objectId)
         if object[key] is Counter {
             fatalError("Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.")
         }
@@ -373,7 +373,7 @@ public final class Context {
     /**
      * Takes a value and returns an object describing the value (in the format used by patches).
      */
-    func getValueDescription(value: Any) -> Diff {
+    private func getValueDescription(value: Any) -> Diff {
         switch value {
         case let double as Double:
             return .value(.init(value: .number(double)))
@@ -427,22 +427,17 @@ public final class Context {
      * Returns a string that is either 'map', 'table', 'list', or 'text', indicating
      * the type of the object with ID `objectId`.
      */
-    func getObjectType(objectId: String) -> CollectionType {
+    private func getObjectType(objectId: String) -> CollectionType {
         if objectId == ROOT_ID {
             return .map
         }
         let object = getObject(objectId: objectId)
-        switch object {
-        case let object as [String: Any]:
-            if object[LIST_VALUES] != nil {
-                return .list
-            } else if object[TABLE_VALUES] != nil{
-                return .table
-            } else {
-                return .map
-            }
-        default:
-            fatalError()
+        if object[LIST_VALUES] != nil {
+            return .list
+        } else if object[TABLE_VALUES] != nil{
+            return .table
+        } else {
+            return .map
         }
     }
     //    getObjectType(objectId) {
@@ -458,7 +453,7 @@ public final class Context {
      * Returns an object (not proxied) from the cache or updated set, as appropriate.
      */
     private func getList(objectId: String) -> [Any] {
-        guard let object = (updated[objectId] ?? cache[objectId]) as? [String: Any] else {
+        guard let object = (updated[objectId] ?? cache[objectId]) else {
             fatalError("Target object does not exist: \(objectId)")
         }
         return object[LIST_VALUES] as! [Any]
@@ -467,7 +462,7 @@ public final class Context {
     /**
      * Returns an object (not proxied) from the cache or updated set, as appropriate.
      */
-    func getObject(objectId: String) -> Any {
+    func getObject(objectId: String) -> [String: Any] {
         let updatedObject = updated[objectId]
         let cachedObject = cache[objectId]
         guard let object = updatedObject ?? cachedObject else {
@@ -488,7 +483,8 @@ public final class Context {
     func applyAt(path: [KeyPathElement], callback: (ObjectDiff) -> Void) {
         let patch = Patch(clock: [:], version: 0, diffs: ObjectDiff(objectId: ROOT_ID, type: .map))
         callback(getSubpatch(patch: patch, path: path))
-        cache[ROOT_ID] = applyPatch(patch.diffs, cache[ROOT_ID] as! [String: Any], &updated)
+        cache[ROOT_ID] = applyPatch(patch.diffs, cache[ROOT_ID], &updated)
+        updated[ROOT_ID] = cache[ROOT_ID]
     }
     //    applyAtPath(path, callback) {
     //      let patch = {diffs: {objectId: ROOT_ID, type: 'map'}}
@@ -502,7 +498,7 @@ public final class Context {
      */
     func getSubpatch(patch: Patch, path: [KeyPathElement]) -> ObjectDiff {
         var subPatch = patch.diffs
-        var object = getObject(objectId: ROOT_ID)
+        var object: Any = getObject(objectId: ROOT_ID)
         for pathElem in path {
             guard case .string(let key) = pathElem.key else {
                 fatalError()
@@ -533,35 +529,35 @@ public final class Context {
 
         return subPatch
     }
-    //    getSubpatch(patch, path) {
-    //      let subpatch = patch.diffs, object = this.getObject(ROOT_ID)
-    //
-    //      for (let pathElem of path) {
-    //        if (!subpatch.props) {
-    //          subpatch.props = {}
-    //        }
-    //        if (!subpatch.props[pathElem.key]) {
-    //          subpatch.props[pathElem.key] = this.getValuesDescriptions(path, object, pathElem.key)
-    //        }
-    //
-    //        let nextOpId = null, values = subpatch.props[pathElem.key]
-    //        for (let opId of Object.keys(values)) {
-    //          if (values[opId].objectId === pathElem.objectId) {
-    //            nextOpId = opId
-    //          }
-    //        }
-    //        if (!nextOpId) {
-    //          throw new RangeError(``)
-    //        }
-    //        subpatch = values[nextOpId]
-    //        object = this.getPropertyValue(object, pathElem.key, nextOpId)
-    //      }
-    //
-    //      if (!subpatch.props) {
-    //        subpatch.props = {}
-    //      }
-    //      return subpatch
-    //    }
+//    getSubpatch(patch, path) {
+//      let subpatch = patch.diffs, object = this.getObject(ROOT_ID)
+//
+//      for (let pathElem of path) {
+//        if (!subpatch.props) {
+//          subpatch.props = {}
+//        }
+//        if (!subpatch.props[pathElem.key]) {
+//          subpatch.props[pathElem.key] = this.getValuesDescriptions(path, object, pathElem.key)
+//        }
+//
+//        let nextOpId = null, values = subpatch.props[pathElem.key]
+//        for (let opId of Object.keys(values)) {
+//          if (values[opId].objectId === pathElem.objectId) {
+//            nextOpId = opId
+//          }
+//        }
+//        if (!nextOpId) {
+//          throw new RangeError(`Cannot find path object with objectId ${pathElem.objectId}`)
+//        }
+//        subpatch = values[nextOpId]
+//        object = this.getPropertyValue(object, pathElem.key, nextOpId)
+//      }
+//
+//      if (!subpatch.props) {
+//        subpatch.props = {}
+//      }
+//      return subpatch
+//    }
 
     /**
      * Returns the value at property `key` of object `object`. In the case of a conflict, returns
@@ -572,7 +568,7 @@ public final class Context {
         case let table as Table:
             fatalError()
         case let object as [String: Any]:
-            return ((object[CONFLICTS] as! [String: Any])[key] as! [String: Any])[opId]
+            return ((object[CONFLICTS] as! [Key: Any])[.string(key)] as! [String: Any])[opId]
         default:
             fatalError()
         }
@@ -595,7 +591,7 @@ public final class Context {
         case is Table:
             fatalError()
         case let map as [String: Any]:
-            guard let conflicts = (map[CONFLICTS] as? [String: Any])?[key] else {
+            guard let conflicts = (map[CONFLICTS] as? [Key: Any])?[.string(key)] else {
                 fatalError("No children at key \(key) of path \(path)")
             }
             let typedConflicts = conflicts as! [String: Any]
@@ -638,7 +634,7 @@ public final class Context {
      */
     func setListIndexpath<T: Equatable>(path: [KeyPathElement], index: Int, value: T) {
         let objectId = path.isEmpty ? ROOT_ID : path[path.count - 1].objectId
-        let object = getObject(objectId: objectId) as! [String: Any]
+        let object = getObject(objectId: objectId)
         let list = object[LIST_VALUES] as! [Any]
         if index == list.count {
             fatalError()
@@ -715,7 +711,7 @@ public final class Context {
      */
     func deleteTableRow(path: [KeyPathElement], rowId: UUID) {
         let objectId =  path[path.count - 1].objectId
-        let table = getObject(objectId: objectId) as! [String: Any]
+        let table = getObject(objectId: objectId)
         fatalError()
     }
 //    deleteTableRow(path, rowId) {

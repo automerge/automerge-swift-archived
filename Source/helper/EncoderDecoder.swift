@@ -7,28 +7,13 @@
 
 import Foundation
 
+@dynamicMemberLookup
 class DictionaryEncoder {
 
     private let encoder = JSONEncoder()
 
-    var dateEncodingStrategy: JSONEncoder.DateEncodingStrategy {
-        set { encoder.dateEncodingStrategy = newValue }
-        get { return encoder.dateEncodingStrategy }
-    }
-
-    var dataEncodingStrategy: JSONEncoder.DataEncodingStrategy {
-        set { encoder.dataEncodingStrategy = newValue }
-        get { return encoder.dataEncodingStrategy }
-    }
-
-    var nonConformingFloatEncodingStrategy: JSONEncoder.NonConformingFloatEncodingStrategy {
-        set { encoder.nonConformingFloatEncodingStrategy = newValue }
-        get { return encoder.nonConformingFloatEncodingStrategy }
-    }
-
-    var keyEncodingStrategy: JSONEncoder.KeyEncodingStrategy {
-        set { encoder.keyEncodingStrategy = newValue }
-        get { return encoder.keyEncodingStrategy }
+    subscript<T>(dynamicMember keyPath: WritableKeyPath<JSONEncoder, T>) -> T {
+        return encoder[keyPath: keyPath]
     }
 
     func encode<T>(_ value: T) throws -> [String: Any] where T : Encodable {
@@ -38,34 +23,59 @@ class DictionaryEncoder {
         }
         return obj
     }
+
+    func encode<T>(_ value: [T]) throws -> [[String: Any]] where T : Encodable {
+        let data = try encoder.encode(value)
+        guard let obj = try JSONSerialization.jsonObject(with: data, options: .allowFragments) as? [[String: Any]] else {
+            throw NSError(domain: "", code: 0, userInfo: nil)
+        }
+        return obj
+    }
 }
 
+@dynamicMemberLookup
 class DictionaryDecoder {
 
     private let decoder = JSONDecoder()
 
-    var dateDecodingStrategy: JSONDecoder.DateDecodingStrategy {
-        set { decoder.dateDecodingStrategy = newValue }
-        get { return decoder.dateDecodingStrategy }
-    }
-
-    var dataDecodingStrategy: JSONDecoder.DataDecodingStrategy {
-        set { decoder.dataDecodingStrategy = newValue }
-        get { return decoder.dataDecodingStrategy }
-    }
-
-    var nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy {
-        set { decoder.nonConformingFloatDecodingStrategy = newValue }
-        get { return decoder.nonConformingFloatDecodingStrategy }
-    }
-
-    var keyDecodingStrategy: JSONDecoder.KeyDecodingStrategy {
-        set { decoder.keyDecodingStrategy = newValue }
-        get { return decoder.keyDecodingStrategy }
+    subscript<T>(dynamicMember keyPath: WritableKeyPath<JSONDecoder, T>) -> T {
+        return decoder[keyPath: keyPath]
     }
 
     func decode<T>(_ type: T.Type, from dictionary: [String: Any]) throws -> T where T : Decodable {
-        let data = try JSONSerialization.data(withJSONObject: dictionary, options: [])
+        let clearDict = removeConflicts(dictionary)
+        let data = try JSONSerialization.data(withJSONObject: clearDict, options: [])
         return try decoder.decode(type, from: data)
     }
+
+    func decodeList<T>(from array: [[String: Any]]) throws -> T where T : Decodable {
+        let clearArray = array.map { removeConflicts($0) }
+        let data = try JSONSerialization.data(withJSONObject: clearArray, options: [.fragmentsAllowed])
+        return try decoder.decode(T.self, from: data)
+    }
+}
+
+private func removeConflicts(_ dict: [String: Any]) -> Any {
+    var dict = dict
+    dict[CONFLICTS] = nil
+    for key in dict.keys {
+        if let childDict = dict[key] as? [String: Any] {
+            dict[key] = removeConflicts(childDict)
+        }
+        if let childDict = dict[key] as? [String: Any], let lisValues = childDict[LIST_VALUES] as? [[String: Any]] {
+            dict[key] = lisValues.map(removeConflicts)
+        }
+        if let childDict = dict[key] as? [String: Any], let lisValues = childDict[LIST_VALUES] as? [Primitives] {
+            dict[key] = lisValues.map(\.value)
+        }
+        if let value = dict[key] as? Primitives {
+            dict[key] = value.value
+        }
+    }
+
+    return dict
+}
+
+private func removeListValues() {
+
 }

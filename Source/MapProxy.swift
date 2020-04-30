@@ -7,6 +7,11 @@
 
 import Foundation
 
+public final class ArrayProxy<T> {
+
+    func append(_ element: T) {}
+}
+
 public final class MapProxy<T> {
 
     init(
@@ -32,23 +37,29 @@ public final class MapProxy<T> {
             return getObjectByKeyPath(key.keyPath, objectId: objectId)
         }
         set {
-            if let encoded = try? DictionaryEncoder().encode(newValue) {
-                contex.setMapKey(path: path, key: key, value: encoded)
-            } else {
-                contex.setMapKey(path: path, key: key, value: newValue)
-            }
+            return setMapKey(key.keyPath, newValue: newValue)
+        }
+    }
 
+    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, [Y]>, key: String) -> [Y] {
+        get {
+            return getObjectByKeyPath(key.keyPath, objectId: objectId)
+        }
+        set {
+            return setMapKey(key.keyPath, newValue: newValue)
         }
     }
 
     public subscript<Y: Equatable>(keyPath: KeyPath<T, Y>, key: String) -> Y {
         get {
-            switch contex.getObject(objectId: objectId) {
-            case let object as [String: Any]:
-                return (object[key] as? Primitives)?.value as! Y
-            default:
-                fatalError()
-            }
+            let object = contex.getObject(objectId: objectId)
+            return (object[key] as? Primitives)?.value as! Y
+        }
+    }
+
+    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Array<Y>>, key: String) -> ArrayProxy<Y> {
+        get {
+             fatalError()
         }
     }
 
@@ -56,33 +67,66 @@ public final class MapProxy<T> {
         return MapProxy<T>(contex: contex, objectId: ROOT_ID, path: [])
     }
 
-    private func getObjectByKeyPath<Y: Codable>(_ keyPath: [Key], objectId: String) -> Y {
+    private func setMapKey<Y: Codable>(_ keyPath: [Key], newValue: [Y]) {
         if case .string(let key) = keyPath.first, keyPath.count == 1 {
-            switch contex.getObject(objectId: objectId) {
-            case let object as [String: Any]:
-                switch object[key] {
-                case let primitives as Primitives:
-                    return primitives.value as! Y
-                case let object as [String: Any]:
-                    if let listValues = object[LIST_VALUES] {
-                        return listValues as! Y
-                    } else {
-                        return try! DictionaryDecoder().decode(Y.self, from: object)
-                    }
-                default:
-                    fatalError()
-                }
-                return (object[key] as? Primitives)?.value as! Y
-            default:
-                fatalError()
+            let encoded = try? DictionaryEncoder().encode(newValue)
+            if let encoded2 = encoded {
+                contex.setMapKey(path: path, key: key, value: encoded2)
+            } else {
+                contex.setMapKey(path: path, key: key, value: newValue)
+            }
+        } else if case .string(let key) = keyPath.first {
+            let object = contex.getObject(objectId: objectId)
+            let objectId = (object[key] as! [String: Any])[OBJECT_ID] as! String
+            let proxy = MapProxy<Any>(contex: contex, objectId: objectId, path: [.init(key: .string(key), objectId: objectId)])
+            return proxy.setMapKey(Array(keyPath.suffix(from: 1)), newValue: newValue)
+        }
+    }
+
+    private func setMapKey<Y: Codable>(_ keyPath: [Key], newValue: Y) {
+        if case .string(let key) = keyPath.first, keyPath.count == 1 {
+            let encoded = try? DictionaryEncoder().encode(newValue)
+            if let encoded2 = encoded {
+                contex.setMapKey(path: path, key: key, value: encoded2)
+            } else {
+                contex.setMapKey(path: path, key: key, value: newValue)
             }
         } else if case .string(let key) = keyPath.first, let object = contex.getObject(objectId: objectId) as? [String: Any] {
             let objectId = (object[key] as! [String: Any])[OBJECT_ID] as! String
-            let proxy = MapProxy<Any>(contex: contex, objectId: objectId, path: [.init(key: .string(key), objectId: self.objectId)])
-            return proxy.getObjectByKeyPath(Array(keyPath.suffix(from: 1)), objectId: objectId)
+            let proxy = MapProxy<Any>(contex: contex, objectId: objectId, path: [.init(key: .string(key), objectId: objectId)])
+            return proxy.setMapKey(Array(keyPath.suffix(from: 1)), newValue: newValue)
         }
-        fatalError()
     }
+
+    private func getObjectByKeyPath<Y: Codable>(_ keyPath: [Key], objectId: String) -> Y {
+           if case .string(let key) = keyPath.first, keyPath.count == 1 {
+               switch contex.getObject(objectId: objectId) {
+               case let object as [String: Any]:
+                   switch object[key] {
+                   case let primitives as Primitives:
+                       return primitives.value as! Y
+                   case let objectType as [String: Any]:
+                       if let listValues = objectType[LIST_VALUES] as? [Primitives] {
+                           return (listValues.map { $0.value! }) as! Y
+                       } else if let listValues = objectType[LIST_VALUES] as? [[String: Any]] {
+                        return try! DictionaryDecoder().decodeList(from: listValues)
+                    }
+                   case .none:
+                       fatalError()
+                   default:
+                       fatalError()
+                   }
+                   return (object[key] as? Primitives)?.value as! Y
+               default:
+                   fatalError()
+               }
+           } else if case .string(let key) = keyPath.first, let object = contex.getObject(objectId: objectId) as? [String: Any] {
+               let objectId = (object[key] as! [String: Any])[OBJECT_ID] as! String
+               let proxy = MapProxy<Any>(contex: contex, objectId: objectId, path: [.init(key: .string(key), objectId: self.objectId)])
+               return proxy.getObjectByKeyPath(Array(keyPath.suffix(from: 1)), objectId: objectId)
+           }
+           fatalError()
+       }
 
 }
 

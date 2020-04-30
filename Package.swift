@@ -40,14 +40,12 @@ let package = Package(
                name: "Automerge",
                targets: ["Automerge"])
        ],
-    dependencies: [
-        .package(url: "https://github.com/Azoy/Echo.git", from: "0.0.1")
-    ],
+    dependencies: [ ],
 
     targets: [
         .target(
             name: "Automerge",
-            dependencies: ["Echo"],
+            dependencies: [],
             path: "Source"),
         .testTarget(
             name: "AutomergeTests",
