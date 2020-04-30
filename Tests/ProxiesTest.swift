@@ -10,13 +10,15 @@ import XCTest
 @testable import Automerge
 
 struct DeepObj: Codable, Equatable {
-    var list: [Int]
+    var list: [Double]
 }
 
 struct TestStruct: Codable {
     var key1: String?
     let key2: String
     var deepObj: DeepObj
+
+    var deepObjList: [DeepObj]
 }
 
 class ProxiesTest: XCTestCase {
@@ -36,22 +38,7 @@ class ProxiesTest: XCTestCase {
     // should expose keys as object properties
     func testProxie3() {
         // GIVEN
-        let backend = BackendMock { req in
-            return Patch(
-                actor: req.actor.uuidString,
-                seq: 1,
-                clock: [req.actor: 1],
-                version: 1,
-                canUndo: true,
-                canRedo: false,
-                diffs: ObjectDiff(
-                    objectId: ROOT_ID,
-                    type: .map,
-                    props: [
-                        "key1": ["1@\(req.actor.uuidString)": .value(.string("value1"))]
-                    ])
-            )
-        }
+        let backend = BackendMock()
         let document = Document<TestStruct>(options: .init(actorId: UUID(), backend: backend))
 
         // WHEN
@@ -67,61 +54,56 @@ class ProxiesTest: XCTestCase {
 
         // WHEN
         _ = document.change(execute: { doc in
-            XCTAssertNil(doc[\.key1, "key1"])
+            let nilValue = doc[\.key1, "key1"]
+            XCTAssertNil(nilValue)
         })
     }
 
-    // should allow access to an object by id
-    func testProxies5() {
-        let backend = BackendMock { req in
-            return Patch(
-                actor: req.actor.uuidString,
-                seq: 1,
-                clock: [req.actor: 1],
-                version: 1,
-                canUndo: true,
-                canRedo: false,
-                diffs: ObjectDiff(
-                    objectId: ROOT_ID,
-                    type: .map,
-                    props: [
-                        "deepObj": [
-                            "1@\(req.actor.uuidString)": .object(.init(objectId: "1@\(req.actor.uuidString)", type: .map,
-                                                                       props: [
-                                                                        "deepList": ["2@\(req.actor.uuidString)": .object(.init(objectId: "2@\(req.actor.uuidString)", type: .list))]
-                                                                        ]))
-                        ]
-                    ])
-            )
-        }
+    // should allow deep object assigment
+    func testProxiesSwift1() {
+        let document = Document<TestStruct>(options: .init(actorId: UUID(), backend: BackendMock()))
+
+        // WHEN
+        _ = document.change(execute: { doc in
+            doc[\.deepObj, "deepObj"] = DeepObj(list: [1])
+            XCTAssertEqual(doc[\.deepObj, "deepObj"], DeepObj(list: [1]))
+        })
+    }
+
+    // should allow list assignment inside deep object
+    func testProxiesSwift2() {
+        let backend = BackendMock()
         let document = Document<TestStruct>(options: .init(actorId: UUID(), backend: backend))
 
         // WHEN
         _ = document.change(execute: { doc in
             doc[\.deepObj, "deepObj"] = DeepObj(list: [])
-
-            XCTAssertEqual(doc[\.deepObj.list, "deepObj.list"], [])
-
-            doc[\.deepObj, "deepObj"] = DeepObj(list: [1])
-
+            doc[\.deepObj.list, "deepObj.list"] = [1]
             XCTAssertEqual(doc[\.deepObj.list, "deepObj.list"], [1])
         })
     }
+
+    // should allow empty list assignment inside deep object
+    func testProxiesSwift3() {
+        let backend = BackendMock()
+        let document = Document<TestStruct>(options: .init(actorId: UUID(), backend: backend))
+
+        // WHEN
+        _ = document.change(execute: { doc in
+            doc[\.deepObj, "deepObj"] = DeepObj(list: [])
+            XCTAssertEqual(doc[\.deepObj.list, "deepObj.list"], [])
+        })
+    }
+
+    // should allow list (conatining objects) assignment inside deep object
+    func testProxiesSwift4() {
+        let backend = BackendMock()
+        let document = Document<TestStruct>(options: .init(actorId: UUID(), backend: backend))
+
+        // WHEN
+        _ = document.change(execute: { doc in
+            doc[\.deepObjList, "deepObjList"] = [DeepObj(list: [1])]
+            XCTAssertEqual(doc[\.deepObjList, "deepObjList"], [DeepObj(list: [1])])
+        })
+    }
 }
-
-
-
-//  it('should allow access to an object by id', () => {
-//    const doc = Automerge.change(Automerge.init(), doc => {
-//      doc.deepObj = {}
-//      doc.deepObj.deepList = []
-//      const listId = Automerge.getObjectId(doc.deepObj.deepList)
-//      assert.throws(() => { Automerge.getObjectById(doc, listId) }, /Cannot use getObjectById in a change callback/)
-//    })
-//
-//    const objId = Automerge.getObjectId(doc.deepObj)
-//    assert.strictEqual(Automerge.getObjectById(doc, objId), doc.deepObj)
-//    const listId = Automerge.getObjectId(doc.deepObj.deepList)
-//    assert.strictEqual(Automerge.getObjectById(doc, listId), doc.deepObj.deepList)
-//  })
-//})

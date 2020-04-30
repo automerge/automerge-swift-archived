@@ -33,26 +33,20 @@ public struct Document<T: Codable> {
         self.options = options
         self.root = [
             OBJECT_ID: ROOT_ID,
-            CONFLICTS: [String: Any]()
+            CONFLICTS: [Key: [String: Any]]()
         ]
         self.root[CACHE] = [ROOT_ID: root]
         self.state = State(seq: 0, requests: [], version: 0, clock: [:], canUndo: false, canRedo: false, backend: options.backend)
     }
-
-//    public init(obj: T, options: Options) {
-//        self = Document(options: options).change(execute: { doc in
-//
-//        }).0
-//    }
-
+    
     init(root: [String: Any], state: State, options: Options) {
         self.options = options
         self.root = root
         self.state = state
     }
 
-    var cache: [String: Any] {
-        root[CACHE] as! [String: Any]
+    var cache: [String: [String: Any]] {
+        root[CACHE] as! [String: [String: Any]]
     }
 
 

@@ -59,11 +59,11 @@ func updateListObject(patch: ObjectDiff, obj: [String: Any]?, updated: inout [St
         updated[objectId] = cloneListObject(originalList: obj, objectId: objectId)
     }
     var object = updated[objectId]
-    var list = object![LIST_VALUES] as! [Any?]
-    var conflicts = object![CONFLICTS] as! [Any?]
+    var list = object![LIST_VALUES] as! [[String: Any]?]
+    var conflicts = Array(object![CONFLICTS] as! [Key: [String: Any]])
     patch.edits?.iterate(
         insertCallback: { index, insertions in
-            let blanks = Array<Any?>(repeating: nil, count: insertions)
+            let blanks = Array<[String: Any]?>(repeating: nil, count: insertions)
             list.replaceSubrange(index..<index, with: blanks)
             conflicts.replaceSubrange(index..<index, with: blanks)
     },
@@ -71,9 +71,10 @@ func updateListObject(patch: ObjectDiff, obj: [String: Any]?, updated: inout [St
             list.removeSubrange(index..<index + deletions)
             conflicts.removeSubrange(index..<index + deletions)
     })
-    var abcd = [String: [String: Any]]()
-    applyProperties(props: patch.props, objectId: objectId, object: &object, conflicts: &abcd, updated: &updated)
-    object![CONFLICTS] = conflicts
+    var dictConflicts = [Key: [String: Any]?](conflicts)
+    object?[LIST_VALUES] = list
+    applyProperties(props: patch.props, objectId: objectId, object: &object, conflicts: &dictConflicts, updated: &updated)
+    object![CONFLICTS] = dictConflicts
 
     return object
 }
@@ -107,7 +108,7 @@ func updateListObject(patch: ObjectDiff, obj: [String: Any]?, updated: inout [St
  */
 func cloneListObject(originalList: [String: Any]?, objectId: String) -> [String: Any] {
     var originalList = originalList ?? [:]
-    originalList[CONFLICTS] = originalList[CONFLICTS] ?? [[String: [String: Any]]]()
+    originalList[CONFLICTS] = originalList[CONFLICTS] ?? [Key: [String: Any]]()
     originalList[OBJECT_ID] = objectId
     originalList[LIST_VALUES] = originalList[LIST_VALUES] ?? [Any]()
 
@@ -134,7 +135,7 @@ func updateMapObject(patch: ObjectDiff, obj: [String: Any]?, updated: inout [Str
     }
 
     var object = updated[objectId]
-    var conflicts = object?[CONFLICTS] as! [String: [String: Any]]
+    var conflicts = object?[CONFLICTS] as! [Key: [String: Any]?]
     applyProperties(props: patch.props, objectId: objectId, object: &object, conflicts: &conflicts, updated: &updated)
     object?[CONFLICTS] = conflicts
 
@@ -188,28 +189,47 @@ func clone(originalObject: [String: Any]?, objectId: String) -> [String: Any] {
 func applyProperties(props: Props?,
                      objectId: String,
                      object: inout [String: Any]?,
-                     conflicts: inout [String: [String: Any]],
+                     conflicts: inout [Key: [String: Any]?],
                      updated: inout [String: [String: Any]]) {
     guard let props = props else {
         return
     }
     for key in props.keys {
-        guard case .string(let stringKey) = key else {
-            fatalError("Index is not allowed")
-        }
         var values = [String: Any]()
         let opIds = props[key]?.keys.sorted(by: lamportCompare)
         for opId in opIds ?? [] {
             let subPatch = props[key]![opId]
-            values[opId] = getValue(patch: subPatch!, object: conflicts[stringKey]?[opId] as? [String: Any], updated: &updated)
+            let object = conflicts[key]??[opId] as! [String: Any]?
+            values[opId] = getValue(patch: subPatch!, object: object, updated: &updated)
         }
         if opIds?.count == 0 {
-            object?[stringKey] = nil
-            conflicts[stringKey] = nil
+            switch key {
+            case .string(let string):
+                object?[string] = nil
+            case .index(let index):
+                fatalError()
+
+            }
+
+            conflicts[key] = nil
         } else {
-            object?[stringKey] = values[opIds![0]]
-            updated[objectId]?[stringKey] = values[opIds![0]]
-            conflicts[stringKey] = values
+            switch key {
+            case .string(let string):
+                object?[string] = values[opIds![0]]
+                updated[objectId]?[string] = values[opIds![0]]
+            case .index(let index):
+                var list = object?[LIST_VALUES] as! Array<Any>
+                if list.count > index {
+                    list[index] = values[opIds![0]]!
+                } else if index == list.count {
+                    list.append(values[opIds![0]]!)
+                } else {
+                    fatalError()
+                }
+                object?[LIST_VALUES] = list
+            }
+
+            conflicts[key] = values
         }
     }
 }
