@@ -41,6 +41,10 @@ extension ArrayProxy: Collection {
 
     public subscript(position: Index) -> T {
         get { return elements[position] }
+        set {
+            elements[position] = newValue
+            contex.setListIndex(path: path, index: position, value: newValue)
+        }
     }
 
     // Method that returns the next index when iterating
@@ -64,19 +68,5 @@ extension ArrayProxy: RangeReplaceableCollection {
         contex.spice(path: path, start: start, deletions: deleteCount, insertions: Array(newElements))
         elements.replaceSubrange(subrange, with: newElements)
     }
-
-//    splice(start, deleteCount, ...values) {
-//      let list = context.getObject(listId)
-//      start = parseListIndex(start)
-//      if (deleteCount === undefined) {
-//        deleteCount = list.length - start
-//      }
-//      const deleted = []
-//      for (let n = 0; n < deleteCount; n++) {
-//        deleted.push(context.getObjectField(path, listId, start + n))
-//      }
-//      context.splice(path, start, deleteCount, values)
-//      return deleted
-//    },
 
 }

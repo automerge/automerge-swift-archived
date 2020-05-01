@@ -136,7 +136,7 @@ public final class Context {
             ops.append(operation)
 
             var props = Props()
-            for nested in object.keys {
+            for nested in object.keys.sorted() {
                 let valuePatch = setValue(objectId: child, key: .string(nested), value: object[nested], insert: nil)
                 props[.string(nested)] = [actorId.uuidString: valuePatch]
             }
@@ -371,37 +371,6 @@ public final class Context {
     //      }
     //    }
 
-    /**
-     * Returns the value associated with the property named `key` on the object
-     * at path `path`. If the value is an object, returns a proxy for it.
-     */
-    func getObjectField(path: [KeyPathElement], objectId: String, key: Key) -> Any? {
-        let object = getObject(objectId: objectId)
-        switch key {
-        case .index(let index):
-            fatalError()
-        case .string(let string):
-            return object[string]
-        }
-    }
-//    getObjectField(path, objectId, key) {
-//      if (!['string', 'number'].includes(typeof key)) return
-//      const object = this.getObject(objectId)
-//
-//      if (object[key] instanceof Counter) {
-//        return getWriteableCounter(object[key].value, this, path, objectId, key)
-//
-//      } else if (isObject(object[key])) {
-//        const childId = object[key][OBJECT_ID]
-//        const subpath = path.concat([{key, objectId: childId}])
-//        // The instantiateObject function is added to the context object by rootObjectProxy()
-//        return this.instantiateObject(subpath, childId)
-//
-//      } else {
-//        return object[key]
-//      }
-//    }
-
 
     /**
      * Takes a value and returns an object describing the value (in the format used by patches).
@@ -624,7 +593,7 @@ public final class Context {
         case is Table:
             fatalError()
         case let map as [String: Any]:
-            guard let conflicts = (map[CONFLICTS] as? [Key: Any])?[.string(key)] else {
+            guard let conflicts = (map[CONFLICTS] as?[Key: Any])?[.string(key)] else {
                 fatalError("No children at key \(key) of path \(path)")
             }
             let typedConflicts = conflicts as! [String: Any]
@@ -665,7 +634,7 @@ public final class Context {
      * Updates the list object at path `path`, replacing the current value at
      * position `index` with the new value `value`.
      */
-    func setListIndexpath<T: Equatable>(path: [KeyPathElement], index: Int, value: T) {
+    func setListIndex<T>(path: [KeyPathElement], index: Int, value: T) {
         let objectId = path.isEmpty ? ROOT_ID : path[path.count - 1].objectId
         let object = getObject(objectId: objectId)
         let list = object[LIST_VALUES] as! [Any]
@@ -673,14 +642,13 @@ public final class Context {
             fatalError()
         }
         precondition(!(list[index] is Counter), "Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.")
-        if (list[index] as? T) != value {
-            applyAt(path: path) { subpatch in
-                let valuePatch = setValue(objectId: objectId, key: .index(index), value: value, insert: nil)
-                subpatch.props?[.index(index)] = [actorId.uuidString: valuePatch]
-            }
+         applyAt(path: path) { subpatch in
+            let valuePatch = setValue(objectId: objectId, key: .index(index), value: value, insert: nil)
+            subpatch.props?[.index(index)] = [actorId.uuidString: valuePatch]
         }
 
     }
+    
 //    setListIndex(path, index, value) {
 //      const objectId = path.length === 0 ? ROOT_ID : path[path.length - 1].objectId
 //      const list = this.getObject(objectId)

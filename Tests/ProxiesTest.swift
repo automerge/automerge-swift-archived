@@ -183,7 +183,7 @@ class ProxiesTest: XCTestCase {
 
         // WHEN
         _ = document.change(execute: { doc in
-           let proxy: ArrayProxy<Double> = doc[\.list, "list"]
+            let proxy: ArrayProxy<Double> = doc[\.list, "list"]
             XCTAssertEqual(doc[\.list, "list"], [1, 3])
             XCTAssertEqual(proxy[0], 1)
             XCTAssertEqual(proxy[1], 3)
@@ -196,13 +196,32 @@ class ProxiesTest: XCTestCase {
         let backend = BackendMock()
         let document = Document<DocWithList>(options: .init(actorId: UUID(), backend: backend)).change(execute: { doc in
             doc[\.list, "list"] = [1, 2, 3]
+        }).0
 
+        // WHEN
+        _ = document.change(execute: { doc in
             var proxy: ArrayProxy<Double> = doc[\.list, "list"]
             proxy.append(4)
             proxy.append(contentsOf: [5, 6])
             XCTAssertEqual(proxy.count, 6)
             XCTAssertEqual(doc[\.list, "list"], [1, 2, 3, 4, 5, 6])
+        })
+    }
+
+    // setAtIndex()
+    func testListObject6() {
+        let backend = BackendMock()
+        let document = Document<DocWithList>(options: .init(actorId: UUID(), backend: backend)).change(execute: { doc in
+            doc[\.list, "list"] = [1, 2, 3]
         }).0
+
+        _ = document.change(execute: { doc in
+            let proxy: ArrayProxy<Double> = doc[\.list, "list"]
+            proxy[1] = 1
+            XCTAssertEqual(proxy[1], 1)
+            XCTAssertEqual(doc[\.list, "list"], [1, 1, 3])
+
+        })
     }
 
 }
