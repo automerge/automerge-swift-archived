@@ -166,30 +166,43 @@ class ProxiesTest: XCTestCase {
         let backend = BackendMock()
         let document = Document<DocWithList>(options: .init(actorId: UUID(), backend: backend)).change(execute: { doc in
             doc[\.list, "list"] = [1, 2, 3]
-            doc[\.empty, "empty"] = []
 
             let proxy: ArrayProxy<Double> = doc[\.list, "list"]
             proxy.replaceSubrange(1...1, with: [])
+            XCTAssertEqual(proxy[0], 1)
+            XCTAssertEqual(proxy[1], 3)
+            XCTAssertEqual(proxy.count, 2)
+
+            let proxy2: ArrayProxy<Double> = doc[\.list, "list"]
+            XCTAssertEqual(doc[\.list, "list"], [1, 3])
+            XCTAssertEqual(proxy2[0], 1)
+            XCTAssertEqual(proxy2[1], 3)
+            XCTAssertEqual(proxy2.count, 2)
 
         }).0
 
         // WHEN
         _ = document.change(execute: { doc in
            let proxy: ArrayProxy<Double> = doc[\.list, "list"]
-            XCTAssertEqual(doc[\.list, "list"], [1, 2])
+            XCTAssertEqual(doc[\.list, "list"], [1, 3])
             XCTAssertEqual(proxy[0], 1)
             XCTAssertEqual(proxy[1], 3)
             XCTAssertEqual(proxy.count, 2)
         })
     }
 
+    // append()
+    func testListObject5() {
+        let backend = BackendMock()
+        let document = Document<DocWithList>(options: .init(actorId: UUID(), backend: backend)).change(execute: { doc in
+            doc[\.list, "list"] = [1, 2, 3]
 
-//it('splice()', () => {
-//  root = Automerge.change(root, doc => assert.deepStrictEqual(doc.list.splice(1), [2, 3]))
-//  assert.deepStrictEqual(root.list, [1])
-//  root = Automerge.change(root, doc => assert.deepStrictEqual(doc.list.splice(0, 0, 'a', 'b', 'c'), []))
-//  assert.deepStrictEqual(root.list, ['a', 'b', 'c', 1])
-//  root = Automerge.change(root, doc => assert.deepStrictEqual(doc.list.splice(1, 2, '-->'), ['b', 'c']))
-//  assert.deepStrictEqual(root.list, ['a', '-->', 1])
-//})
+            var proxy: ArrayProxy<Double> = doc[\.list, "list"]
+            proxy.append(4)
+            proxy.append(contentsOf: [5, 6])
+            XCTAssertEqual(proxy.count, 6)
+            XCTAssertEqual(doc[\.list, "list"], [1, 2, 3, 4, 5, 6])
+        }).0
+    }
+
 }
