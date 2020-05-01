@@ -46,7 +46,12 @@ public struct Document<T: Codable> {
     }
 
     var cache: [String: [String: Any]] {
-        root[CACHE] as! [String: [String: Any]]
+        get {
+            root[CACHE] as! [String: [String: Any]]
+        }
+        set {
+            root[CACHE] = newValue
+        }
     }
 
 
@@ -185,7 +190,7 @@ public struct Document<T: Codable> {
                 let(newBackend, patch) = backend.applyLocalChange(request: request)
                 state.backend = newBackend
 
-                return (applyPatchToDoc(patch: patch, state: state, fromBackend: false), request)
+                return (applyPatchToDoc(patch: patch, state: state, fromBackend: false, context: context), request)
             } else {
                 fatalError()
             }
@@ -237,9 +242,10 @@ public struct Document<T: Codable> {
      * and to `false` if the patch is a transient local (optimistically applied)
      * change from the frontend.
      */
-    func applyPatchToDoc(patch: Patch, state: State, fromBackend: Bool) -> Document<T> {
+    private func applyPatchToDoc(patch: Patch, state: State, fromBackend: Bool, context: Context?) -> Document<T> {
         var updated = [String: [String: Any]]()
-        let newRoot = interpretPatch(patch: patch.diffs, obj: root, updated: &updated)
+        var newRoot = interpretPatch(patch: patch.diffs, obj: root, updated: &updated)
+        newRoot?[CACHE] = context?.updated
 
         if fromBackend {
             fatalError()

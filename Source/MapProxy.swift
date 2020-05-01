@@ -7,11 +7,6 @@
 
 import Foundation
 
-public final class ArrayProxy<T> {
-
-    func append(_ element: T) {}
-}
-
 public final class MapProxy<T> {
 
     init(
@@ -68,9 +63,32 @@ public final class MapProxy<T> {
 
     public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Array<Y>>, key: String) -> ArrayProxy<Y> {
         get {
-            fatalError()
+            getCollectionProxy(key.keyPath, objectId: objectId)
         }
     }
+
+    private func getCollectionProxy<Y: Codable>(_ keyPath: [Key], objectId: String) -> ArrayProxy<Y> {
+        if case .string(let key) = keyPath.first, keyPath.count == 1 {
+            switch contex.getObject(objectId: objectId)[key] {
+            case let objectType as [String: Any]:
+                if let listValues = objectType[LIST_VALUES] as? [Primitives] {
+                    let values = (listValues.map { $0.value! })
+                    let listId = objectType[OBJECT_ID] as! String
+                    return ArrayProxy(elements: values as! [Y], contex: contex, listId: listId, path: path + [.init(key: .string(key), objectId: listId)])
+
+                }
+            default:
+                fatalError()
+            }
+        } else if case .string(let key) = keyPath.first {
+            let object = contex.getObject(objectId: objectId)
+            let objectId = (object[key] as! [String: Any])[OBJECT_ID] as! String
+            let proxy = MapProxy<Any>(contex: contex, objectId: objectId, path: path + [.init(key: .string(key), objectId: objectId)])
+            return proxy.getCollectionProxy(Array(keyPath.suffix(from: 1)), objectId: objectId)
+        }
+        fatalError()
+    }
+
 
     static func rootProxy<T>(contex: Context) -> MapProxy<T> {
         return MapProxy<T>(contex: contex, objectId: ROOT_ID, path: [])
@@ -115,7 +133,8 @@ public final class MapProxy<T> {
                 return primitives.value as? Y
             case let objectType as [String: Any]:
                 if let listValues = objectType[LIST_VALUES] as? [Primitives] {
-                    return (listValues.map { $0.value! }) as? Y
+                    let values = (listValues.map { $0.value! })
+                    return values as? Y
                 } else if let listValues = objectType[LIST_VALUES] as? [[String: Any]] {
                     return try! DictionaryDecoder().decodeList(from: listValues)
                 } else {
@@ -133,6 +152,40 @@ public final class MapProxy<T> {
             return proxy.getObjectByKeyPath(Array(keyPath.suffix(from: 1)), objectId: objectId)
         }
         fatalError()
+    }
+
+    private func getObjectByKeyPath2<Y: Codable>(_ keyPath: [Key], objectId: String) -> Y? {
+        let (key, objectId) = getPathFor(keyPath: keyPath, objectId: self.objectId)
+
+        switch contex.getObject(objectId: objectId)[key] {
+        case let primitives as Primitives:
+            return primitives.value as? Y
+        case let objectType as [String: Any]:
+            if let listValues = objectType[LIST_VALUES] as? [Primitives] {
+                let values = (listValues.map { $0.value! })
+                return values as? Y
+            } else if let listValues = objectType[LIST_VALUES] as? [[String: Any]] {
+                return try! DictionaryDecoder().decodeList(from: listValues)
+            } else {
+                return try! DictionaryDecoder().decode(Y.self, from: objectType)
+            }
+        case .none:
+            return nil
+        default:
+            fatalError()
+        }
+    }
+
+    func getPathFor(keyPath: [Key], objectId: String) -> (key: String, objectId: String) {
+        if case .string(let key) = keyPath.first, keyPath.count == 1 {
+            return (objectId, key)
+        } else if case .string(let key) = keyPath.first {
+            let object = contex.getObject(objectId: objectId)
+            let objectId = (object[key] as! [String: Any])[OBJECT_ID] as! String
+            return getPathFor(keyPath: Array(keyPath.suffix(from: 1)), objectId: objectId)
+        } else {
+            fatalError()
+        }
     }
 
 }

@@ -21,6 +21,13 @@ struct TestStruct: Codable {
     var deepObjList: [DeepObj]
 }
 
+struct DocWithList: Codable {
+    var list: [Double]
+    var empty: [Double]
+
+    var deepObj: DeepObj
+}
+
 class ProxiesTest: XCTestCase {
 
     // should have a fixed object ID
@@ -95,15 +102,94 @@ class ProxiesTest: XCTestCase {
         })
     }
 
-    // should allow list (conatining objects) assignment inside deep object
-    func testProxiesSwift4() {
+    // should have a length property
+    func testListObject1() {
         let backend = BackendMock()
-        let document = Document<TestStruct>(options: .init(actorId: UUID(), backend: backend))
+        let document = Document<DocWithList>(options: .init(actorId: UUID(), backend: backend)).change(execute: { doc in
+            doc[\.list, "list"] = [1, 2, 3]
+            doc[\.empty, "empty"] = []
+        }).0
 
         // WHEN
         _ = document.change(execute: { doc in
-            doc[\.deepObjList, "deepObjList"] = [DeepObj(list: [1])]
-            XCTAssertEqual(doc[\.deepObjList, "deepObjList"], [DeepObj(list: [1])])
+            XCTAssertEqual(doc[\.list, "list"].count, 3)
+            XCTAssertEqual(doc[\.empty, "empty"].count, 0)
+
+            let proxy: ArrayProxy<Double> = doc[\.list, "list"]
+            let emptyProxy: ArrayProxy<Double> = doc[\.empty, "empty"]
+            XCTAssertEqual(proxy.count, 3)
+            XCTAssertEqual(emptyProxy.count, 0)
         })
     }
+
+    // should allow entries to be fetched by index
+    func testListObject2() {
+        let backend = BackendMock()
+        let document = Document<DocWithList>(options: .init(actorId: UUID(), backend: backend)).change(execute: { doc in
+            doc[\.list, "list"] = [1, 2, 3]
+            doc[\.empty, "empty"] = []
+        }).0
+
+        // WHEN
+        _ = document.change(execute: { doc in
+            let proxy: ArrayProxy<Double> = doc[\.list, "list"]
+
+            XCTAssertEqual(proxy[0], 1)
+            XCTAssertEqual(proxy[1], 2)
+            XCTAssertEqual(proxy[2], 3)
+        })
+    }
+
+    // should support iteration
+    func testListObject3() {
+        let backend = BackendMock()
+        let document = Document<DocWithList>(options: .init(actorId: UUID(), backend: backend)).change(execute: { doc in
+            doc[\.list, "list"] = [1, 2, 3]
+            doc[\.empty, "empty"] = []
+        }).0
+
+        // WHEN
+        _ = document.change(execute: { doc in
+            let proxy: ArrayProxy<Double> = doc[\.list, "list"]
+            var copy = [Double]()
+
+            for value in proxy {
+                copy.append(value)
+            }
+
+            XCTAssertEqual(copy, [1, 2, 3])
+        })
+    }
+
+    // splice()
+    func testListObject4() {
+        let backend = BackendMock()
+        let document = Document<DocWithList>(options: .init(actorId: UUID(), backend: backend)).change(execute: { doc in
+            doc[\.list, "list"] = [1, 2, 3]
+            doc[\.empty, "empty"] = []
+
+            let proxy: ArrayProxy<Double> = doc[\.list, "list"]
+            proxy.replaceSubrange(1...1, with: [])
+
+        }).0
+
+        // WHEN
+        _ = document.change(execute: { doc in
+           let proxy: ArrayProxy<Double> = doc[\.list, "list"]
+            XCTAssertEqual(doc[\.list, "list"], [1, 2])
+            XCTAssertEqual(proxy[0], 1)
+            XCTAssertEqual(proxy[1], 3)
+            XCTAssertEqual(proxy.count, 2)
+        })
+    }
+
+
+//it('splice()', () => {
+//  root = Automerge.change(root, doc => assert.deepStrictEqual(doc.list.splice(1), [2, 3]))
+//  assert.deepStrictEqual(root.list, [1])
+//  root = Automerge.change(root, doc => assert.deepStrictEqual(doc.list.splice(0, 0, 'a', 'b', 'c'), []))
+//  assert.deepStrictEqual(root.list, ['a', 'b', 'c', 1])
+//  root = Automerge.change(root, doc => assert.deepStrictEqual(doc.list.splice(1, 2, '-->'), ['b', 'c']))
+//  assert.deepStrictEqual(root.list, ['a', '-->', 1])
+//})
 }

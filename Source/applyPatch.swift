@@ -75,6 +75,7 @@ func updateListObject(patch: ObjectDiff, obj: [String: Any]?, updated: inout [St
     object?[LIST_VALUES] = list
     applyProperties(props: patch.props, objectId: objectId, object: &object, conflicts: &dictConflicts, updated: &updated)
     object![CONFLICTS] = dictConflicts
+    updated[objectId] = object
 
     return object
 }
@@ -138,6 +139,7 @@ func updateMapObject(patch: ObjectDiff, obj: [String: Any]?, updated: inout [Str
     var conflicts = object?[CONFLICTS] as! [Key: [String: Any]?]
     applyProperties(props: patch.props, objectId: objectId, object: &object, conflicts: &conflicts, updated: &updated)
     object?[CONFLICTS] = conflicts
+    updated[objectId] = object
 
     return object
 }
@@ -196,33 +198,32 @@ func applyProperties(props: Props?,
     }
     for key in props.keys {
         var values = [String: Any]()
-        let opIds = props[key]?.keys.sorted(by: lamportCompare)
-        for opId in opIds ?? [] {
+        let opIds = props[key]?.keys.sorted(by: lamportCompare) ?? []
+        for opId in opIds {
             let subPatch = props[key]![opId]
             let object = conflicts[key]??[opId] as! [String: Any]?
             values[opId] = getValue(patch: subPatch!, object: object, updated: &updated)
         }
-        if opIds?.count == 0 {
+        if opIds.count == 0 {
             switch key {
             case .string(let string):
                 object?[string] = nil
             case .index(let index):
                 fatalError()
-
             }
 
             conflicts[key] = nil
         } else {
             switch key {
             case .string(let string):
-                object?[string] = values[opIds![0]]
-                updated[objectId]?[string] = values[opIds![0]]
+                object?[string] = values[opIds[0]]
+                updated[objectId]?[string] = values[opIds[0]]
             case .index(let index):
                 var list = object?[LIST_VALUES] as! Array<Any>
                 if list.count > index {
-                    list[index] = values[opIds![0]]!
+                    list[index] = values[opIds[0]]!
                 } else if index == list.count {
-                    list.append(values[opIds![0]]!)
+                    list.append(values[opIds[0]]!)
                 } else {
                     fatalError()
                 }
