@@ -14,7 +14,7 @@ import Foundation
  */
 
 func interpretPatch(patch: ObjectDiff, obj: [String: Any]?, updated: inout [String: [String: Any]]) -> [String: Any]? {
-    if patch.props != nil && patch.edits != nil && updated[patch.objectId] != nil {
+    if patch.props != nil && patch.edits != nil && updated[patch.objectId] != nil && obj?[LIST_VALUES] == nil {
         return obj
     }
     switch patch.type {
@@ -59,7 +59,7 @@ func updateListObject(patch: ObjectDiff, obj: [String: Any]?, updated: inout [St
         updated[objectId] = cloneListObject(originalList: obj, objectId: objectId)
     }
     var object = updated[objectId]
-    var list = object![LIST_VALUES] as! [[String: Any]?]
+    var list = object![LIST_VALUES] as! [Any?]
     var conflicts = Array(object![CONFLICTS] as! [Key: [String: Any]])
     patch.edits?.iterate(
         insertCallback: { index, insertions in
