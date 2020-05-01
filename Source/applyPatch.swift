@@ -201,8 +201,8 @@ func applyProperties(props: Props?,
         let opIds = props[key]?.keys.sorted(by: lamportCompare) ?? []
         for opId in opIds {
             let subPatch = props[key]![opId]
-            let object = conflicts[key]??[opId] as! [String: Any]?
-            values[opId] = getValue(patch: subPatch!, object: object, updated: &updated)
+            let object = conflicts[key]??[opId] as? [String: Any]?
+            values[opId] = getValue(patch: subPatch!, object: object ?? nil, updated: &updated)
         }
         if opIds.count == 0 {
             switch key {

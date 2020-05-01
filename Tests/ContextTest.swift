@@ -174,7 +174,7 @@ class ContextTest: XCTestCase {
                 ROOT_ID: [
                     OBJECT_ID: ROOT_ID,
                     CONFLICTS: [
-                        "birds": ["actor1": child]
+                        Key.string("birds"): ["actor1": child]
                     ],
                     "birds": child
                 ]
@@ -222,7 +222,7 @@ class ContextTest: XCTestCase {
                     OBJECT_ID: ROOT_ID,
                     "birds": child2,
                     CONFLICTS: [
-                        "birds": [
+                        Key.string("birds"): [
                             "actor1": child1,
                             "actor2": child2
                         ]
@@ -272,7 +272,7 @@ class ContextTest: XCTestCase {
                 ROOT_ID: [
                     OBJECT_ID: ROOT_ID,
                     CONFLICTS: [
-                        "values": [
+                        Key.string("values"): [
                             "actor1": dateValue,
                             "actor2": Counter(value: 0),
                             "actor3": 42,
@@ -503,14 +503,14 @@ class ContextTest: XCTestCase {
                     "birds": list,
 
                     CONFLICTS: [
-                        "birds": ["actor1": list]
+                        Key.string("birds"): ["actor1": list]
                     ]
                 ]
             ]
         )
 
         // When
-        context.setListIndexpath(path: [.init(key: .string("birds"), objectId: listId)], index: 0, value: "starling")
+        context.setListIndex(path: [.init(key: .string("birds"), objectId: listId)], index: 0, value: "starling")
 
         // Then
         XCTAssertEqual(context.ops, [
@@ -555,14 +555,14 @@ class ContextTest: XCTestCase {
                     "birds": list,
 
                     CONFLICTS: [
-                        "birds": ["actor1": list]
+                        Key.string("birds"): ["actor1": list]
                     ]
                 ]
             ]
         )
 
         // When
-        context.setListIndexpath(path: [.init(key: .string("birds"), objectId: listId)], index: 1, value: ["english": "goldfinch", "latin": "carduelis"])
+        context.setListIndex(path: [.init(key: .string("birds"), objectId: listId)], index: 1, value: ["english": "goldfinch", "latin": "carduelis"])
 
         // Then
         let nestedId = applyPatch.value!.props!["birds"]!["actor1"]!.props![1]![actor.uuidString]!.objectId!
@@ -598,7 +598,7 @@ class ContextTest: XCTestCase {
         let list: [String: Any] = [
             LIST_VALUES : ["swallow", "magpie"],
             OBJECT_ID: listId,
-            CONFLICTS:  ["actor1": "swallow", "actor2": "swallow"]
+            CONFLICTS:  [Key.string("actor1"): "swallow", "actor2": "swallow"]
         ]
 
         let actor = UUID()
@@ -613,7 +613,7 @@ class ContextTest: XCTestCase {
                     "birds": list,
 
                     CONFLICTS: [
-                        "birds": ["actor1": list]
+                        Key.string("birds"): ["actor1": list]
                     ]
                 ]
             ]
@@ -673,7 +673,7 @@ class ContextTest: XCTestCase {
                     "birds": list,
 
                     CONFLICTS: [
-                        "birds": ["actor1": list]
+                        Key.string("birds"): ["actor1": list]
                     ]
                 ]
             ]
@@ -731,7 +731,7 @@ class ContextTest: XCTestCase {
                     "birds": list,
 
                     CONFLICTS: [
-                        "birds": ["actor1": list]
+                        Key.string("birds"): ["actor1": list]
                     ]
                 ]
             ]
@@ -789,7 +789,7 @@ class ContextTest: XCTestCase {
                     "birds": list,
 
                     CONFLICTS: [
-                        "birds": ["actor1": list]
+                        Key.string("birds"): ["actor1": list]
                     ]
                 ]
             ]
@@ -847,7 +847,7 @@ class ContextTest: XCTestCase {
                     OBJECT_ID: ROOT_ID,
                     "books": table,
                     CONFLICTS: [
-                        "books": ["actor1": table]
+                        Key.string("books"): ["actor1": table]
                     ]
                 ]
             ]
