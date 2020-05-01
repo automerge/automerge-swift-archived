@@ -255,7 +255,7 @@ public final class Context {
      * Updates the list object at path `path`, deleting `deletions` list elements starting from
      * list index `start`, and inserting the list of new elements `insertions` at that position.
      */
-    func spice<T: Equatable>(path: [KeyPathElement], start: Int, deletions: Int, insertions: [T]) {
+    func spice<T>(path: [KeyPathElement], start: Int, deletions: Int, insertions: [T]) {
         let objectId = path.isEmpty ? ROOT_ID : path[path.count - 1].objectId
         let object = getObject(objectId: objectId)
         let list = object[LIST_VALUES] as! [Any]
@@ -280,6 +280,8 @@ public final class Context {
             insertListItems(subPatch: subPatch, index: start, values: insertions, newObject: false)
         }
         cache[ROOT_ID] = applyPatch(patch.diffs, cache[ROOT_ID]!, &updated)
+        updated[ROOT_ID] = cache[ROOT_ID]
+
     }
 //    splice(path, start, deletions, insertions) {
 //      const objectId = path.length === 0 ? ROOT_ID : path[path.length - 1].objectId
@@ -369,6 +371,38 @@ public final class Context {
     //        })
     //      }
     //    }
+
+    /**
+     * Returns the value associated with the property named `key` on the object
+     * at path `path`. If the value is an object, returns a proxy for it.
+     */
+    func getObjectField(path: [KeyPathElement], objectId: String, key: Key) -> Any? {
+        let object = getObject(objectId: objectId)
+        switch key {
+        case .index(let index):
+            fatalError()
+        case .string(let string):
+            return object[string]
+        }
+    }
+//    getObjectField(path, objectId, key) {
+//      if (!['string', 'number'].includes(typeof key)) return
+//      const object = this.getObject(objectId)
+//
+//      if (object[key] instanceof Counter) {
+//        return getWriteableCounter(object[key].value, this, path, objectId, key)
+//
+//      } else if (isObject(object[key])) {
+//        const childId = object[key][OBJECT_ID]
+//        const subpath = path.concat([{key, objectId: childId}])
+//        // The instantiateObject function is added to the context object by rootObjectProxy()
+//        return this.instantiateObject(subpath, childId)
+//
+//      } else {
+//        return object[key]
+//      }
+//    }
+
 
     /**
      * Takes a value and returns an object describing the value (in the format used by patches).
