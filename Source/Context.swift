@@ -61,13 +61,13 @@ public final class Context {
     func setValue<T>(objectId: String, key: Key?, value: T, insert: Bool? = nil) -> Diff {
         switch value {
         case  let value as Double:
-            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .number(value))
+            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .double(value))
             ops.append(operation)
-            return .value(.number(value))
+            return .value(.double(value))
         case  let value as Int:
-            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .number(Double(value)))
+            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .int(value))
             ops.append(operation)
-            return .value(.number(Double(value)))
+            return .value(.int(value))
         case let string as String:
             let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .string(string))
             ops.append(operation)
@@ -77,13 +77,13 @@ public final class Context {
             ops.append(operation)
             return .value(.string(String(character)))
         case let date as Date:
-            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .number(date.timeIntervalSince1970), datatype: .timestamp)
+            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .double(date.timeIntervalSince1970), datatype: .timestamp)
             ops.append(operation)
-            return .value(.init(value: .number(date.timeIntervalSince1970), datatype: .timestamp))
+            return .value(.init(value: .double(date.timeIntervalSince1970), datatype: .timestamp))
         case let couter as Counter:
-            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .number(couter.value), datatype: .counter)
+            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .double(couter.value), datatype: .counter)
             ops.append(operation)
-            return .value(.init(value: .number(couter.value), datatype: .counter))
+            return .value(.init(value: .double(couter.value), datatype: .counter))
         case let value as [String: Any]:
             return .object(createNestedObjects(obj: objectId, key: key, value: value, insert: insert))
         case let array as [Any]:
@@ -378,13 +378,13 @@ public final class Context {
     private func getValueDescription(value: Any) -> Diff {
         switch value {
         case let double as Double:
-            return .value(.init(value: .number(double)))
+            return .value(.init(value: .double(double)))
         case let int as Int:
-            return .value(.init(value: .number(Double(int))))
+            return .value(.init(value: .int(int)))
         case let date as Date:
-            return .value(.init(value: .number(date.timeIntervalSince1970), datatype: .timestamp))
+            return .value(.init(value: .double(date.timeIntervalSince1970), datatype: .timestamp))
         case let counter as Counter:
-            return .value(.init(value: .number(counter.value), datatype: .counter))
+            return .value(.init(value: .double(counter.value), datatype: .counter))
         case is NSNull:
             return .value(.init(value: .null))
         case let object as [String : Any]:

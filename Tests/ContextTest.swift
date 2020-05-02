@@ -57,13 +57,13 @@ class ContextTest: XCTestCase {
         context.setMapKey(path: [], key: "sparrows", value: 5)
 
         // THEN
-        XCTAssertEqual(context.ops, [Op(action: .set, obj: ROOT_ID, key: .string("sparrows"), value: .number(5))])
+        XCTAssertEqual(context.ops, [Op(action: .set, obj: ROOT_ID, key: "sparrows", value: .int(5))])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, ObjectDiff(
             objectId: ROOT_ID,
             type: .map,
             props: [
-                "sparrows": [actor.uuidString: .value(.init(value: .number(5),
+                "sparrows": [actor.uuidString: .value(.init(value: .int(5),
                                                             datatype: nil))]])
         )
     }
@@ -114,13 +114,12 @@ class ContextTest: XCTestCase {
         context.setMapKey(path: [], key: "goldfinches", value: 3)
 
         //THEN
-        XCTAssertEqual(context.ops, [Op(action: .set, obj: ROOT_ID, key: .string("goldfinches"), value: .number(3))])
+        XCTAssertEqual(context.ops, [Op(action: .set, obj: ROOT_ID, key: "goldfinches", value: .int(3))])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, ObjectDiff(objectId: ROOT_ID,
                                                     type: .map,
                                                     props: [
-                                                        "goldfinches": [actor.uuidString: .value(.init(value: .number(3),
-                                                                                                       datatype: nil))]]))
+                                                        "goldfinches": [actor.uuidString: 3]]))
     }
 
     //should create nested maps
@@ -140,8 +139,8 @@ class ContextTest: XCTestCase {
 
         let objectId = applyPatch.value!.props!["birds"]![actor.uuidString]!.objectId!
         XCTAssertEqual(context.ops, [
-            Op(action: .makeMap, obj: ROOT_ID, key: .string("birds"), child: objectId),
-            Op(action: .set, obj: objectId, key: .string("goldfinches"), value: .number(3))
+            Op(action: .makeMap, obj: ROOT_ID, key: "birds", child: objectId),
+            Op(action: .set, obj: objectId, key: "goldfinches", value: .int(3))
         ])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, ObjectDiff(
@@ -152,7 +151,7 @@ class ContextTest: XCTestCase {
                     objectId: objectId,
                     type: .map,
                     props: [
-                        "goldfinches": [actor.uuidString: .value(.init(value: .number(3), datatype: nil))]]
+                        "goldfinches": [actor.uuidString: 3]]
                     ))
                 ]
             ]
@@ -181,10 +180,10 @@ class ContextTest: XCTestCase {
         ])
 
         // WHEN
-        context.setMapKey(path: [.init(key: .string("birds"), objectId: objectId)], key: "goldfinches", value: 3)
+        context.setMapKey(path: [.init(key: "birds", objectId: objectId)], key: "goldfinches", value: 3)
 
         //THEN
-        XCTAssertEqual(context.ops, [Op(action: .set, obj: objectId, key: .string("goldfinches"), value: .number(3))])
+        XCTAssertEqual(context.ops, [Op(action: .set, obj: objectId, key: "goldfinches", value: .int(3))])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, ObjectDiff(
             objectId: ROOT_ID,
@@ -195,7 +194,7 @@ class ContextTest: XCTestCase {
                     objectId: objectId,
                     type: .map,
                     props: [
-                        "goldfinches": [actor.uuidString: .value(.init(value: .number(3), datatype: nil))]]
+                        "goldfinches": [actor.uuidString: 3]]
                     ))
                 ]
             ]
@@ -231,10 +230,10 @@ class ContextTest: XCTestCase {
         ])
 
         //When
-        context.setMapKey(path: [.init(key: .string("birds"), objectId: objectId2)], key: "goldfinches", value: 3)
+        context.setMapKey(path: [.init(key: "birds", objectId: objectId2)], key: "goldfinches", value: 3)
 
         //Then
-        XCTAssertEqual(context.ops, [Op(action: .set, obj: objectId2, key: .string("goldfinches"), value: .number(3))])
+        XCTAssertEqual(context.ops, [Op(action: .set, obj: objectId2, key: "goldfinches", value: .int(3))])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, ObjectDiff(
             objectId: ROOT_ID,
@@ -247,7 +246,7 @@ class ContextTest: XCTestCase {
                         objectId: objectId2,
                         type: .map,
                         props: [
-                            "goldfinches": [actor.uuidString: .value(.init(value: .number(3), datatype: nil))]
+                            "goldfinches": [actor.uuidString: 3]
                         ]
                         ))
                 ]
@@ -284,10 +283,10 @@ class ContextTest: XCTestCase {
                 ]
         ])
         //When
-        context.setMapKey(path: [.init(key: .string("values"), objectId: objectId)], key: "goldfinches", value: 3)
+        context.setMapKey(path: [.init(key: "values", objectId: objectId)], key: "goldfinches", value: 3)
 
         //Then
-        XCTAssertEqual(context.ops, [Op(action: .set, obj: objectId, key: .string("goldfinches"), value: .number(3))])
+        XCTAssertEqual(context.ops, [Op(action: .set, obj: objectId, key: "goldfinches", value: .int(3))])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, ObjectDiff(
             objectId: ROOT_ID,
@@ -295,11 +294,11 @@ class ContextTest: XCTestCase {
             edits: nil,
             props: [
                 "values": [
-                    "actor1": .value(.init(value: .number(dateValue.timeIntervalSince1970), datatype: .timestamp)),
-                    "actor2": .value(.init(value: .number(0), datatype: .counter)),
-                    "actor3": .value(.init(value: .number(42))),
+                    "actor1": .value(.init(value: .double(dateValue.timeIntervalSince1970), datatype: .timestamp)),
+                    "actor2": .value(.init(value: .double(0), datatype: .counter)),
+                    "actor3": 42,
                     "actor4": .value(.init(value: .null)),
-                    "actor5": .object(.init(objectId: objectId, type: .map, props: ["goldfinches": [actor.uuidString: .value(.init(value: .number(3)))]]))
+                    "actor5": .object(.init(objectId: objectId, type: .map, props: ["goldfinches": [actor.uuidString: 3]]))
                 ]
             ]
             )
@@ -322,7 +321,7 @@ class ContextTest: XCTestCase {
         // Then
         let objectId = applyPatch.value!.props!["birds"]![actor.uuidString]!.objectId!
         XCTAssertEqual(context.ops, [
-            Op(action: .makeList, obj: ROOT_ID, key: .string("birds"), child: objectId),
+            Op(action: .makeList, obj: ROOT_ID, key: "birds", child: objectId),
             Op(action: .set, obj: objectId, key: .index(0), insert: true, value: .string("sparrow")),
             Op(action: .set, obj: objectId, key: .index(1), insert: true, value: .string("goldfinch"))
         ])
@@ -336,8 +335,8 @@ class ContextTest: XCTestCase {
                                                     type: .list,
                                                     edits: [Edit(action: .insert, index: 0), Edit(action: .insert, index: 1)],
                                                     props: [
-                                                        0: [actor.uuidString: .value(.init(value: .string("sparrow")))],
-                                                        1:  [actor.uuidString: .value(.init(value: .string("goldfinch")))]
+                                                        0: [actor.uuidString: "sparrow"],
+                                                        1: [actor.uuidString: "goldfinch"]
                     ]))
                 ]
             ]
@@ -362,7 +361,7 @@ class ContextTest: XCTestCase {
         //THEN
         let objectId = applyPatch.value!.props!["text"]![actor.uuidString]!.objectId!
         XCTAssertEqual(context.ops, [
-            Op(action: .makeText, obj: ROOT_ID, key: .string("text"), child: objectId),
+            Op(action: .makeText, obj: ROOT_ID, key: "text", child: objectId),
             Op(action: .set, obj: objectId, key: .index(0), insert: true, value: .string("h")),
             Op(action: .set, obj: objectId, key: .index(1), insert: true, value: .string("i"))
         ])
@@ -376,8 +375,8 @@ class ContextTest: XCTestCase {
                                                     type: .text,
                                                     edits: [Edit(action: .insert, index: 0), Edit(action: .insert, index: 1)],
                                                     props: [
-                                                        0: [actor.uuidString: .value(.init(value: .string("h")))],
-                                                        1:  [actor.uuidString: .value(.init(value: .string("i")))]
+                                                        0: [actor.uuidString: "h"],
+                                                        1: [actor.uuidString: "i"]
                     ]))
                 ]
             ]
@@ -402,7 +401,7 @@ class ContextTest: XCTestCase {
         //Then
         let objectId = applyPatch.value!.props!["books"]![actor.uuidString]!.objectId!
         XCTAssertEqual(context.ops, [
-            Op(action: .makeTable, obj: ROOT_ID, key: .string("books"), child: objectId)
+            Op(action: .makeTable, obj: ROOT_ID, key: "books", child: objectId)
         ])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, ObjectDiff(
@@ -434,7 +433,7 @@ class ContextTest: XCTestCase {
 
         //Then
         XCTAssertEqual(context.ops, [
-            Op(action: .set, obj: ROOT_ID, key: .string("now"), value: .number(now.timeIntervalSince1970), datatype: .timestamp)
+            Op(action: .set, obj: ROOT_ID, key: "now", value: .double(now.timeIntervalSince1970), datatype: .timestamp)
         ])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, ObjectDiff(
@@ -442,7 +441,7 @@ class ContextTest: XCTestCase {
             type: .map,
             props: [
                 "now": [
-                    actor.uuidString: .value(.init(value: .number(now.timeIntervalSince1970), datatype: .timestamp))
+                    actor.uuidString: .value(.init(value: .double(now.timeIntervalSince1970), datatype: .timestamp))
                 ]
             ]
             )
@@ -466,7 +465,7 @@ class ContextTest: XCTestCase {
 
         //Then
         XCTAssertEqual(context.ops, [
-            Op(action: .set, obj: ROOT_ID, key: .string("counter"), value: .number(3), datatype: .counter)
+            Op(action: .set, obj: ROOT_ID, key: "counter", value: .double(3), datatype: .counter)
         ])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, ObjectDiff(
@@ -474,7 +473,7 @@ class ContextTest: XCTestCase {
             type: .map,
             props: [
                 "counter": [
-                    actor.uuidString: .value(.init(value: .number(3), datatype: .counter))
+                    actor.uuidString: .value(.init(value: .double(3), datatype: .counter))
                 ]
             ]
             )
@@ -510,7 +509,7 @@ class ContextTest: XCTestCase {
         )
 
         // When
-        context.setListIndex(path: [.init(key: .string("birds"), objectId: listId)], index: 0, value: "starling")
+        context.setListIndex(path: [.init(key: "birds", objectId: listId)], index: 0, value: "starling")
 
         // Then
         XCTAssertEqual(context.ops, [
@@ -525,7 +524,7 @@ class ContextTest: XCTestCase {
                     "actor1": .object(.init(objectId: listId,
                                             type: .list,
                                             props: [
-                                                0: [actor.uuidString: .value(.string("starling"))]
+                                                0: [actor.uuidString: "starling"]
                     ]))
                 ]
             ]
@@ -562,14 +561,14 @@ class ContextTest: XCTestCase {
         )
 
         // When
-        context.setListIndex(path: [.init(key: .string("birds"), objectId: listId)], index: 1, value: ["english": "goldfinch", "latin": "carduelis"])
+        context.setListIndex(path: [.init(key: "birds", objectId: listId)], index: 1, value: ["english": "goldfinch", "latin": "carduelis"])
 
         // Then
         let nestedId = applyPatch.value!.props!["birds"]!["actor1"]!.props![1]![actor.uuidString]!.objectId!
         XCTAssertEqual(context.ops, [
             Op(action: .makeMap, obj: listId, key: .index(1), child: nestedId),
-            Op(action: .set, obj: nestedId, key: .string("english"), value: .string("goldfinch")),
-            Op(action: .set, obj: nestedId, key: .string("latin"), value: .string("carduelis"))
+            Op(action: .set, obj: nestedId, key: "english", value: .string("goldfinch")),
+            Op(action: .set, obj: nestedId, key: "latin", value: .string("carduelis"))
         ])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, ObjectDiff(
@@ -581,8 +580,8 @@ class ContextTest: XCTestCase {
                                             type: .list,
                                             props: [
                                                 1: [actor.uuidString: .object(.init(objectId: nestedId, type: .map, props: [
-                                                    "english": [actor.uuidString: .value(.string("goldfinch"))],
-                                                    "latin": [actor.uuidString: .value(.string("carduelis"))]
+                                                    "english": [actor.uuidString: "goldfinch"],
+                                                    "latin": [actor.uuidString: "carduelis"]
                                                 ]))]
                     ]))
                 ]
@@ -620,14 +619,14 @@ class ContextTest: XCTestCase {
         )
 
         // When
-        context.spice(path: [.init(key: .string("birds"), objectId: listId)], start: 2, deletions: 0, insertions: [["english": "goldfinch", "latin": "carduelis"]])
+        context.spice(path: [.init(key: "birds", objectId: listId)], start: 2, deletions: 0, insertions: [["english": "goldfinch", "latin": "carduelis"]])
 
         // Then
         let nestedId = applyPatch.value!.props!["birds"]!["actor1"]!.props![2]![actor.uuidString]!.objectId!
         XCTAssertEqual(context.ops, [
             Op(action: .makeMap, obj: listId, key: .index(2), child: nestedId),
-            Op(action: .set, obj: nestedId, key: .string("english"), value: .string("goldfinch")),
-            Op(action: .set, obj: nestedId, key: .string("latin"), value: .string("carduelis"))
+            Op(action: .set, obj: nestedId, key: "english", value: .string("goldfinch")),
+            Op(action: .set, obj: nestedId, key: "latin", value: .string("carduelis"))
         ])
 
         XCTAssertEqual(applyPatch.callCount, 1)
@@ -641,8 +640,8 @@ class ContextTest: XCTestCase {
                                             edits: [Edit(action: .insert, index: 2)],
                                             props: [
                                                 2: [actor.uuidString: .object(.init(objectId: nestedId, type: .map, props: [
-                                                    "english": [actor.uuidString: .value(.string("goldfinch"))],
-                                                    "latin": [actor.uuidString: .value(.string("carduelis"))]
+                                                    "english": [actor.uuidString: "goldfinch"],
+                                                    "latin": [actor.uuidString: "carduelis"]
                                                 ]))]
                     ]))
                 ]
@@ -680,7 +679,7 @@ class ContextTest: XCTestCase {
         )
 
         // When
-        context.spice(path: [.init(key: .string("birds"), objectId: listId)], start: 0, deletions: 2, insertions: [String]())
+        context.spice(path: [.init(key: "birds", objectId: listId)], start: 0, deletions: 2, insertions: [String]())
 
         // Then
         XCTAssertEqual(context.ops, [
@@ -738,7 +737,7 @@ class ContextTest: XCTestCase {
         )
 
         // When
-        context.spice(path: [.init(key: .string("birds"), objectId: listId)], start: 0, deletions: 2, insertions: [String]())
+        context.spice(path: [.init(key: "birds", objectId: listId)], start: 0, deletions: 2, insertions: [String]())
 
         // Then
         XCTAssertEqual(context.ops, [
@@ -796,7 +795,7 @@ class ContextTest: XCTestCase {
         )
 
         // When
-        context.spice(path: [.init(key: .string("birds"), objectId: listId)], start: 0, deletions: 1, insertions: ["starling", "goldfinch"])
+        context.spice(path: [.init(key: "birds", objectId: listId)], start: 0, deletions: 1, insertions: ["starling", "goldfinch"])
 
         // Then
         XCTAssertEqual(context.ops, [
@@ -820,8 +819,8 @@ class ContextTest: XCTestCase {
                                 Edit(action: .insert, index: 1)
                             ],
                               props: [
-                                0: [actor.uuidString: .value(.string("starling"))],
-                                1: [actor.uuidString: .value(.string("goldfinch"))]
+                                0: [actor.uuidString: "starling"],
+                                1: [actor.uuidString: "goldfinch"]
                         ]))
                 ]
             ]
@@ -854,13 +853,13 @@ class ContextTest: XCTestCase {
         )
 
         //When
-        let rowId = context.addTableRow(path: [.init(key: .string("books"), objectId: tableId)], row: ["author": "Mary Shelley", "title": "Frankenstein"])
+        let rowId = context.addTableRow(path: [.init(key: "books", objectId: tableId)], row: ["author": "Mary Shelley", "title": "Frankenstein"])
 
         // Then
         XCTAssertEqual(context.ops, [
             Op(action: .makeMap, obj: tableId, key: .string(rowId), child: rowId),
-            Op(action: .set, obj: rowId, key: .string("author"), value: .string("Mary Shelley")),
-            Op(action: .set, obj: rowId, key: .string("title"), value: .string("Frankenstein"))
+            Op(action: .set, obj: rowId, key: "author", value: .string("Mary Shelley")),
+            Op(action: .set, obj: rowId, key: "title", value: .string("Frankenstein"))
         ])
 
         XCTAssertEqual(applyPatch.callCount, 1)
@@ -878,8 +877,8 @@ class ContextTest: XCTestCase {
                                         objectId: rowId,
                                         type: .map,
                                         props: [
-                                            "author": [actor.uuidString: .value(.string("Mary Shelley"))],
-                                            "title": [actor.uuidString: .value(.string("Frankenstein"))]
+                                            "author": [actor.uuidString: "Mary Shelley"],
+                                            "title": [actor.uuidString: "Frankenstein"]
                                     ]))
                                 ]
                         ]))

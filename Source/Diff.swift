@@ -30,6 +30,24 @@ enum Diff: Equatable {
     }
 }
 
+extension Diff: ExpressibleByIntegerLiteral {
+    
+    public init(integerLiteral value: Int) {
+        self = .value(.int(value))
+       }
+
+}
+
+extension Diff: ExpressibleByStringLiteral {
+
+    public init(stringLiteral value: String) {
+        self = .value(.string(value))
+    }
+
+}
+
+
+
 struct ValueDiff: Equatable {
 
     init(value: Primitives, datatype: DataType? = nil) {
