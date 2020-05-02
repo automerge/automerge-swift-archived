@@ -259,6 +259,7 @@ class ProxiesTest: XCTestCase {
         _ = document.change(execute: { doc in
              doc[\.list[1], "list[1]"] = 1
             XCTAssertEqual(doc[\.list, "list"], [1, 1, 3])
+            XCTAssertEqual(doc[\.list[1], "list[1]"], 1)
 
         })
     }
