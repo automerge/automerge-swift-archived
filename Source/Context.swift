@@ -593,7 +593,6 @@ public final class Context {
         case is Table:
             fatalError()
         case let map as [String: Any]:
-//            if case .index(let index) =
             guard let conflicts = (map[CONFLICTS] as?[Key: Any])?[key] else {
                 fatalError("No children at key \(key) of path \(path)")
             }
