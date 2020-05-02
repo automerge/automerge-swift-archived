@@ -119,14 +119,19 @@ public final class MapProxy<T> {
     }
 
     private func setMapKey<Y: Codable>(_ keyPath: [Key], newValue: Y) {
+        let path = getPathFrom(keyPath: keyPath, path: self.path)
+        switch keyPath.last! {
+        case .string(let key):
+            let encoded: Any = (try? DictionaryEncoder().encode(newValue)) ?? newValue
+            contex.setMapKey(path: path, key: key, value: encoded)
+        case .index(let index):
+            contex.setListIndex(path: path, index: index, value: newValue)
+        }
+    }
+
+    private func getPathFrom(keyPath: [Key], path: [Context.KeyPathElement]) -> [Context.KeyPathElement] {
         if keyPath.count == 1 {
-            switch keyPath[0] {
-            case .string(let key):
-                let encoded: Any = (try? DictionaryEncoder().encode(newValue)) ?? newValue
-                contex.setMapKey(path: path, key: key, value: encoded)
-            case .index(let index):
-                contex.setListIndex(path: path, index: index, value: newValue)
-            }
+            return path
         } else {
             let object = contex.getObject(objectId: objectId)
             let objectId: String
@@ -138,8 +143,7 @@ public final class MapProxy<T> {
                 objectId = listValues[index][OBJECT_ID] as! String
             }
 
-            let proxy = MapProxy<Any>(contex: contex, objectId: objectId, path: path + [.init(key: keyPath[0], objectId: objectId)])
-            return proxy.setMapKey(Array(keyPath.suffix(from: 1)), newValue: newValue)
+            return path + [.init(key: keyPath[0], objectId: objectId)]
         }
     }
 
