@@ -102,6 +102,31 @@ class ProxiesTest: XCTestCase {
         })
     }
 
+    // should allow empty list assignment inside deep object
+    func testProxiesSwift4() {
+        let backend = BackendMock()
+        let document = Document<TestStruct>(options: .init(actorId: UUID(), backend: backend))
+
+        // WHEN
+        _ = document.change(execute: { doc in
+            doc[\.deepObjList, "deepObjList"] = [DeepObj(list: [])]
+            XCTAssertEqual(doc[\.deepObjList[0].list, "deepObjList[0].list"], [])
+        })
+    }
+
+    // should allow empty list assignment inside deep object
+    func testProxiesSwift5() {
+        let backend = BackendMock()
+        let document = Document<TestStruct>(options: .init(actorId: UUID(), backend: backend))
+
+        // WHEN
+        _ = document.change(execute: { doc in
+            doc[\.deepObjList, "deepObjList"] = [DeepObj(list: [])]
+            doc[\.deepObjList[0].list, "deepObjList[0].list"] = [1, 2]
+            XCTAssertEqual(doc[\.deepObjList[0].list, "deepObjList[0].list"], [1, 2])
+        })
+    }
+
     // should have a length property
     func testListObject1() {
         let backend = BackendMock()
@@ -219,6 +244,20 @@ class ProxiesTest: XCTestCase {
             let proxy: ArrayProxy<Double> = doc[\.list, "list"]
             proxy[1] = 1
             XCTAssertEqual(proxy[1], 1)
+            XCTAssertEqual(doc[\.list, "list"], [1, 1, 3])
+
+        })
+    }
+
+    // setAtIndex2()
+    func testListObject7() {
+        let backend = BackendMock()
+        let document = Document<DocWithList>(options: .init(actorId: UUID(), backend: backend)).change(execute: { doc in
+            doc[\.list, "list"] = [1, 2, 3]
+        }).0
+
+        _ = document.change(execute: { doc in
+             doc[\.list[1], "list[1]"] = 1
             XCTAssertEqual(doc[\.list, "list"], [1, 1, 3])
 
         })

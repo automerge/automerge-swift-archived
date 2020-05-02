@@ -502,14 +502,14 @@ public final class Context {
         var subPatch = patch.diffs
         var object: Any = getObject(objectId: ROOT_ID)
         for pathElem in path {
-            guard case .string(let key) = pathElem.key else {
-                fatalError()
-            }
+//            guard case .string(let key) = pathElem.key else {
+//                fatalError()
+//            }
             if subPatch.props == nil {
                 subPatch.props = [:]
             }
             if subPatch.props?[pathElem.key] == nil {
-                subPatch.props?[pathElem.key] = getValuesDescriptions(path: path, object: object, key: key)
+                subPatch.props?[pathElem.key] = getValuesDescriptions(path: path, object: object, key: pathElem.key)
             }
             var nextOpId: String?
             let values = subPatch.props![pathElem.key]!
@@ -522,7 +522,7 @@ public final class Context {
                 fatalError("Cannot find path object with objectId \(pathElem.objectId)")
             }
             subPatch = objectDiff
-            object = getPropertyValue(object: object, key: key, opId: nextOpId2)
+            object = getPropertyValue(object: object, key: pathElem.key, opId: nextOpId2)
 
         }
         if subPatch.props == nil {
@@ -565,12 +565,12 @@ public final class Context {
      * Returns the value at property `key` of object `object`. In the case of a conflict, returns
      * the value whose assignment operation has the ID `opId`.
      */
-    func getPropertyValue(object: Any, key: String, opId: String) -> Any {
+    func getPropertyValue(object: Any, key: Key, opId: String) -> Any {
         switch object {
         case let table as Table:
             fatalError()
         case let object as [String: Any]:
-            return ((object[CONFLICTS] as! [Key: Any])[.string(key)] as! [String: Any])[opId]
+            return ((object[CONFLICTS] as! [Key: Any])[key] as! [String: Any])[opId]
         default:
             fatalError()
         }
@@ -588,12 +588,12 @@ public final class Context {
      * property `key` of `object` (there might be multiple values in the case of a conflict), and
      * returns an object that maps operation IDs to descriptions of values.
      */
-    func getValuesDescriptions(path: [KeyPathElement], object: Any, key: String) -> [String: Diff] {
+    func getValuesDescriptions(path: [KeyPathElement], object: Any, key: Key) -> [String: Diff] {
         switch object {
         case is Table:
             fatalError()
         case let map as [String: Any]:
-            guard let conflicts = (map[CONFLICTS] as?[Key: Any])?[.string(key)] else {
+            guard let conflicts = (map[CONFLICTS] as?[Key: Any])?[key] else {
                 fatalError("No children at key \(key) of path \(path)")
             }
             let typedConflicts = conflicts as! [String: Any]
