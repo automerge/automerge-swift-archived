@@ -9,7 +9,8 @@ import Foundation
 
 enum Primitives: Equatable {
     case string(String)
-    case number(Double)
+    case double(Double)
+    case int(Int)
     case bool(Bool)
     case null
 
@@ -17,8 +18,10 @@ enum Primitives: Equatable {
         switch self {
         case .string(let stringValue):
             return stringValue
-        case .number(let numberValue):
-            return numberValue
+        case .double(let doubleValue):
+            return doubleValue
+        case .int(let intValue):
+            return intValue
         case .bool(let boolValue):
             return boolValue
         case .null:
