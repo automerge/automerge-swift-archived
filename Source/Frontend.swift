@@ -29,7 +29,7 @@ public struct Document<T: Codable> {
     var root: [String: Any]
     var change: Bool = false
 
-    public init(options: Options) {
+    init(options: Options) {
         self.options = options
         self.root = [
             OBJECT_ID: ROOT_ID,
@@ -37,6 +37,12 @@ public struct Document<T: Codable> {
         ]
         self.root[CACHE] = [ROOT_ID: root]
         self.state = State(seq: 0, requests: [], version: 0, clock: [:], canUndo: false, canRedo: false, backend: options.backend)
+    }
+
+    public init(_ initialState: T, options: Options) {
+        self = Document<T>(options: options).change(options: .init(message: "Initialization", undoable: true), execute: { doc in
+            doc.set(object: initialState)
+        }).0
     }
     
     init(root: [String: Any], state: State, options: Options) {

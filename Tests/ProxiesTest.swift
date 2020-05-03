@@ -282,9 +282,8 @@ class ProxiesTest: XCTestCase {
     // setAtIndex4()
     func testListObject9() {
         let backend = BackendMock()
-        let document = Document<DocWithList>(options: .init(actorId: UUID(), backend: backend)).change(execute: { doc in
-            doc[\.nested, "nested"] = [[0], [2]]
-        }).0
+        let document = Document(DocWithList(list: [], empty: [], nested: [[0], [2]], deepObj: DeepObj(list: [])),
+                           options: .init(actorId: UUID(), backend: backend))
 
         _ = document.change(execute: { doc in
             let proxy: ArrayProxy = doc[\.nested[0], "nested[0]"]

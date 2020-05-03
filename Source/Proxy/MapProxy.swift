@@ -7,7 +7,7 @@
 
 import Foundation
 
-public final class MapProxy<T> {
+public final class MapProxy<T: Codable> {
 
     init(
         contex: Context,
@@ -53,6 +53,13 @@ public final class MapProxy<T> {
     public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Array<Y>>, key: String) -> ArrayProxy<Y> {
         get {
             getCollectionProxy(key.keyPath)
+        }
+    }
+
+    func set(object: T) {
+        let dictionary = try! DictionaryEncoder().encode(object)
+        for key in dictionary.keys {
+            contex.setMapKey(path: path, key: key, value: dictionary[key])
         }
     }
 
