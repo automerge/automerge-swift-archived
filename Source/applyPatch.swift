@@ -219,7 +219,7 @@ func applyProperties(props: Props?,
                 object?[string] = values[opIds[0]]
                 updated[objectId]?[string] = values[opIds[0]]
             case .index(let index):
-                var list = object?[LIST_VALUES] as! Array<Any>
+                var list = object?[LIST_VALUES] as! [Any]
                 if list.count > index {
                     list[index] = values[opIds[0]]!
                 } else if index == list.count {
