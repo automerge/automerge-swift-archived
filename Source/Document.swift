@@ -86,23 +86,14 @@ public struct Document<T: Codable> {
     //  return Object.freeze(root)
     //}
 
-    /**
-     * Returns a new document object initialized with the given state.
-     */
-    //    function from(initialState, options) {
-    //      return change(init(options), 'Initialization', doc => Object.assign(doc, initialState))
-    //    }
+
 
     /**
      * Returns the Automerge actor ID of the given document.
      */
-    //    var actorId: UUID {
-    //        return _options.actorId
-    //    }
-
-    //    function getActorId(doc) {
-    //      return doc[STATE].actorId || doc[OPTIONS].actorId
-    //    }
+    var actor: UUID {
+        return options.actorId
+    }
 
     public struct ChangeOptions {
         let message: String
@@ -249,12 +240,19 @@ public struct Document<T: Codable> {
      * change from the frontend.
      */
     private func applyPatchToDoc(patch: Patch, state: State, fromBackend: Bool, context: Context?) -> Document<T> {
+        var state = state
         var updated = [String: [String: Any]]()
         var newRoot = interpretPatch(patch: patch.diffs, obj: root, updated: &updated)
         newRoot?[CACHE] = context?.updated
 
         if fromBackend {
-            fatalError()
+            if let clockValue = patch.clock[actor], clockValue > state.seq {
+                state.seq = clockValue
+            }
+            state.clock = patch.clock
+            state.version = patch.version
+            state.canUndo = patch.canUndo ?? false
+            state.canRedo = patch.canRedo ?? false
         }
 
         return Document(root: newRoot!, state: state, options: options)
@@ -276,50 +274,6 @@ public struct Document<T: Codable> {
     //        state.canRedo = patch.canRedo
     //      }
     //      return updateRootObject(doc, updated, state)
-    //    }
-
-    /**
-     * Takes a set of objects that have been updated (in `updated`) and an updated state object
-     * `state`, and returns a new immutable document root object based on `doc` that reflects
-     * those updates.
-     */
-    func updateRootObject(updated: inout [String: [String: Any]], state: State) {
-        
-    }
-    //    function updateRootObject(doc, updated, state) {
-    //      let newDoc = updated[ROOT_ID]
-    //      if (!newDoc) {
-    //        newDoc = cloneRootObject(doc[CACHE][ROOT_ID])
-    //        updated[ROOT_ID] = newDoc
-    //      }
-    //      Object.defineProperty(newDoc, OPTIONS,  {value: doc[OPTIONS]})
-    //      Object.defineProperty(newDoc, CACHE,    {value: updated})
-    //      Object.defineProperty(newDoc, STATE,    {value: state})
-    //
-    //      if (doc[OPTIONS].freeze) {
-    //        for (let objectId of Object.keys(updated)) {
-    //          if (updated[objectId] instanceof Table) {
-    //            updated[objectId]._freeze()
-    //          } else if (updated[objectId] instanceof Text) {
-    //            Object.freeze(updated[objectId].elems)
-    //            Object.freeze(updated[objectId])
-    //          } else {
-    //            Object.freeze(updated[objectId])
-    //            Object.freeze(updated[objectId][CONFLICTS])
-    //          }
-    //        }
-    //      }
-    //
-    //      for (let objectId of Object.keys(doc[CACHE])) {
-    //        if (!updated[objectId]) {
-    //          updated[objectId] = doc[CACHE][objectId]
-    //        }
-    //      }
-    //
-    //      if (doc[OPTIONS].freeze) {
-    //        Object.freeze(updated)
-    //      }
-    //      return newDoc
     //    }
 
 }
