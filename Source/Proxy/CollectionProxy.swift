@@ -7,7 +7,7 @@
 
 import Foundation
 
-public final class ArrayProxy<T> {
+public final class ArrayProxy<T: Codable> {
 
     init(
         elements: [T],
@@ -43,7 +43,8 @@ extension ArrayProxy: Collection {
         get { return elements[position] }
         set {
             elements[position] = newValue
-            contex.setListIndex(path: path, index: position, value: newValue)
+            let encoded: Any = (try? DictionaryEncoder().encode(newValue)) ?? newValue
+            contex.setListIndex(path: path, index: position, value: encoded)
         }
     }
 

@@ -61,21 +61,45 @@ public final class MapProxy<T> {
     }
 
     private func getCollectionProxy<Y: Codable>(_ keyPath: [Key]) -> ArrayProxy<Y> {
-        let (_, taregtObjectId) = getPathFrom(keyPath: keyPath, path: self.path, objectId: objectId)
+        let (path, taregtObjectId) = getPathFrom(keyPath: keyPath, path: self.path, objectId: objectId)
         switch keyPath.last! {
         case .string(let key):
             switch contex.getObject(objectId: taregtObjectId)[key] {
             case let objectType as [String: Any]:
-                if let listValues = objectType[LIST_VALUES] as? [Primitives] {
+                let listId = objectType[OBJECT_ID] as! String
+                if let listValues = objectType[LIST_VALUES] as? [Primitive] {
                     let values = (listValues.map { $0.value! })
-                    let listId = objectType[OBJECT_ID] as! String
                     return ArrayProxy(elements: values as! [Y], contex: contex, listId: listId, path: path + [.init(key: .string(key), objectId: listId)])
+                }
+                if let listValues = objectType[LIST_VALUES] as? [[String: Any]] {
+                    let objects = try! DictionaryDecoder().decodeList(from: listValues) as [Y]
+                    return ArrayProxy(elements: objects, contex: contex, listId: listId, path: path + [.init(key: .string(key), objectId: listId)])
                 }
                 fatalError()
             default:
                 fatalError()
             }
         case .index(let index):
+            switch contex.getObject(objectId: taregtObjectId)[LIST_VALUES] {
+            case let listObjects as [[String: Any]]:
+             switch listObjects[index] {
+                case let objectType as [String: Any]:
+                    let listId = objectType[OBJECT_ID] as! String
+                    if let listValues = objectType[LIST_VALUES] as? [Primitive] {
+                        let values = (listValues.map { $0.value! })
+                        return ArrayProxy(elements: values as! [Y], contex: contex, listId: listId, path: path + [.init(key: .index(index), objectId: listId)])
+                    }
+                    if let listValues = objectType[LIST_VALUES] as? [[String: Any]] {
+                        let objects = try! DictionaryDecoder().decodeList(from: listValues) as [Y]
+                        return ArrayProxy(elements: objects, contex: contex, listId: listId, path: path + [.init(key: .index(index), objectId: listId)])
+                    }
+                    fatalError()
+                default:
+                    fatalError()
+                }
+            default:
+                fatalError()
+            }
             fatalError("Unsupported proxy at \(index), implement later")
         }
     }
@@ -85,10 +109,10 @@ public final class MapProxy<T> {
         switch keyPath.last! {
         case .string(let key):
             switch contex.getObject(objectId: taregtObjectId)[key] {
-            case let primitives as Primitives:
+            case let primitives as Primitive:
                 return primitives.value as? Y
             case let objectType as [String: Any]:
-                if let listValues = objectType[LIST_VALUES] as? [Primitives] {
+                if let listValues = objectType[LIST_VALUES] as? [Primitive] {
                     let values = (listValues.map { $0.value! })
                     return values as? Y
                 } else if let listValues = objectType[LIST_VALUES] as? [[String: Any]] {
@@ -103,10 +127,20 @@ public final class MapProxy<T> {
             }
         case .index(let index):
             switch contex.getObject(objectId: taregtObjectId)[LIST_VALUES] {
-            case let primitives as [Primitives]:
+            case let primitives as [Primitive]:
                 return primitives[index].value as? Y
             case let listObjects as [[String: Any]]:
-                return try! DictionaryDecoder().decodeList(from: listObjects)
+                switch listObjects[index][LIST_VALUES] {
+                case let primitives as [Primitive]:
+                    let values = (primitives.map { $0.value! })
+                    return values as? Y
+                case let objects as [[String: Any]]:
+                    return try! DictionaryDecoder().decodeList(from: objects)
+                case .none:
+                    return try! DictionaryDecoder().decode(Y.self, from: listObjects[index])
+                default:
+                    fatalError()
+                }
             default:
                 fatalError()
             }

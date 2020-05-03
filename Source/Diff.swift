@@ -25,7 +25,7 @@ enum Diff: Equatable {
         return nil
     }
 
-    static func value(_ value: Primitives) -> Diff {
+    static func value(_ value: Primitive) -> Diff {
         return Diff.value(.init(value: value))
     }
 }
@@ -46,16 +46,14 @@ extension Diff: ExpressibleByStringLiteral {
 
 }
 
-
-
 struct ValueDiff: Equatable {
 
-    init(value: Primitives, datatype: DataType? = nil) {
+    init(value: Primitive, datatype: DataType? = nil) {
         self.value = value
         self.datatype = datatype
     }
 
-    var value: Primitives
+    var value: Primitive
     var datatype: DataType?
 }
 

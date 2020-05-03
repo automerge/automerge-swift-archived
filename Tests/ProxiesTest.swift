@@ -24,6 +24,7 @@ struct TestStruct: Codable {
 struct DocWithList: Codable {
     var list: [Double]
     var empty: [Double]
+    var nested: [[Double]]
 
     var deepObj: DeepObj
 }
@@ -260,7 +261,36 @@ class ProxiesTest: XCTestCase {
              doc[\.list[1], "list[1]"] = 1
             XCTAssertEqual(doc[\.list, "list"], [1, 1, 3])
             XCTAssertEqual(doc[\.list[1], "list[1]"], 1)
+        })
+    }
 
+    // setAtIndex3()
+    func testListObject8() {
+        let backend = BackendMock()
+        let document = Document<TestStruct>(options: .init(actorId: UUID(), backend: backend)).change(execute: { doc in
+            doc[\.deepObjList, "deepObjList"] = [DeepObj(list: [])]
+        }).0
+
+        _ = document.change(execute: { doc in
+            let proxy: ArrayProxy = doc[\.deepObjList, "deepObjList"]
+            proxy[0] = DeepObj(list: [1])
+            XCTAssertEqual(proxy[0], DeepObj(list: [1]))
+            XCTAssertEqual(doc[\.deepObjList, "deepObjList"], [DeepObj(list: [1])])
+        })
+    }
+
+    // setAtIndex4()
+    func testListObject9() {
+        let backend = BackendMock()
+        let document = Document<DocWithList>(options: .init(actorId: UUID(), backend: backend)).change(execute: { doc in
+            doc[\.nested, "nested"] = [[0], [2]]
+        }).0
+
+        _ = document.change(execute: { doc in
+            let proxy: ArrayProxy = doc[\.nested[0], "nested[0]"]
+            proxy[0] = 1
+            XCTAssertEqual(proxy[0], 1)
+            XCTAssertEqual(doc[\.nested[0], "nested[0]"], [1])
         })
     }
 
