@@ -20,10 +20,6 @@ public final class MapProxy<T> {
     }
 
     let objectId: String
-    var change: Context {
-        return contex
-    }
-
     private let contex: Context
     private let path: [Context.KeyPathElement]
 
@@ -82,21 +78,17 @@ public final class MapProxy<T> {
         case .index(let index):
             switch contex.getObject(objectId: taregtObjectId)[LIST_VALUES] {
             case let listObjects as [[String: Any]]:
-             switch listObjects[index] {
-                case let objectType as [String: Any]:
-                    let listId = objectType[OBJECT_ID] as! String
-                    if let listValues = objectType[LIST_VALUES] as? [Primitive] {
-                        let values = (listValues.map { $0.value! })
-                        return ArrayProxy(elements: values as! [Y], contex: contex, listId: listId, path: path + [.init(key: .index(index), objectId: listId)])
-                    }
-                    if let listValues = objectType[LIST_VALUES] as? [[String: Any]] {
-                        let objects = try! DictionaryDecoder().decodeList(from: listValues) as [Y]
-                        return ArrayProxy(elements: objects, contex: contex, listId: listId, path: path + [.init(key: .index(index), objectId: listId)])
-                    }
-                    fatalError()
-                default:
-                    fatalError()
+                let objectType = listObjects[index]
+                let listId = objectType[OBJECT_ID] as! String
+                if let listValues = objectType[LIST_VALUES] as? [Primitive] {
+                    let values = (listValues.map { $0.value! })
+                    return ArrayProxy(elements: values as! [Y], contex: contex, listId: listId, path: path + [.init(key: .index(index), objectId: listId)])
                 }
+                if let listValues = objectType[LIST_VALUES] as? [[String: Any]] {
+                    let objects = try! DictionaryDecoder().decodeList(from: listValues) as [Y]
+                    return ArrayProxy(elements: objects, contex: contex, listId: listId, path: path + [.init(key: .index(index), objectId: listId)])
+                }
+                fatalError()
             default:
                 fatalError()
             }
