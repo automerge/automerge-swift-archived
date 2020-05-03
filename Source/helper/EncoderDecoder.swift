@@ -65,10 +65,10 @@ private func removeConflicts(_ dict: [String: Any]) -> Any {
         if let childDict = dict[key] as? [String: Any], let lisValues = childDict[LIST_VALUES] as? [[String: Any]] {
             dict[key] = lisValues.map(removeConflicts)
         }
-        if let childDict = dict[key] as? [String: Any], let lisValues = childDict[LIST_VALUES] as? [Primitives] {
+        if let childDict = dict[key] as? [String: Any], let lisValues = childDict[LIST_VALUES] as? [Primitive] {
             dict[key] = lisValues.map(\.value)
         }
-        if let value = dict[key] as? Primitives {
+        if let value = dict[key] as? Primitive {
             dict[key] = value.value
         }
     }
