@@ -50,6 +50,15 @@ public final class MapProxy<T: Codable> {
         }
     }
 
+    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Optional<[Y]>>, key: String) -> [Y]? {
+        get {
+            return getObjectByKeyPath(key.keyPath)
+        }
+        set {
+            return setMapKey(key.keyPath, newValue: newValue)
+        }
+    }
+
     public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Array<Y>>, key: String) -> ArrayProxy<Y> {
         get {
             getCollectionProxy(key.keyPath)
