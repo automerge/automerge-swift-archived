@@ -37,10 +37,10 @@ class ProxiesTest: XCTestCase {
     func testProxie1() {
         // GIVEN
         let backend = BackendMock()
-        let document = Document<TestStruct>(.fake, options: .init(actorId: UUID(), backend: backend))
+        var document = Document<TestStruct>(.fake, options: .init(backend: backend))
 
         // WHEN
-        _ = document.change(execute: { doc in
+        document.change({ doc in
             XCTAssertEqual(doc.objectId, "00000000-0000-0000-0000-000000000000")
         })
     }
@@ -49,10 +49,10 @@ class ProxiesTest: XCTestCase {
     func testProxie3() {
         // GIVEN
         let backend = BackendMock()
-        let document = Document<TestStruct>(options: .init(actorId: UUID(), backend: backend))
+        var document = Document<TestStruct>(options: .init(backend: backend))
 
         // WHEN
-        _ = document.change(execute: { doc in
+        document.change({ doc in
             doc[\.key1, "key1"] = "value1"
             XCTAssertEqual(doc[\.key1, "key1"], "value1")
         })
@@ -60,10 +60,10 @@ class ProxiesTest: XCTestCase {
 
     // should return undefined for unknown properties
     func testProxies4() {
-        let document = Document<TestStruct>(options: .init(actorId: UUID(), backend: BackendMock()))
+        var document = Document<TestStruct>(options: .init(backend: BackendMock()))
 
         // WHEN
-        _ = document.change(execute: { doc in
+        document.change({ doc in
             let nilValue = doc[\.key1, "key1"]
             XCTAssertNil(nilValue)
         })
@@ -71,10 +71,10 @@ class ProxiesTest: XCTestCase {
 
     // should allow deep object assigment
     func testProxiesSwift1() {
-        let document = Document<TestStruct>(options: .init(actorId: UUID(), backend: BackendMock()))
+        var document = Document<TestStruct>(options: .init(backend: BackendMock()))
 
         // WHEN
-        _ = document.change(execute: { doc in
+        document.change({ doc in
             doc[\.deepObj, "deepObj"] = DeepObj(list: [1])
             XCTAssertEqual(doc[\.deepObj, "deepObj"], DeepObj(list: [1]))
         })
@@ -83,10 +83,10 @@ class ProxiesTest: XCTestCase {
     // should allow list assignment inside deep object
     func testProxiesSwift2() {
         let backend = BackendMock()
-        let document = Document<TestStruct>(options: .init(actorId: UUID(), backend: backend))
+        var document = Document<TestStruct>(options: .init(backend: backend))
 
         // WHEN
-        _ = document.change(execute: { doc in
+        document.change({ doc in
             doc[\.deepObj, "deepObj"] = DeepObj(list: [])
             doc[\.deepObj.list, "deepObj.list"] = [1]
             XCTAssertEqual(doc[\.deepObj.list, "deepObj.list"], [1])
@@ -96,10 +96,10 @@ class ProxiesTest: XCTestCase {
     // should allow empty list assignment inside deep object
     func testProxiesSwift3() {
         let backend = BackendMock()
-        let document = Document<TestStruct>(options: .init(actorId: UUID(), backend: backend))
+        var document = Document<TestStruct>(options: .init(backend: backend))
 
         // WHEN
-        _ = document.change(execute: { doc in
+        document.change({ doc in
             doc[\.deepObj, "deepObj"] = DeepObj(list: [])
             XCTAssertEqual(doc[\.deepObj.list, "deepObj.list"], [])
         })
@@ -108,10 +108,10 @@ class ProxiesTest: XCTestCase {
     // should allow empty list assignment inside deep object
     func testProxiesSwift4() {
         let backend = BackendMock()
-        let document = Document<TestStruct>(options: .init(actorId: UUID(), backend: backend))
+        var document = Document<TestStruct>(options: .init(backend: backend))
 
         // WHEN
-        _ = document.change(execute: { doc in
+        document.change({ doc in
             doc[\.deepObjList, "deepObjList"] = [DeepObj(list: [])]
             XCTAssertEqual(doc[\.deepObjList[0].list, "deepObjList[0].list"], [])
         })
@@ -120,10 +120,10 @@ class ProxiesTest: XCTestCase {
     // should allow empty list assignment inside deep object
     func testProxiesSwift5() {
         let backend = BackendMock()
-        let document = Document<TestStruct>(options: .init(actorId: UUID(), backend: backend))
+        var document = Document<TestStruct>(options: .init(backend: backend))
 
         // WHEN
-        _ = document.change(execute: { doc in
+        document.change({ doc in
             doc[\.deepObjList, "deepObjList"] = [DeepObj(list: [])]
             doc[\.deepObjList[0].list, "deepObjList[0].list"] = [1, 2]
             XCTAssertEqual(doc[\.deepObjList[0].list, "deepObjList[0].list"], [1, 2])
@@ -133,13 +133,14 @@ class ProxiesTest: XCTestCase {
     // should have a length property
     func testListObject1() {
         let backend = BackendMock()
-        let document = Document<DocWithList>(options: .init(actorId: UUID(), backend: backend)).change(execute: { doc in
+        var document = Document<DocWithList>(options: .init(backend: backend))
+        document.change({ doc in
             doc[\.list, "list"] = [1, 2, 3]
             doc[\.empty, "empty"] = []
-        }).0
+        })
 
         // WHEN
-        _ = document.change(execute: { doc in
+        document.change({ doc in
             XCTAssertEqual(doc[\.list, "list"].count, 3)
             XCTAssertEqual(doc[\.empty, "empty"].count, 0)
 
@@ -153,13 +154,14 @@ class ProxiesTest: XCTestCase {
     // should allow entries to be fetched by index
     func testListObject2() {
         let backend = BackendMock()
-        let document = Document<DocWithList>(options: .init(actorId: UUID(), backend: backend)).change(execute: { doc in
+        var document = Document<DocWithList>(options: .init(backend: backend))
+        document.change({ doc in
             doc[\.list, "list"] = [1, 2, 3]
             doc[\.empty, "empty"] = []
-        }).0
+        })
 
         // WHEN
-        _ = document.change(execute: { doc in
+        document.change({ doc in
             let proxy: Proxy<[Double]> = doc[\.list, "list"]
 
             XCTAssertEqual(proxy[0], 1)
@@ -171,13 +173,14 @@ class ProxiesTest: XCTestCase {
     // should support iteration
     func testListObject3() {
         let backend = BackendMock()
-        let document = Document<DocWithList>(options: .init(actorId: UUID(), backend: backend)).change(execute: { doc in
+        var document = Document<DocWithList>(options: .init(backend: backend))
+        document.change({ doc in
             doc[\.list, "list"] = [1, 2, 3]
             doc[\.empty, "empty"] = []
-        }).0
+        })
 
         // WHEN
-        _ = document.change(execute: { doc in
+        document.change({ doc in
             let proxy: Proxy<[Double]> = doc[\.list, "list"]
             var copy = [Double]()
 
@@ -192,7 +195,8 @@ class ProxiesTest: XCTestCase {
     // splice()
     func testListObject4() {
         let backend = BackendMock()
-        let document = Document<DocWithList>(options: .init(actorId: UUID(), backend: backend)).change(execute: { doc in
+        var document = Document<DocWithList>(options: .init(backend: backend))
+        document.change({ doc in
             doc[\.list, "list"] = [1, 2, 3]
 
             let proxy: Proxy<[Double]> = doc[\.list, "list"]
@@ -207,10 +211,10 @@ class ProxiesTest: XCTestCase {
             XCTAssertEqual(proxy2[1], 3)
             XCTAssertEqual(proxy2.count, 2)
 
-        }).0
+        })
 
         // WHEN
-        _ = document.change(execute: { doc in
+        document.change({ doc in
             let proxy: Proxy<[Double]> = doc[\.list, "list"]
             XCTAssertEqual(doc[\.list, "list"], [1, 3])
             XCTAssertEqual(proxy[0], 1)
@@ -222,15 +226,16 @@ class ProxiesTest: XCTestCase {
     // append()
     func testListObject5() {
         let backend = BackendMock()
-        let document = Document<DocWithList>(options: .init(actorId: UUID(), backend: backend)).change(execute: { doc in
+        var document = Document<DocWithList>(options: .init(backend: backend))
+        document.change({ doc in
             doc[\.list, "list"] = [1, 2, 3]
-        }).0
+        })
 
         // WHEN
-        _ = document.change(execute: { doc in
-            var proxy: Proxy = doc[\.list, "list"]
-            proxy.append(4)
-            proxy.append(contentsOf: [5, 6])
+        document.change({ doc in
+            doc[\.list, "list"].append(4)
+            doc[\.list, "list"].append(contentsOf: [5, 6])
+            let proxy: Proxy = doc[\.list, "list"]
             XCTAssertEqual(proxy.count, 6)
             XCTAssertEqual(doc[\.list, "list"], [1, 2, 3, 4, 5, 6])
         })
@@ -239,11 +244,12 @@ class ProxiesTest: XCTestCase {
     // setAtIndex()
     func testListObject6() {
         let backend = BackendMock()
-        let document = Document<DocWithList>(options: .init(actorId: UUID(), backend: backend)).change(execute: { doc in
+        var document = Document<DocWithList>(options: .init(backend: backend))
+        document.change({ doc in
             doc[\.list, "list"] = [1, 2, 3]
-        }).0
+        })
 
-        _ = document.change(execute: { doc in
+        document.change({ doc in
             let proxy: Proxy<[Double]> = doc[\.list, "list"]
             proxy[1] = 1
             XCTAssertEqual(proxy[1], 1)
@@ -255,11 +261,12 @@ class ProxiesTest: XCTestCase {
     // setAtIndex2()
     func testListObject7() {
         let backend = BackendMock()
-        let document = Document<DocWithList>(options: .init(actorId: UUID(), backend: backend)).change(execute: { doc in
+        var document = Document<DocWithList>(options: .init(backend: backend))
+        document.change({ doc in
             doc[\.list, "list"] = [1, 2, 3]
-        }).0
+        })
 
-        _ = document.change(execute: { doc in
+        document.change({ doc in
              doc[\.list[1], "list[1]"] = 1
             XCTAssertEqual(doc[\.list, "list"], [1, 1, 3])
             XCTAssertEqual(doc[\.list[1], "list[1]"], 1)
@@ -269,11 +276,12 @@ class ProxiesTest: XCTestCase {
     // setAtIndex3()
     func testListObject8() {
         let backend = BackendMock()
-        let document = Document<TestStruct>(options: .init(actorId: UUID(), backend: backend)).change(execute: { doc in
+        var document = Document<TestStruct>(options: .init(backend: backend))
+        document.change({ doc in
             doc[\.deepObjList, "deepObjList"] = [DeepObj(list: [])]
-        }).0
+        })
 
-        _ = document.change(execute: { doc in
+        document.change({ doc in
             let proxy: Proxy = doc[\.deepObjList, "deepObjList"]
             proxy[0] = DeepObj(list: [1])
             XCTAssertEqual(proxy[0], DeepObj(list: [1]))
@@ -284,14 +292,14 @@ class ProxiesTest: XCTestCase {
     // setAtIndex4()
     func testListObject9() {
         let backend = BackendMock()
-        let document = Document(DocWithList(list: [], empty: [], nested: [[0], [2]], deepObj: DeepObj(list: [])),
-                           options: .init(actorId: UUID(), backend: backend))
+        var document = Document(DocWithList(list: [], empty: [], nested: [[0], [2]], deepObj: DeepObj(list: [])),
+                           options: .init(backend: backend))
 
-        _ = document.change(execute: { doc in
-//            let proxy: Proxy = doc[\.nested[0], "nested[0]"]
-//            proxy[0] = 1
-//            XCTAssertEqual(proxy[0], 1)
-//            XCTAssertEqual(doc[\.nested[0], "nested[0]"], [1])
+        document.change({ doc in
+            let proxy: Proxy = doc[\.nested[0], "nested[0]"]
+            proxy[0] = 1
+            XCTAssertEqual(proxy[0], 1)
+            XCTAssertEqual(doc[\.nested[0], "nested[0]"], [1])
         })
     }
 
