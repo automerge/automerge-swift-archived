@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol Backend {
+public protocol Backend {
 
     func applyLocalChange(request: Request) -> (Backend, Patch)
     

@@ -7,21 +7,42 @@
 
 import Foundation
 
-public final class MapProxy<T: Codable> {
+public final class Proxy<T: Codable> {
 
-    init(
+    convenience init(
         contex: Context,
         objectId: String,
         path: [Context.KeyPathElement]
     ) {
+        let object = contex.getObject(objectId: objectId)
+        let value: T?
+        if let listValues = object[LIST_VALUES] as? [Primitive], let primitiveValues = listValues.map({ $0.value }) as? T {
+            value = primitiveValues
+        } else if let listObjects = object[LIST_VALUES] as? [[String: Any]], let objects = try? DictionaryDecoder().decodeList(from: listObjects) as T {
+            value = objects
+        } else {
+             value = try? DictionaryDecoder().decode(T.self, from: object)
+        }
+
+        self.init(contex: contex, objectId: objectId, path: path, value: value)
+    }
+
+    init(
+        contex: Context,
+        objectId: String,
+        path: [Context.KeyPathElement],
+        value: T?
+    ) {
         self.contex = contex
         self.objectId = objectId
         self.path = path
+        self.value = value
     }
 
     let objectId: String
-    private let contex: Context
-    private let path: [Context.KeyPathElement]
+    let contex: Context
+    let path: [Context.KeyPathElement]
+    var value: T!
 
     public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Y>, key: String) -> Y {
         get {
@@ -59,7 +80,7 @@ public final class MapProxy<T: Codable> {
         }
     }
 
-    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Array<Y>>, key: String) -> ArrayProxy<Y> {
+    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Array<Y>>, key: String) -> Proxy<[Y]> {
         get {
             getCollectionProxy(key.keyPath)
         }
@@ -72,22 +93,14 @@ public final class MapProxy<T: Codable> {
         }
     }
 
-    private func getCollectionProxy<Y: Codable>(_ keyPath: [Key]) -> ArrayProxy<Y> {
+    private func getCollectionProxy<Y: Codable>(_ keyPath: [Key]) -> Proxy<[Y]> {
         let (path, taregtObjectId) = getPathFrom(keyPath: keyPath, path: self.path, objectId: objectId)
         switch keyPath.last! {
         case .string(let key):
             switch contex.getObject(objectId: taregtObjectId)[key] {
             case let objectType as [String: Any]:
                 let listId = objectType[OBJECT_ID] as! String
-                if let listValues = objectType[LIST_VALUES] as? [Primitive] {
-                    let values = (listValues.map { $0.value! })
-                    return ArrayProxy(elements: values as! [Y], contex: contex, listId: listId, path: path + [.init(key: .string(key), objectId: listId)])
-                }
-                if let listValues = objectType[LIST_VALUES] as? [[String: Any]] {
-                    let objects = try! DictionaryDecoder().decodeList(from: listValues) as [Y]
-                    return ArrayProxy(elements: objects, contex: contex, listId: listId, path: path + [.init(key: .string(key), objectId: listId)])
-                }
-                fatalError()
+                return Proxy<[Y]>(contex: contex, objectId: listId, path: path + [.init(key: .string(key), objectId: listId)])
             default:
                 fatalError()
             }
@@ -96,38 +109,23 @@ public final class MapProxy<T: Codable> {
             case let listObjects as [[String: Any]]:
                 let objectType = listObjects[index]
                 let listId = objectType[OBJECT_ID] as! String
-                if let listValues = objectType[LIST_VALUES] as? [Primitive] {
-                    let values = (listValues.map { $0.value! })
-                    return ArrayProxy(elements: values as! [Y], contex: contex, listId: listId, path: path + [.init(key: .index(index), objectId: listId)])
-                }
-                if let listValues = objectType[LIST_VALUES] as? [[String: Any]] {
-                    let objects = try! DictionaryDecoder().decodeList(from: listValues) as [Y]
-                    return ArrayProxy(elements: objects, contex: contex, listId: listId, path: path + [.init(key: .index(index), objectId: listId)])
-                }
-                fatalError()
+                return Proxy<[Y]>(contex: contex, objectId: listId, path: path + [.init(key: .index(index), objectId: listId)])
             default:
-                fatalError()
+                fatalError("Unsupported proxy at \(index), implement later")
             }
-            fatalError("Unsupported proxy at \(index), implement later")
         }
     }
 
     private func getObjectByKeyPath<Y: Codable>(_ keyPath: [Key]) -> Y? {
-        let (_, taregtObjectId) = getPathFrom(keyPath: keyPath, path: self.path, objectId: objectId)
+        let (path, taregtObjectId) = getPathFrom(keyPath: keyPath, path: self.path, objectId: objectId)
         switch keyPath.last! {
         case .string(let key):
             switch contex.getObject(objectId: taregtObjectId)[key] {
             case let primitives as Primitive:
                 return primitives.value as? Y
             case let objectType as [String: Any]:
-                if let listValues = objectType[LIST_VALUES] as? [Primitive] {
-                    let values = (listValues.map { $0.value! })
-                    return values as? Y
-                } else if let listValues = objectType[LIST_VALUES] as? [[String: Any]] {
-                    return try! DictionaryDecoder().decodeList(from: listValues)
-                } else {
-                    return try! DictionaryDecoder().decode(Y.self, from: objectType)
-                }
+                let objectId = objectType[OBJECT_ID] as! String
+                return Proxy<Y?>(contex: contex, objectId: objectId, path: path + [.init(key: .string(key), objectId: objectId)]).value
             case .none:
                 return nil
             default:
@@ -138,17 +136,8 @@ public final class MapProxy<T: Codable> {
             case let primitives as [Primitive]:
                 return primitives[index].value as? Y
             case let listObjects as [[String: Any]]:
-                switch listObjects[index][LIST_VALUES] {
-                case let primitives as [Primitive]:
-                    let values = (primitives.map { $0.value! })
-                    return values as? Y
-                case let objects as [[String: Any]]:
-                    return try! DictionaryDecoder().decodeList(from: objects)
-                case .none:
-                    return try! DictionaryDecoder().decode(Y.self, from: listObjects[index])
-                default:
-                    fatalError()
-                }
+                let objectId = listObjects[index][OBJECT_ID] as! String
+                return Proxy<Y?>(contex: contex, objectId: objectId, path: path + [.init(key: .index(index), objectId: objectId)]).value
             default:
                 fatalError()
             }
@@ -156,8 +145,8 @@ public final class MapProxy<T: Codable> {
     }
 
 
-    static func rootProxy<T>(contex: Context) -> MapProxy<T> {
-        return MapProxy<T>(contex: contex, objectId: ROOT_ID, path: [])
+    static func rootProxy<T>(contex: Context) -> Proxy<T> {
+        return Proxy<T>(contex: contex, objectId: ROOT_ID, path: [])
     }
 
     private func setMapKey<Y: Codable>(_ keyPath: [Key], newValue: [Y]) {

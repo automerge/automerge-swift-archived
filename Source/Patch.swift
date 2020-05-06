@@ -7,7 +7,7 @@
 
 import Foundation
 
-final class Patch {
+public final class Patch {
     init(actor: String? = nil, seq: Int? = nil, clock: Clock, version: Int, canUndo: Bool? = nil, canRedo: Bool? = nil, diffs: ObjectDiff) {
         self.actor = actor
         self.seq = seq

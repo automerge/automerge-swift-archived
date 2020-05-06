@@ -9,6 +9,15 @@ import Foundation
 public struct Document<T: Codable> {
 
     public struct Options {
+
+        public init(
+            actorId: UUID,
+            backend: Backend?
+        ) {
+            self.actorId = actorId
+            self.backend = backend
+        }
+        
         let actorId: UUID
         let backend: Backend?
     }
@@ -112,7 +121,7 @@ public struct Document<T: Codable> {
      * is the change request to send to the backend. If nothing was actually
      * changed, returns the original `doc` and a `null` change request.
      */
-    public func change(options: ChangeOptions? = nil, execute: (MapProxy<T>) -> Void) -> (Document<T>, Request?) {
+    public func change(options: ChangeOptions? = nil, execute: (Proxy<T>) -> Void) -> (Document<T>, Request?) {
         if change {
             fatalError("Calls to Automerge.change cannot be nested")
         }
