@@ -567,10 +567,8 @@ public final class Context {
      */
     func getPropertyValue(object: Any, key: Key, opId: String) -> Any {
         switch object {
-        case let table as Table:
-            fatalError()
         case let object as [String: Any]:
-            return ((object[CONFLICTS] as! [Key: Any])[key] as! [String: Any])[opId]
+            return ((object[CONFLICTS] as! [Key: Any])[key] as! [String: Any])[opId]!
         default:
             fatalError()
         }
@@ -711,8 +709,8 @@ public final class Context {
      * Updates the table object at path `path`, deleting the row with ID `rowId`.
      */
     func deleteTableRow(path: [KeyPathElement], rowId: UUID) {
-        let objectId =  path[path.count - 1].objectId
-        let table = getObject(objectId: objectId)
+//        let objectId =  path[path.count - 1].objectId
+//        let table = getObject(objectId: objectId)
         fatalError()
     }
 //    deleteTableRow(path, rowId) {

@@ -62,12 +62,14 @@ private func removeConflicts(_ dict: [String: Any]) -> Any {
         if let childDict = dict[key] as? [String: Any] {
             dict[key] = removeConflicts(childDict)
         }
-        if let childDict = dict[key] as? [String: Any], let lisValues = childDict[LIST_VALUES] as? [[String: Any]] {
-            dict[key] = lisValues.map(removeConflicts)
+        if let childDict = dict[key] as? [String: Any], let list = childDict[LIST_VALUES] as? [Any] {
+            dict[key] = removeListValues(list: list)
         }
-        if let childDict = dict[key] as? [String: Any], let lisValues = childDict[LIST_VALUES] as? [Primitive] {
-            dict[key] = lisValues.map(\.value)
+
+        if let list = dict[LIST_VALUES] as? [Any] {
+            dict[key] = removeListValues(list: list)
         }
+
         if let value = dict[key] as? Primitive {
             dict[key] = value.value
         }
@@ -76,6 +78,15 @@ private func removeConflicts(_ dict: [String: Any]) -> Any {
     return dict
 }
 
-private func removeListValues() {
-
+private func removeListValues(list: [Any]) -> [Any?] {
+    if let objects = list as? [[String: Any]] {
+        return objects.map(removeConflicts)
+    }
+    if let primitives = list as? [Primitive] {
+        return primitives.map(\.value)
+    }
+    if let nested = list as? [[Any]] {
+        return nested.map(removeListValues)
+    }
+    return list
 }

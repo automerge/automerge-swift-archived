@@ -34,7 +34,7 @@ extension Diff: ExpressibleByIntegerLiteral {
     
     public init(integerLiteral value: Int) {
         self = .value(.int(value))
-       }
+    }
 
 }
 
