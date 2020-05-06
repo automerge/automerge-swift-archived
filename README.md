@@ -2,9 +2,7 @@
 # automerge-swift
 A automerge frontend in Swift using the rs-backend
 
-## Usage
-
-⚠️ Highly Experimental
+## Usage (⚠️ Highly Experimental)
 
 ### 1. Define your types you want to store
 ⚠️  <b>Default</b> Codable conformance required
