@@ -13,6 +13,16 @@ public protocol Backend {
     
 }
 
+public struct DefaultBackend: Backend {
+
+    public init() {}
+
+    public func applyLocalChange(request: Request) -> (Backend, Patch) {
+        return (self, Patch(clock: [:], version: 0, diffs: ObjectDiff(objectId: UUID().uuidString, type: .map)))
+    }
+
+}
+
 
 
 

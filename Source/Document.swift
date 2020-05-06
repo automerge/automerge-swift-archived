@@ -11,7 +11,7 @@ public struct Document<T: Codable> {
     public struct Options {
 
         public init(
-            actorId: UUID,
+            actorId: UUID = UUID(),
             backend: Backend?
         ) {
             self.actorId = actorId
@@ -34,7 +34,7 @@ public struct Document<T: Codable> {
     }
 
     let options: Options
-    let state: State
+    var state: State
     var root: [String: Any]
     var change: Bool = false
 
@@ -48,10 +48,12 @@ public struct Document<T: Codable> {
         self.state = State(seq: 0, requests: [], version: 0, clock: [:], canUndo: false, canRedo: false, backend: options.backend)
     }
 
-    public init(_ initialState: T, options: Options) {
-        self = Document<T>(options: options).change(options: .init(message: "Initialization", undoable: true), execute: { doc in
+    public init(_ initialState: T, options: Options = Options(backend: DefaultBackend())) {
+        var newDocument = Document<T>(options: options)
+        newDocument.change(options: .init(message: "Initialization", undoable: true), execute: { doc in
             doc.set(object: initialState)
-        }).0
+        })
+        self = newDocument
     }
     
     init(root: [String: Any], state: State, options: Options) {
@@ -121,7 +123,8 @@ public struct Document<T: Codable> {
      * is the change request to send to the backend. If nothing was actually
      * changed, returns the original `doc` and a `null` change request.
      */
-    public func change(options: ChangeOptions? = nil, execute: (Proxy<T>) -> Void) -> (Document<T>, Request?) {
+    @discardableResult
+    public mutating func change(options: ChangeOptions, execute: (Proxy<T>) -> Void) -> Request? {
         if change {
             fatalError("Calls to Automerge.change cannot be nested")
         }
@@ -130,7 +133,21 @@ public struct Document<T: Codable> {
         if context.idUpdated {
             return makeChange(requestType: .change, context: context, options: options)
         } else {
-            return (self, nil)
+            return nil
+        }
+    }
+
+    @discardableResult
+    public mutating func change(_ execute: (Proxy<T>) -> Void) -> Request? {
+        if change {
+            fatalError("Calls to Automerge.change cannot be nested")
+        }
+        let context = Context(doc: self, actorId: self.options.actorId)
+        execute(.rootProxy(contex: context))
+        if context.idUpdated {
+            return makeChange(requestType: .change, context: context, options: nil)
+        } else {
+            return nil
         }
     }
 
@@ -175,10 +192,10 @@ public struct Document<T: Codable> {
      * particular, the `message` property of `options` is an optional human-readable
      * string describing the change.
      */
-    func makeChange(requestType: Request.RequestType,
+    mutating func makeChange(requestType: Request.RequestType,
                     context: Context?,
-                    options: ChangeOptions?) -> (Document<T>, Request?
-        ) {
+                    options: ChangeOptions?) -> Request?
+    {
             var state = self.state
             state.seq += 1
 
@@ -196,7 +213,8 @@ public struct Document<T: Codable> {
                 let(newBackend, patch) = backend.applyLocalChange(request: request)
                 state.backend = newBackend
 
-                return (applyPatchToDoc(patch: patch, state: state, fromBackend: false, context: context), request)
+                applyPatchToDoc(patch: patch, state: state, fromBackend: false, context: context)
+                return request
             } else {
                 fatalError()
             }
@@ -248,7 +266,7 @@ public struct Document<T: Codable> {
      * and to `false` if the patch is a transient local (optimistically applied)
      * change from the frontend.
      */
-    private func applyPatchToDoc(patch: Patch, state: State, fromBackend: Bool, context: Context?) -> Document<T> {
+    private mutating func applyPatchToDoc(patch: Patch, state: State, fromBackend: Bool, context: Context?) {
         var state = state
         var updated = [String: [String: Any]]()
         var newRoot = interpretPatch(patch: patch.diffs, obj: root, updated: &updated)
@@ -263,8 +281,8 @@ public struct Document<T: Codable> {
             state.canUndo = patch.canUndo ?? false
             state.canRedo = patch.canRedo ?? false
         }
-
-        return Document(root: newRoot!, state: state, options: options)
+        self.root = newRoot!
+        self.state = state
     }
 
     //    function applyPatchToDoc(doc, patch, state, fromBackend) {
