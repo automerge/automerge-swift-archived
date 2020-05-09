@@ -7,6 +7,10 @@
 
 import Foundation
 
-struct Counter: Equatable {
+struct Counter: Codable, Equatable {
     let value: Double
+
+    enum CodingKeys: String, CodingKey  {
+        case value = "_Counter_Value"
+    }
 }

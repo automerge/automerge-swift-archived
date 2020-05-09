@@ -887,74 +887,110 @@ class ContextTest: XCTestCase {
         ))
     }
 
-//    // should delete a table row
-//    func testTableManipulation2() {
-//        let rowId = UUID()
-//        let row: [String: Any] = [
-//            "author": "Mary Shelley",
-//            "title": "Frankenstein",
-//            OBJECT_ID: rowId
-//        ]
-//        let tableId = UUID()
-//        let table: [String: Any] = [
-//            OBJECT_ID: tableId.uuidString,
-//            CONFLICTS: [String: Any](),
-//            "entries": [rowId.uuidString: row]
-//        ]
-//        let actor = UUID()
-//        let context = Context(
-//            actorId: actor,
-//            applyPatch: applyPatch.observerDiff,
-//            updated: [:],
-//            cache: [
-//                tableId.uuidString: table,
-//                ROOT_ID: [
-//                    OBJECT_ID: ROOT_ID,
-//                    "books": table,
-//                    CONFLICTS: [
-//                        "books": ["actor1": table]
-//                    ]
-//                ]
-//            ]
-//        )
-//
-//        //When
-//        context.deleteTableRow(path: [.init(key: .string("books"), objectId: tableId)], rowId: rowId)
-//
-//        // Then
-//        XCTAssertEqual(context.ops, [
-//            Op(action: .del, obj: tableId, key: .string(rowId.uuidString))
-//        ])
-//
-//        XCTAssertEqual(applyPatch.callCount, 1)
-//        XCTAssertEqual(applyPatch.value, ObjectDiff(
-//            objectId: ROOT_ID,
-//            type: .map,
-//            props: [
-//                "books": [
-//                    "actor1": .object(
-//                        .init(objectId: tableId,
-//                              type: .table,
-//                              props: [
-//                                .string(rowId.uuidString): [:]
-//                        ]))
-//                ]
-//            ]
-//        ))
-//    }
+    // should delete a table row
+    func testTableManipulation2() {
+        let rowId = UUID()
+        let row: [String: Any] = [
+            "author": "Mary Shelley",
+            "title": "Frankenstein",
+            OBJECT_ID: rowId
+        ]
+        let tableId = UUID().uuidString
+        let table: [String: Any] = [
+            OBJECT_ID: tableId,
+            CONFLICTS: [String: Any](),
+            "entries": [rowId.uuidString: row]
+        ]
+        let actor = UUID()
+        let context = Context(
+            actorId: actor,
+            applyPatch: applyPatch.observerDiff,
+            updated: [:],
+            cache: [
+                tableId: table,
+                ROOT_ID: [
+                    OBJECT_ID: ROOT_ID,
+                    "books": table,
+                    CONFLICTS: [
+                        Key.string("books"): ["actor1": table]
+                    ]
+                ]
+            ]
+        )
 
-//    it('should delete a table row', () => {
-//        const rowId = uuid()
-//        const row = {author: 'Mary Shelley', title: 'Frankenstein'}
-//        row[OBJECT_ID] = rowId
-//        table.entries[rowId] = row
-//        context.deleteTableRow([{key: 'books', objectId: tableId}], rowId)
-//        assert(applyPatch.calledOnce)
-//        assert.deepStrictEqual(applyPatch.firstCall.args[0], {objectId: ROOT_ID, type: 'map', props: {
-//          books: {actor1: {objectId: tableId, type: 'table', props: {[rowId]: {}}}}
-//        }})
-//        assert.deepStrictEqual(context.ops, [{obj: tableId, action: 'del', key: rowId}])
-//      })
+        //When
+        context.deleteTableRow(path: [.init(key: .string("books"), objectId: tableId)], rowId: rowId)
+
+        // Then
+        XCTAssertEqual(context.ops, [
+            Op(action: .del, obj: tableId, key: .string(rowId.uuidString))
+        ])
+
+        XCTAssertEqual(applyPatch.callCount, 1)
+        XCTAssertEqual(applyPatch.value, ObjectDiff(
+            objectId: ROOT_ID,
+            type: .map,
+            props: [
+                "books": [
+                    "actor1": .object(
+                        .init(objectId: tableId,
+                              type: .table,
+                              props: [
+                                .string(rowId.uuidString): [:]
+                        ]))
+                ]
+            ]
+        ))
+    }
+
+    //should increment a counter
+    func testCounter1() {
+        let counter = ["_Counter_Value": Primitive.double(0)]
+        let actor = UUID()
+        let context = Context(
+            actorId: actor,
+            applyPatch: applyPatch.observerDiff,
+            updated: [:],
+            cache: [
+                ROOT_ID: [
+                    OBJECT_ID: ROOT_ID,
+                    "counter": counter,
+                    CONFLICTS: [
+                        Key.string("counter"): ["actor1": counter]
+                    ]
+                ]
+            ]
+        )
+
+        //When
+        context.increment(path: [], key: "counter", delta: 1)
+
+        //Then
+        XCTAssertEqual(context.ops, [
+            Op(action: .inc, obj: ROOT_ID, key: .string("counter"), value: .double(1))
+        ])
+
+        XCTAssertEqual(applyPatch.callCount, 1)
+        XCTAssertEqual(applyPatch.value, ObjectDiff(
+            objectId: ROOT_ID,
+            type: .map,
+            props: [
+                "counter": [
+                    actor.uuidString: .value(.init(value: .double(1), datatype: .counter))
+                ]
+            ]
+        ))
+    }
+
+//    it('should increment a counter', () => {
+//      const counter = new Counter()
+//      context.cache[ROOT_ID] = {[OBJECT_ID]: ROOT_ID, counter, [CONFLICTS]: {counter: {actor1: counter}}}
+//      context.increment([], 'counter', 1)
+//      assert(applyPatch.calledOnce)
+//      assert.deepStrictEqual(applyPatch.firstCall.args[0], {objectId: ROOT_ID, type: 'map', props: {
+//        counter: {[context.actorId]: {value: 1, datatype: 'counter'}}
+//      }})
+//      assert.deepStrictEqual(context.ops, [{obj: ROOT_ID, action: 'inc', key: 'counter', value: 1}])
 //    })
 
 }
