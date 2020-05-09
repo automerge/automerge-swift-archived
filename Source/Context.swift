@@ -472,6 +472,7 @@ public final class Context {
         }
         return object
     }
+
     //    getObject(objectId) {
     //      const object = this.updated[objectId] || this.cache[objectId]
     //      if (!object) throw new RangeError(``)
@@ -502,9 +503,6 @@ public final class Context {
         var subPatch = patch.diffs
         var object: Any = getObject(objectId: ROOT_ID)
         for pathElem in path {
-//            guard case .string(let key) = pathElem.key else {
-//                fatalError()
-//            }
             if subPatch.props == nil {
                 subPatch.props = [:]
             }
@@ -709,9 +707,17 @@ public final class Context {
      * Updates the table object at path `path`, deleting the row with ID `rowId`.
      */
     func deleteTableRow(path: [KeyPathElement], rowId: UUID) {
-//        let objectId =  path[path.count - 1].objectId
-//        let table = getObject(objectId: objectId)
-        fatalError()
+        let objectId =  path[path.count - 1].objectId
+        let table = getObject(objectId: objectId)
+        guard let entries = table[TABLE_VALUES] as? [String: Any] else {
+            fatalError()
+        }
+        if entries[rowId.uuidString] != nil {
+            ops.append(Op(action: .del, obj: objectId, key: .string(rowId.uuidString)))
+            applyAt(path: path, callback: { subpatch in
+                subpatch.props?[.string(rowId.uuidString)] = [:]
+            })
+        }
     }
 //    deleteTableRow(path, rowId) {
 //      const objectId = path[path.length - 1].objectId, table = this.getObject(objectId)
@@ -722,6 +728,45 @@ public final class Context {
 //          subpatch.props[rowId] = {}
 //        })
 //      }
+//    }
+
+    /**
+     * Adds the integer `delta` to the value of the counter located at property
+     * `key` in the object at path `path`.
+     */
+    func increment(path: [KeyPathElement], key: Key, delta: Double) {
+        let objectId = path.count == 0 ? ROOT_ID : path[path.count - 1].objectId
+        let object = getObject(objectId: objectId)
+        let counterValue: Double
+        switch key {
+        case .string(let key):
+            if case .double(let value) = (object[key] as! [String: Primitive])["_Counter_Value"]! {
+                counterValue = value
+            }else {
+                fatalError()
+            }
+        case .index(let index):
+            fatalError()
+        }
+        // TODO what if there is a conflicting value on the same key as the counter?
+        ops.append(Op(action: .inc, obj: objectId, key: key, value: .double(counterValue + delta)))
+        applyAt(path: path, callback: { subpatch in
+            subpatch.props?[key] = [actorId.uuidString: .value(.init(value: .double(counterValue + delta), datatype: .counter))]
+        })
+    }
+//    increment(path, key, delta) {
+//      const objectId = path.length === 0 ? ROOT_ID : path[path.length - 1].objectId
+//      const object = this.getObject(objectId)
+//      if (!(object[key] instanceof Counter)) {
+//        throw new TypeError('Only counter values can be incremented')
+//      }
+//
+//      // TODO what if there is a conflicting value on the same key as the counter?
+//      const value = object[key].value + delta
+//      this.addOp({action: 'inc', obj: objectId, key, value: delta})
+//      this.applyAtPath(path, subpatch => {
+//        subpatch.props[key] = {[this.actorId]: {value, datatype: 'counter'}}
+//      })
 //    }
 
 }
