@@ -206,3 +206,47 @@ extension String {
     }
 }
 
+extension Proxy where T: NSObject {
+
+    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Y>) -> Y {
+        get {
+            return getObjectByKeyPath(NSExpression(forKeyPath: keyPath).keyPath.keyPath)!
+        }
+        set {
+            return setMapKey(NSExpression(forKeyPath: keyPath).keyPath.keyPath, newValue: newValue)
+        }
+    }
+
+    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Optional<Y>>) -> Y? {
+        get {
+            return getObjectByKeyPath(NSExpression(forKeyPath: keyPath).keyPath.keyPath)
+        }
+        set {
+            return setMapKey(NSExpression(forKeyPath: keyPath).keyPath.keyPath, newValue: newValue)
+        }
+    }
+
+    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, [Y]>) -> [Y] {
+        get {
+            return getObjectByKeyPath(NSExpression(forKeyPath: keyPath).keyPath.keyPath)!
+        }
+        set {
+            return setMapKey(NSExpression(forKeyPath: keyPath).keyPath.keyPath, newValue: newValue)
+        }
+    }
+
+    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Optional<[Y]>>) -> [Y]? {
+        get {
+            return getObjectByKeyPath(NSExpression(forKeyPath: keyPath).keyPath.keyPath)
+        }
+        set {
+            return setMapKey(NSExpression(forKeyPath: keyPath).keyPath.keyPath, newValue: newValue)
+        }
+    }
+
+    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Array<Y>>) -> Proxy<[Y]> {
+        get {
+            getCollectionProxy(NSExpression(forKeyPath: keyPath).keyPath.keyPath)
+        }
+    }
+}

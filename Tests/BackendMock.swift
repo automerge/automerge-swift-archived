@@ -12,7 +12,7 @@ final class BackendMock: Backend {
 
     private let applyLocalChange: (Request) -> Patch
 
-    init(applyLocalChange: @escaping (Request) -> Patch = { _ in return Patch(clock: [:], version: 0, diffs: ObjectDiff(objectId: UUID().uuidString, type: .map)) }) {
+    init(applyLocalChange: @escaping (Request) -> Patch = { _ in return Patch(clock: [:], version: 0, canUndo: false, canRedo: false, diffs: ObjectDiff(objectId: UUID().uuidString, type: .map)) }) {
         self.applyLocalChange = applyLocalChange
     }
 

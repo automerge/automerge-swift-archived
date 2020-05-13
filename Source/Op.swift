@@ -37,7 +37,7 @@ enum DataType: Equatable {
 
 public struct Op: Equatable {
 
-    init(action: OpAction, obj: String, key: Key, insert: Bool? = nil, child: String? = nil, value: Primitive? = nil, datatype: DataType? = nil) {
+    init(action: OpAction, obj: String, key: Key, insert: Bool = false, child: String? = nil, value: Primitive? = nil, datatype: DataType? = nil) {
         self.action = action
         self.obj = obj
         self.key = key
@@ -50,7 +50,7 @@ public struct Op: Equatable {
     var action: OpAction
     var obj: String
     var key: Key
-    var insert: Bool?
+    var insert: Bool
     var child: String?
     var value: Primitive?
     var datatype: DataType?

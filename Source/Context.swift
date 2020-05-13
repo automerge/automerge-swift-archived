@@ -58,7 +58,7 @@ public final class Context {
      * primitive value. For string, number, boolean, or null the datatype is omitted.
      */
 
-    func setValue<T>(objectId: String, key: Key?, value: T, insert: Bool? = nil) -> Diff {
+    func setValue<T>(objectId: String, key: Key?, value: T, insert: Bool = false) -> Diff {
         switch value {
         case  let value as Double:
             let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .double(value))
@@ -126,7 +126,7 @@ public final class Context {
      * element. If `key` is null, the ID of the new object is used as key (this construction
      * is used by Automerge.Table).
      */
-    private func createNestedObjects(obj: String, key: Key?, value: Any, insert: Bool? = nil) -> ObjectDiff {
+    private func createNestedObjects(obj: String, key: Key?, value: Any, insert: Bool = false) -> ObjectDiff {
         let child = UUID().uuidString
         let key = key ?? .string(child)
         switch value {
@@ -137,7 +137,7 @@ public final class Context {
 
             var props = Props()
             for nested in object.keys.sorted() {
-                let valuePatch = setValue(objectId: child, key: .string(nested), value: object[nested], insert: nil)
+                let valuePatch = setValue(objectId: child, key: .string(nested), value: object[nested], insert: false)
                 props[.string(nested)] = [actorId.uuidString: valuePatch]
             }
 
@@ -254,7 +254,7 @@ public final class Context {
      * Updates the list object at path `path`, deleting `deletions` list elements starting from
      * list index `start`, and inserting the list of new elements `insertions` at that position.
      */
-    func spice<T>(path: [KeyPathElement], start: Int, deletions: Int, insertions: [T]) {
+    func splice<T>(path: [KeyPathElement], start: Int, deletions: Int, insertions: [T]) {
         let objectId = path.isEmpty ? ROOT_ID : path[path.count - 1].objectId
         let object = getObject(objectId: objectId)
         let list = object[LIST_VALUES] as! [Any]
@@ -264,7 +264,7 @@ public final class Context {
         if deletions == 0 && insertions.count == 0 {
             return
         }
-        let patch = Patch(clock: [:], version: 0, diffs: ObjectDiff(objectId: ROOT_ID, type: .map))
+        let patch = Patch(clock: [:], version: 0, canUndo: false, canRedo: false, diffs: ObjectDiff(objectId: ROOT_ID, type: .map))
         let subPatch = getSubpatch(patch: patch, path: path)
         if subPatch.edits == nil {
             subPatch.edits = []
@@ -321,7 +321,7 @@ public final class Context {
         // If the assigned field value is the same as the existing value, and
         // the assignment does not resolve a conflict, do nothing
         applyAt(path: path, callback: { subpatch in
-            let valuePatch = setValue(objectId: objectId, key: .string(key), value: value, insert: nil)
+            let valuePatch = setValue(objectId: objectId, key: .string(key), value: value, insert: false)
             subpatch.props?[.string(key)] = [actorId.uuidString: valuePatch]
         })
 
@@ -342,7 +342,7 @@ public final class Context {
         // the assignment does not resolve a conflict, do nothing
         if (object[key] as? T) != value {
             applyAt(path: path, callback: { subpatch in
-                let valuePatch = setValue(objectId: objectId, key: .string(key), value: value, insert: nil)
+                let valuePatch = setValue(objectId: objectId, key: .string(key), value: value, insert: false)
                 subpatch.props?[.string(key)] = [actorId.uuidString: valuePatch]
             })
         } else if (object[CONFLICTS] as? [String: [Any]])?[key]?.count ?? 0 > 1 {
@@ -484,7 +484,7 @@ public final class Context {
      * and then immediately applies the patch to the document.
      */
     func applyAt(path: [KeyPathElement], callback: (ObjectDiff) -> Void) {
-        let patch = Patch(clock: [:], version: 0, diffs: ObjectDiff(objectId: ROOT_ID, type: .map))
+        let patch = Patch(clock: [:], version: 0, canUndo: false, canRedo: false, diffs: ObjectDiff(objectId: ROOT_ID, type: .map))
         callback(getSubpatch(patch: patch, path: path))
         cache[ROOT_ID] = applyPatch(patch.diffs, cache[ROOT_ID], &updated)
         updated[ROOT_ID] = cache[ROOT_ID]
@@ -639,7 +639,7 @@ public final class Context {
         }
         precondition(!(list[index] is Counter), "Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.")
          applyAt(path: path) { subpatch in
-            let valuePatch = setValue(objectId: objectId, key: .index(index), value: value, insert: nil)
+            let valuePatch = setValue(objectId: objectId, key: .index(index), value: value, insert: false)
             subpatch.props?[.index(index)] = [actorId.uuidString: valuePatch]
         }
 

@@ -619,7 +619,7 @@ class ContextTest: XCTestCase {
         )
 
         // When
-        context.spice(path: [.init(key: "birds", objectId: listId)], start: 2, deletions: 0, insertions: [["english": "goldfinch", "latin": "carduelis"]])
+        context.splice(path: [.init(key: "birds", objectId: listId)], start: 2, deletions: 0, insertions: [["english": "goldfinch", "latin": "carduelis"]])
 
         // Then
         let nestedId = applyPatch.value!.props!["birds"]!["actor1"]!.props![2]![actor.uuidString]!.objectId!
@@ -679,7 +679,7 @@ class ContextTest: XCTestCase {
         )
 
         // When
-        context.spice(path: [.init(key: "birds", objectId: listId)], start: 0, deletions: 2, insertions: [String]())
+        context.splice(path: [.init(key: "birds", objectId: listId)], start: 0, deletions: 2, insertions: [String]())
 
         // Then
         XCTAssertEqual(context.ops, [
@@ -737,7 +737,7 @@ class ContextTest: XCTestCase {
         )
 
         // When
-        context.spice(path: [.init(key: "birds", objectId: listId)], start: 0, deletions: 2, insertions: [String]())
+        context.splice(path: [.init(key: "birds", objectId: listId)], start: 0, deletions: 2, insertions: [String]())
 
         // Then
         XCTAssertEqual(context.ops, [
@@ -795,7 +795,7 @@ class ContextTest: XCTestCase {
         )
 
         // When
-        context.spice(path: [.init(key: "birds", objectId: listId)], start: 0, deletions: 1, insertions: ["starling", "goldfinch"])
+        context.splice(path: [.init(key: "birds", objectId: listId)], start: 0, deletions: 1, insertions: ["starling", "goldfinch"])
 
         // Then
         XCTAssertEqual(context.ops, [

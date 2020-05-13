@@ -50,7 +50,7 @@ extension Proxy: RangeReplaceableCollection where T: RangeReplaceableCollection,
     public func replaceSubrange<C, R>(_ subrange: R, with newElements: C) where C : Collection, R : RangeExpression, Element == C.Element, Index == R.Bound {
         let start = subrange.relative(to: self).startIndex
         let deleteCount = subrange.relative(to: self).endIndex - subrange.relative(to: self).startIndex
-        contex.spice(path: path, start: start, deletions: deleteCount, insertions: Array(newElements))
+        contex.splice(path: path, start: start, deletions: deleteCount, insertions: Array(newElements))
         value.replaceSubrange(subrange, with: newElements)
     }
 
