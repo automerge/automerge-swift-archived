@@ -278,8 +278,8 @@ public struct Document<T: Codable> {
             }
             state.clock = patch.clock
             state.version = patch.version
-            state.canUndo = patch.canUndo ?? false
-            state.canRedo = patch.canRedo ?? false
+            state.canUndo = patch.canUndo
+            state.canRedo = patch.canRedo
         }
         self.root = newRoot!
         self.state = state

@@ -8,7 +8,7 @@
 import Foundation
 
 public final class Patch {
-    init(actor: String? = nil, seq: Int? = nil, clock: Clock, version: Int, canUndo: Bool? = nil, canRedo: Bool? = nil, diffs: ObjectDiff) {
+    init(actor: String? = nil, seq: Int? = nil, clock: Clock, version: Int, canUndo: Bool, canRedo: Bool, diffs: ObjectDiff) {
         self.actor = actor
         self.seq = seq
         self.clock = clock
@@ -22,7 +22,7 @@ public final class Patch {
   var seq: Int?
   var clock: Clock
   var version: Int
-  var canUndo: Bool?
-  var canRedo: Bool?
+  var canUndo: Bool
+  var canRedo: Bool
   var diffs: ObjectDiff
 }
