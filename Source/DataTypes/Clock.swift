@@ -7,4 +7,4 @@
 
 import Foundation
 
-typealias Clock = [UUID: Int]
+typealias Clock = [String: Int]

@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum Diff: Equatable {
+enum Diff: Equatable, Codable {
     case object(ObjectDiff)
     case value(ValueDiff)
 
@@ -28,6 +28,25 @@ enum Diff: Equatable {
     static func value(_ value: Primitive) -> Diff {
         return Diff.value(.init(value: value))
     }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let value = try? container.decode(ValueDiff.self) {
+            self = .value(value)
+        } else {
+            self = .object(try container.decode(ObjectDiff.self))
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .value(let value):
+            try container.encode(value)
+        case .object(let object):
+            try container.encode(object)
+        }
+    }
 }
 
 extension Diff: ExpressibleByIntegerLiteral {
@@ -46,7 +65,7 @@ extension Diff: ExpressibleByStringLiteral {
 
 }
 
-struct ValueDiff: Equatable {
+struct ValueDiff: Equatable, Codable {
 
     init(value: Primitive, datatype: DataType? = nil) {
         self.value = value
@@ -59,7 +78,7 @@ struct ValueDiff: Equatable {
 
 typealias Props = [Key: [String: Diff]]
 
-class ObjectDiff: Equatable {
+final class ObjectDiff: Equatable, Codable {
 
     init(objectId: String,
          type: CollectionType,
@@ -83,9 +102,32 @@ class ObjectDiff: Equatable {
             lhs.edits == rhs.edits &&
             lhs.props == rhs.props
     }
+
+    required init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        self.objectId = try values.decode(String.self, forKey: .objectId)
+        self.type = try values.decode(CollectionType.self, forKey: .type)
+        self.edits = try values.decodeIfPresent([Edit].self, forKey: .edits)
+        let intProps = try? values.decodeIfPresent([Int: [String: Diff]].self, forKey: .props)
+        var props = Props()
+        if let keys = intProps?.keys {
+            for key in keys {
+                props[.index(key)] = intProps![key]
+            }
+        }
+
+        let stringProps = try? values.decodeIfPresent([String: [String: Diff]].self, forKey: .props)
+        if let keys = stringProps?.keys {
+            for key in keys {
+                props[.string(key)] = stringProps![key]
+            }
+        }
+
+        self.props = props
+    }
 }
 
-enum CollectionType: Equatable {
+enum CollectionType: String, Equatable, Codable {
     case list
     case map
     case table

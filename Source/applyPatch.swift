@@ -263,10 +263,28 @@ func applyProperties(props: Props?,
  * Compares two strings, interpreted as Lamport timestamps of the form
  * 'counter@actorId'. Returns 1 if ts1 is greater, or -1 if ts2 is greater.
  */
-
 func  lamportCompare(ts1: String, ts2: String) -> Bool {
-    fatalError()
+    let time1 = ts1.contains("@") ? parseOpId(opId: ts1) : (counter: 0, actorId: ts1)
+    let time2 = ts2.contains("@") ? parseOpId(opId: ts2) : (counter: 0, actorId: ts2)
+
+    return time1.counter > time2.counter
 }
+
+/**
+ * Takes a string in the form that is used to identify operations (a counter concatenated
+ * with an actor ID, separated by an `@` sign) and returns an object `{counter, actorId}`.
+ */
+func parseOpId(opId: String) -> (counter: Int, actorId: String) {
+    let splitted = opId.split(separator: "@")
+    return (counter: Int(String(splitted[0]))!, actorId: String(splitted[1]))
+}
+//function parseOpId(opId) {
+//  const match = /^(\d+)@(.*)$/.exec(opId || '')
+//  if (!match) {
+//    throw new RangeError(`Not a valid opId: ${opId}`)
+//  }
+//  return {counter: parseInt(match[1]), actorId: match[2]}
+//}
 
 //function lamportCompare(ts1, ts2) {
 //  const regex = /^(\d+)@(.*)$/

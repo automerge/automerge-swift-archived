@@ -28,8 +28,7 @@ class ProxyTest: XCTestCase {
     // should have a fixed object ID
     func testProxie1() {
         // GIVEN
-        let backend = BackendMock()
-        var document = Document<TestStruct>(.fake, options: .init(backend: backend))
+        var document = Document<TestStruct>(.fake, options: .init(backend: RSBackend()))
 
         // WHEN
         document.change({ doc in
@@ -40,8 +39,7 @@ class ProxyTest: XCTestCase {
     // should expose keys as object properties
     func testProxie3() {
         // GIVEN
-        let backend = BackendMock()
-        var document = Document<TestStruct>(options: .init(backend: backend))
+        var document = Document<TestStruct>(options: .init(backend: RSBackend()))
 
         // WHEN
         document.change({ doc in
@@ -52,7 +50,7 @@ class ProxyTest: XCTestCase {
 
     // should return undefined for unknown properties
     func testProxies4() {
-        var document = Document<TestStruct>(options: .init(backend: BackendMock()))
+        var document = Document<TestStruct>(options: .init(backend: RSBackend()))
 
         // WHEN
         document.change({ doc in
@@ -63,7 +61,7 @@ class ProxyTest: XCTestCase {
 
     // should allow deep object assigment
     func testProxiesSwift1() {
-        var document = Document<TestStruct>(options: .init(backend: BackendMock()))
+        var document = Document<TestStruct>(options: .init(backend: RSBackend()))
 
         // WHEN
         document.change({ doc in
@@ -74,8 +72,7 @@ class ProxyTest: XCTestCase {
 
     // should allow list assignment inside deep object
     func testProxiesSwift2() {
-        let backend = BackendMock()
-        var document = Document<TestStruct>(options: .init(backend: backend))
+        var document = Document<TestStruct>(options: .init(backend: RSBackend()))
 
         // WHEN
         document.change({ doc in
@@ -87,8 +84,7 @@ class ProxyTest: XCTestCase {
 
     // should allow empty list assignment inside deep object
     func testProxiesSwift3() {
-        let backend = BackendMock()
-        var document = Document<TestStruct>(options: .init(backend: backend))
+        var document = Document<TestStruct>(options: .init(backend: RSBackend()))
 
         // WHEN
         document.change({ doc in
@@ -99,8 +95,7 @@ class ProxyTest: XCTestCase {
 
     // should allow empty list assignment inside deep object
     func testProxiesSwift4() {
-        let backend = BackendMock()
-        var document = Document<TestStruct>(options: .init(backend: backend))
+        var document = Document<TestStruct>(options: .init(backend: RSBackend()))
 
         // WHEN
         document.change({ doc in
@@ -111,8 +106,7 @@ class ProxyTest: XCTestCase {
 
     // should allow empty list assignment inside deep object
     func testProxiesSwift5() {
-        let backend = BackendMock()
-        var document = Document<TestStruct>(options: .init(backend: backend))
+        var document = Document<TestStruct>(options: .init(backend: RSBackend()))
 
         // WHEN
         document.change({ doc in

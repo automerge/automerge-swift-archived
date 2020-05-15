@@ -10,6 +10,8 @@ import Foundation
 public protocol Backend {
 
     func applyLocalChange(request: Request) -> (Backend, Patch)
+
+    func save() -> [UInt8]
     
 }
 
@@ -21,8 +23,65 @@ public struct DefaultBackend: Backend {
         return (self, Patch(clock: [:], version: 0, canUndo: false, canRedo: false, diffs: ObjectDiff(objectId: UUID().uuidString, type: .map)))
     }
 
+    public func save() -> [UInt8] {
+        return []
+    }
+
 }
 
+public class RSBackend: Backend {
 
+    private let automerge: OpaquePointer
+    private let encoder: JSONEncoder
+    private let decoder: JSONDecoder
 
+    public convenience init() {
+        self.init(automerge: automerge_init())
+    }
+
+    public convenience init(document: [UInt8]) {
+        var document = document
+        self.init(automerge: automerge_load(UInt(document.count), &document))
+    }
+
+    init(automerge: OpaquePointer) {
+        self.automerge = automerge
+        self.encoder = JSONEncoder()
+        self.decoder = JSONDecoder()
+        encoder.dateEncodingStrategy = .custom({ (date, encoder) throws in
+            var container = encoder.singleValueContainer()
+            let seconds: UInt = UInt(date.timeIntervalSince1970)
+            try container.encode(seconds)
+        })
+        decoder.dateDecodingStrategy = .custom({ (decoder) throws in
+            var container = try decoder.unkeyedContainer()
+            return try Date(timeIntervalSince1970: container.decode(TimeInterval.self))
+        })
+    }
+
+    deinit {
+        automerge_free(automerge)
+    }
+
+    public func save() -> [UInt8] {
+        let length = automerge_save(automerge)
+        return Array<UInt8>.init(unsafeUninitializedCapacity: length) { (buffer, size) in
+            automerge_read_binary(automerge, buffer.baseAddress!)
+        }
+    }
+
+    public func applyLocalChange(request: Request) -> (Backend, Patch) {
+        let data = try! encoder.encode(request)
+        let string = String(data: data, encoding: .utf8)
+        let length = automerge_apply_local_change(automerge, string)
+         var buffer = Array<Int8>(repeating: 0, count: length)
+        buffer.append(0)
+        automerge_read_json(automerge, &buffer)
+        let newString = String(cString: buffer)
+        let patch = try! decoder.decode(Patch.self, from: newString.data(using: .utf8)!)
+
+        return (self, patch)
+    }
+    
+}
 

@@ -7,9 +7,9 @@
 
 import Foundation
 
-public struct Request: Equatable {
+public struct Request: Equatable, Codable {
 
-    public enum RequestType {
+    public enum RequestType: String, Codable {
         case change
         case redo
         case undo
@@ -19,7 +19,7 @@ public struct Request: Equatable {
     public var requestType: RequestType
     public var message: String
     public var time: Date
-    public var actor: UUID
+    public var actor: String
     public var seq: Int
     public var version: Int
     public var ops: [Op]
