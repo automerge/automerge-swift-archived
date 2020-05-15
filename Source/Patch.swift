@@ -7,7 +7,7 @@
 
 import Foundation
 
-public final class Patch {
+public final class Patch: Codable {
     init(actor: String? = nil, seq: Int? = nil, clock: Clock, version: Int, canUndo: Bool, canRedo: Bool, diffs: ObjectDiff) {
         self.actor = actor
         self.seq = seq

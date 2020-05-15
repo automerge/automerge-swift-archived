@@ -7,8 +7,8 @@
 
 import Foundation
 
-struct Edit: Equatable {
-    enum Action: Equatable {
+struct Edit: Equatable, Codable {
+    enum Action: String, Equatable, Codable {
         case insert
         case remove
     }

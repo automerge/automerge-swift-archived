@@ -19,5 +19,8 @@ final class BackendMock: Backend {
     func applyLocalChange(request: Request) -> (Backend, Patch) {
         return (self, applyLocalChange(request))
     }
+    func save() -> [UInt8] {
+        return []
+    }
 
 }

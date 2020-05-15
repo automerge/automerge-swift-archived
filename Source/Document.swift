@@ -11,14 +11,14 @@ public struct Document<T: Codable> {
     public struct Options {
 
         public init(
-            actorId: UUID = UUID(),
+            actorId: ActorId = ActorId(),
             backend: Backend?
         ) {
             self.actorId = actorId
             self.backend = backend
         }
         
-        let actorId: UUID
+        let actorId: ActorId
         let backend: Backend?
     }
 
@@ -102,7 +102,7 @@ public struct Document<T: Codable> {
     /**
      * Returns the Automerge actor ID of the given document.
      */
-    var actor: UUID {
+    var actor: ActorId {
         return options.actorId
     }
 
@@ -202,7 +202,7 @@ public struct Document<T: Codable> {
             let request = Request(requestType: requestType,
                                   message: options?.message ?? "",
                                   time: Date(),
-                                  actor: self.options.actorId,
+                                  actor: self.options.actorId.actorId,
                                   seq: state.seq,
                                   version: state.version,
                                   ops: context?.ops ?? [],
@@ -273,7 +273,7 @@ public struct Document<T: Codable> {
         newRoot?[CACHE] = context?.updated
 
         if fromBackend {
-            if let clockValue = patch.clock[actor], clockValue > state.seq {
+            if let clockValue = patch.clock[actor.actorId], clockValue > state.seq {
                 state.seq = clockValue
             }
             state.clock = patch.clock
@@ -303,6 +303,9 @@ public struct Document<T: Codable> {
     //      return updateRootObject(doc, updated, state)
     //    }
 
+    public func save() -> [UInt8] {
+        return options.backend?.save() ?? []
+    }
 }
 
 

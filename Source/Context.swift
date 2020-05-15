@@ -14,7 +14,7 @@ public final class Context {
         let objectId: String
     }
 
-    init<T>(doc: Document<T>, actorId: UUID) {
+    init<T>(doc: Document<T>, actorId: ActorId) {
         self.cache = doc.cache
         self.updated = [String: [String: Any]]()
         self.actorId = actorId
@@ -22,7 +22,7 @@ public final class Context {
         self.applyPatch = interpretPatch
     }
 
-    init(actorId: UUID,
+    init(actorId: ActorId,
          applyPatch: @escaping (ObjectDiff, [String: Any]?, inout [String: [String: Any]]) -> [String: Any]?,
          updated: [String: [String: Any]],
          cache: [String: [String: Any]],
@@ -35,7 +35,7 @@ public final class Context {
         self.ops = ops
     }
 
-    let actorId: UUID
+    let actorId: ActorId
     let applyPatch: (ObjectDiff, [String: Any]?, inout [String: [String: Any]]) -> [String: Any]?
     var updated: [String: [String: Any]]
     var cache: [String: [String: Any]]
@@ -58,7 +58,7 @@ public final class Context {
      * primitive value. For string, number, boolean, or null the datatype is omitted.
      */
 
-    func setValue<T>(objectId: String, key: Key?, value: T, insert: Bool = false) -> Diff {
+    func setValue<T>(objectId: String, key: Key?, value: T, insert: Bool) -> Diff {
         switch value {
         case  let value as Double:
             let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .double(value))
@@ -126,19 +126,19 @@ public final class Context {
      * element. If `key` is null, the ID of the new object is used as key (this construction
      * is used by Automerge.Table).
      */
-    private func createNestedObjects(obj: String, key: Key?, value: Any, insert: Bool = false) -> ObjectDiff {
+    private func createNestedObjects(obj: String, key: Key?, value: Any, insert: Bool) -> ObjectDiff {
         let child = UUID().uuidString
         let key = key ?? .string(child)
         switch value {
         case let object as [String: Any]:
             precondition(object[OBJECT_ID] == nil, "Cannot create a reference to an existing document object")
-            let operation = Op(action: .makeMap, obj: obj, key: key, child: child)
+            let operation = Op(action: .makeMap, obj: obj, key: key, insert: insert, child: child)
             ops.append(operation)
 
             var props = Props()
             for nested in object.keys.sorted() {
                 let valuePatch = setValue(objectId: child, key: .string(nested), value: object[nested], insert: false)
-                props[.string(nested)] = [actorId.uuidString: valuePatch]
+                props[.string(nested)] = [actorId.actorId: valuePatch]
             }
 
             return ObjectDiff(objectId: child, type: .map, props: props)
@@ -234,7 +234,7 @@ public final class Context {
         values.enumerated().forEach({ offset, element in
             let valuePatch = setValue(objectId: subPatch.objectId, key: .index(index + offset), value: element, insert: true)
             subPatch.edits?.append(Edit(action: .insert, index: index + offset))
-            subPatch.props?[.index(index + offset)] = [actorId.uuidString: valuePatch]
+            subPatch.props?[.index(index + offset)] = [actorId.actorId: valuePatch]
         })
     }
     //    insertListItems(subpatch, index, values, newObject) {
@@ -322,7 +322,7 @@ public final class Context {
         // the assignment does not resolve a conflict, do nothing
         applyAt(path: path, callback: { subpatch in
             let valuePatch = setValue(objectId: objectId, key: .string(key), value: value, insert: false)
-            subpatch.props?[.string(key)] = [actorId.uuidString: valuePatch]
+            subpatch.props?[.string(key)] = [actorId.actorId: valuePatch]
         })
 
     }
@@ -343,7 +343,7 @@ public final class Context {
         if (object[key] as? T) != value {
             applyAt(path: path, callback: { subpatch in
                 let valuePatch = setValue(objectId: objectId, key: .string(key), value: value, insert: false)
-                subpatch.props?[.string(key)] = [actorId.uuidString: valuePatch]
+                subpatch.props?[.string(key)] = [actorId.actorId: valuePatch]
             })
         } else if (object[CONFLICTS] as? [String: [Any]])?[key]?.count ?? 0 > 1 {
             fatalError()
@@ -640,7 +640,7 @@ public final class Context {
         precondition(!(list[index] is Counter), "Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.")
          applyAt(path: path) { subpatch in
             let valuePatch = setValue(objectId: objectId, key: .index(index), value: value, insert: false)
-            subpatch.props?[.index(index)] = [actorId.uuidString: valuePatch]
+            subpatch.props?[.index(index)] = [actorId.actorId: valuePatch]
         }
 
     }
@@ -676,7 +676,7 @@ public final class Context {
         precondition(row[OBJECT_ID] == nil, "Cannot reuse an existing object as table row")
         precondition(row["id"] == nil, "A table row must not have an id property; it is generated automatically")
 
-        let valuePatch = setValue(objectId: path[path.count - 1].objectId, key: nil, value: row)
+        let valuePatch = setValue(objectId: path[path.count - 1].objectId, key: nil, value: row, insert: false)
         applyAt(path: path) { subpatch in
             subpatch.props?[.string(valuePatch.objectId!)] = [valuePatch.objectId!: valuePatch]
         }
@@ -751,7 +751,7 @@ public final class Context {
         // TODO what if there is a conflicting value on the same key as the counter?
         ops.append(Op(action: .inc, obj: objectId, key: key, value: .double(counterValue + delta)))
         applyAt(path: path, callback: { subpatch in
-            subpatch.props?[key] = [actorId.uuidString: .value(.init(value: .double(counterValue + delta), datatype: .counter))]
+            subpatch.props?[key] = [actorId.actorId: .value(.init(value: .double(counterValue + delta), datatype: .counter))]
         })
     }
 //    increment(path, key, delta) {
