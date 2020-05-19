@@ -36,7 +36,11 @@ class DictionaryEncoder {
 @dynamicMemberLookup
 class DictionaryDecoder {
 
-    private let decoder = JSONDecoder()
+    private let decoder: JSONDecoder = {
+        let deocder = JSONDecoder()
+        deocder.dateDecodingStrategy = .secondsSince1970
+        return deocder
+    }()
 
     subscript<T>(dynamicMember keyPath: WritableKeyPath<JSONDecoder, T>) -> T {
         return decoder[keyPath: keyPath]

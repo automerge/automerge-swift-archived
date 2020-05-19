@@ -26,6 +26,7 @@ extension Proxy: Collection, Sequence where T: Collection {
 
 }
 
+
 extension Proxy: MutableCollection where T: MutableCollection, T.Element: Encodable, T.Index == Int {
 
     public subscript(position: Index) -> T.Element {

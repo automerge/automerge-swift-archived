@@ -7,6 +7,11 @@
 
 import Foundation
 
+struct RequestMetaData<T: Codable> {
+    let request: Request
+    var before: Document<T>
+}
+
 public struct Request: Equatable, Codable {
 
     public enum RequestType: String, Codable {
@@ -14,7 +19,6 @@ public struct Request: Equatable, Codable {
         case redo
         case undo
     }
-
 
     public var requestType: RequestType
     public var message: String

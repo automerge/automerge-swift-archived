@@ -624,7 +624,7 @@ class ContextTest: XCTestCase {
         // Then
         let nestedId = applyPatch.value!.props!["birds"]!["actor1"]!.props![2]![actor.actorId]!.objectId!
         XCTAssertEqual(context.ops, [
-            Op(action: .makeMap, obj: listId, key: .index(2), child: nestedId),
+            Op(action: .makeMap, obj: listId, key: 2, insert: true, child: nestedId),
             Op(action: .set, obj: nestedId, key: "english", value: .string("goldfinch")),
             Op(action: .set, obj: nestedId, key: "latin", value: .string("carduelis"))
         ])
@@ -683,8 +683,8 @@ class ContextTest: XCTestCase {
 
         // Then
         XCTAssertEqual(context.ops, [
-            Op(action: .del, obj: listId, key: .index(0)),
-            Op(action: .del, obj: listId, key: .index(0))
+            Op(action: .del, obj: listId, key: 0),
+            Op(action: .del, obj: listId, key: 0)
         ])
 
         XCTAssertEqual(applyPatch.callCount, 1)
@@ -741,8 +741,8 @@ class ContextTest: XCTestCase {
 
         // Then
         XCTAssertEqual(context.ops, [
-            Op(action: .del, obj: listId, key: .index(0)),
-            Op(action: .del, obj: listId, key: .index(0))
+            Op(action: .del, obj: listId, key: 0),
+            Op(action: .del, obj: listId, key: 0)
         ])
 
         XCTAssertEqual(applyPatch.callCount, 1)
@@ -799,9 +799,9 @@ class ContextTest: XCTestCase {
 
         // Then
         XCTAssertEqual(context.ops, [
-            Op(action: .del, obj: listId, key: .index(0)),
-            Op(action: .set, obj: listId, key: .index(0), insert: true, value: .string("starling")),
-            Op(action: .set, obj: listId, key: .index(1), insert: true, value: .string("goldfinch")),
+            Op(action: .del, obj: listId, key: 0),
+            Op(action: .set, obj: listId, key: 0, insert: true, value: .string("starling")),
+            Op(action: .set, obj: listId, key: 1, insert: true, value: .string("goldfinch")),
         ])
 
         XCTAssertEqual(applyPatch.callCount, 1)
@@ -919,7 +919,7 @@ class ContextTest: XCTestCase {
         )
 
         //When
-        context.deleteTableRow(path: [.init(key: .string("books"), objectId: tableId)], rowId: rowId)
+        context.deleteTableRow(path: [.init(key: "books", objectId: tableId)], rowId: rowId)
 
         // Then
         XCTAssertEqual(context.ops, [
