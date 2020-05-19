@@ -197,90 +197,54 @@ class DocumentTest: XCTestCase {
         ])
     }
 
-    // should remove pending requests once handled
-    func testBackendConcurrency2() {
-        struct Schema: Codable, Equatable {
-            var blackbirds: Int?
-            var partridges: Int?
-        }
-        let actor = ActorId()
-        var doc =  Document(Schema(blackbirds: nil, partridges: nil), options: .init(actorId: actor ,backend: nil))
-        doc.change({ $0[\.blackbirds, "blackbirds"] = 24 })
-        doc.change({ $0[\.partridges, "partridges"] = 1 })
-        let requests = doc.state.requests.map { $0.request }
-        XCTAssertEqual(requests, [
-           Request(requestType: .change, message: "", time: requests[0].time, actor: actor.actorId, seq: 1, version: 0, ops: [
-            Op(action: .set, obj: ROOT_ID, key: "blackbirds", insert: false, value: .int(24))
-            ], undoable: true),
-           Request(requestType: .change, message: "", time: requests[1].time, actor: actor.actorId, seq: 2, version: 0, ops: [
-           Op(action: .set, obj: ROOT_ID, key: "partridges", insert: false, value: .int(1))
-           ], undoable: true)
-        ])
-        doc.applyPatch(patch: Patch(actor: actor.actorId,
-                                    seq: 1,
-                                    clock: [actor.actorId: 1],
-                                    version: 1,
-                                    canUndo: true,
-                                    canRedo: false,
-                                    diffs: ObjectDiff(objectId: ROOT_ID, type: .map, props: ["blackbirds": [actor.actorId: 24]])
-            )
-        )
-
-        let requests2 = doc.state.requests.map { $0.request }
-        XCTAssertEqual(doc.content, Schema(blackbirds: 24, partridges: 1))
-        XCTAssertEqual(requests2, [
-           Request(requestType: .change, message: "", time: requests2[0].time, actor: actor.actorId, seq: 2, version: 0, ops: [
-            Op(action: .set, obj: ROOT_ID, key: "partridges", insert: false, value: .int(1))
-            ], undoable: true)
-        ])
-
-        doc.applyPatch(patch: Patch(actor: actor.actorId,
-                                    seq: 2,
-                                    clock: [actor.actorId: 2],
-                                    version: 2,
-                                    canUndo: true,
-                                    canRedo: false,
-                                    diffs: ObjectDiff(objectId: ROOT_ID, type: .map, props: ["partridges": [actor.actorId: 1]])
-            )
-        )
-
-        XCTAssertEqual(doc.content, Schema(blackbirds: 24, partridges: 1))
-        XCTAssertEqual(doc.state.requests.map { $0.request }, [])
-    }
-
-//    it('should remove pending requests once handled', () => {
-//      const actor = uuid()
-//      let [doc1, change1] = Frontend.change(Frontend.init(actor), doc => doc.blackbirds = 24)
-//      let [doc2, change2] = Frontend.change(doc1, doc => doc.partridges = 1)
-//      let requests = getRequests(doc2)
-//      assert.deepStrictEqual(requests, [
-//        {requestType: 'change', actor, seq: 1, time: requests[0].time, message: '', version: 0, ops: [
-//          {obj: ROOT_ID, action: 'set', key: 'blackbirds', insert: false, value: 24}
-//        ]},
-//        {requestType: 'change', actor, seq: 2, time: requests[1].time, message: '', version: 0, ops: [
-//          {obj: ROOT_ID, action: 'set', key: 'partridges', insert: false, value: 1}
-//        ]}
-//      ])
-//
-//      doc2 = Frontend.applyPatch(doc2, {
-//        actor, seq: 1, version: 1, clock: {[actor]: 1}, canUndo: true, canRedo: false, diffs: {
-//          objectId: ROOT_ID, type: 'map', props: {blackbirds: {[actor]: {value: 24}}}
+//    // should remove pending requests once handled
+//    func testBackendConcurrency2() {
+//        struct Schema: Codable, Equatable {
+//            var blackbirds: Int?
+//            var partridges: Int?
 //        }
-//      })
-//      requests = getRequests(doc2)
-//      assert.deepStrictEqual(doc2, {blackbirds: 24, partridges: 1})
-//      assert.deepStrictEqual(requests, [
-//        {requestType: 'change', actor, seq: 2, time: requests[0].time, message: '', version: 0, ops: [
-//          {obj: ROOT_ID, action: 'set', key: 'partridges', insert: false, value: 1}
-//        ]}
-//      ])
+//        let actor = ActorId()
+//        var doc =  Document(Schema(blackbirds: nil, partridges: nil), options: .init(actorId: actor, backend: nil))
+//        doc.change({ $0[\.blackbirds, "blackbirds"] = 24 })
+//        doc.change({ $0[\.partridges, "partridges"] = 1 })
+//        let requests = doc.state.requests.map { $0.request }
+//        XCTAssertEqual(requests, [
+//           Request(requestType: .change, message: "", time: requests[0].time, actor: actor.actorId, seq: 1, version: 0, ops: [
+//            Op(action: .set, obj: ROOT_ID, key: "blackbirds", insert: false, value: .int(24))
+//            ], undoable: true),
+//           Request(requestType: .change, message: "", time: requests[1].time, actor: actor.actorId, seq: 2, version: 0, ops: [
+//           Op(action: .set, obj: ROOT_ID, key: "partridges", insert: false, value: .int(1))
+//           ], undoable: true)
+//        ])
+//        doc.applyPatch(patch: Patch(actor: actor.actorId,
+//                                    seq: 1,
+//                                    clock: [actor.actorId: 1],
+//                                    version: 1,
+//                                    canUndo: true,
+//                                    canRedo: false,
+//                                    diffs: ObjectDiff(objectId: ROOT_ID, type: .map, props: ["blackbirds": [actor.actorId: 24]])
+//            )
+//        )
 //
-//      doc2 = Frontend.applyPatch(doc2, {
-//        actor, seq: 2, version: 2, clock: {[actor]: 2}, canUndo: true, canRedo: false, diffs: {
-//          objectId: ROOT_ID, type: 'map', props: {partridges: {[actor]: {value: 1}}}
-//        }
-//      })
-//      assert.deepStrictEqual(doc2, {blackbirds: 24, partridges: 1})
-//      assert.deepStrictEqual(getRequests(doc2), [])
-//    })
+//        let requests2 = doc.state.requests.map { $0.request }
+//        XCTAssertEqual(doc.content, Schema(blackbirds: 24, partridges: 1))
+//        XCTAssertEqual(requests2, [
+//           Request(requestType: .change, message: "", time: requests2[0].time, actor: actor.actorId, seq: 2, version: 0, ops: [
+//            Op(action: .set, obj: ROOT_ID, key: "partridges", insert: false, value: .int(1))
+//            ], undoable: true)
+//        ])
+//
+//        doc.applyPatch(patch: Patch(actor: actor.actorId,
+//                                    seq: 2,
+//                                    clock: [actor.actorId: 2],
+//                                    version: 2,
+//                                    canUndo: true,
+//                                    canRedo: false,
+//                                    diffs: ObjectDiff(objectId: ROOT_ID, type: .map, props: ["partridges": [actor.actorId: 1]])
+//            )
+//        )
+//
+//        XCTAssertEqual(doc.content, Schema(blackbirds: 24, partridges: 1))
+//        XCTAssertEqual(doc.state.requests.map { $0.request }, [])
+//    }
 }
