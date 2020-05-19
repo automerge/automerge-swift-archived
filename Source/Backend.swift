@@ -40,13 +40,13 @@ public class RSBackend: Backend {
     }
 
     public convenience init(document: [UInt8]) {
-        var document = document
-        self.init(automerge: automerge_load(UInt(document.count), &document))
+        self.init(automerge: automerge_load(UInt(document.count), document))
     }
 
     init(automerge: OpaquePointer) {
         self.automerge = automerge
         self.encoder = JSONEncoder()
+        self.encoder.outputFormatting = .prettyPrinted
         self.decoder = JSONDecoder()
         encoder.dateEncodingStrategy = .custom({ (date, encoder) throws in
             var container = encoder.singleValueContainer()
@@ -80,7 +80,7 @@ public class RSBackend: Backend {
         let newString = String(cString: buffer)
         let patch = try! decoder.decode(Patch.self, from: newString.data(using: .utf8)!)
 
-        return (self, patch)
+        return (RSBackend(automerge: automerge_clone(automerge)), patch)
     }
     
 }

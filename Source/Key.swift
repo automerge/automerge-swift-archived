@@ -15,7 +15,12 @@ public enum Key: Equatable, Hashable, Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let string = try? container.decode(String.self) {
-            self = .string(string)
+            if let index = Int(string) {
+                self = .index(index)
+            } else {
+                self = .string(string)
+            }
+
         } else {
             self = .index(try container.decode(Int.self))
         }

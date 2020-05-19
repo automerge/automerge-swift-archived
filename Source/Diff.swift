@@ -108,18 +108,17 @@ final class ObjectDiff: Equatable, Codable {
         self.objectId = try values.decode(String.self, forKey: .objectId)
         self.type = try values.decode(CollectionType.self, forKey: .type)
         self.edits = try values.decodeIfPresent([Edit].self, forKey: .edits)
-        let intProps = try? values.decodeIfPresent([Int: [String: Diff]].self, forKey: .props)
         var props = Props()
-        if let keys = intProps?.keys {
-            for key in keys {
-                props[.index(key)] = intProps![key]
-            }
-        }
 
         let stringProps = try? values.decodeIfPresent([String: [String: Diff]].self, forKey: .props)
         if let keys = stringProps?.keys {
             for key in keys {
-                props[.string(key)] = stringProps![key]
+                if let index = Int(key) {
+                     props[.index(index)] = stringProps![key]
+                } else {
+                    props[.string(key)] = stringProps![key]
+                }
+
             }
         }
 

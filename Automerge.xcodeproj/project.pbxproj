@@ -22,6 +22,7 @@
 
 /* Begin PBXBuildFile section */
 		9477033E246E73C4000E952C /* ActorId.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9477033D246E73C4000E952C /* ActorId.swift */; };
+		94879A6D2470017300F0189E /* DocumentTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94879A6B246FFFCA00F0189E /* DocumentTest.swift */; };
 		94E26780246805BD00C54C0E /* libautomerge.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 94E2677F246805BD00C54C0E /* libautomerge.a */; };
 		94E26786246809CC00C54C0E /* RSBackendTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94E267842468099800C54C0E /* RSBackendTest.swift */; };
 		OBJ_44 /* Backend.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_8 /* Backend.swift */; };
@@ -70,6 +71,7 @@
 
 /* Begin PBXFileReference section */
 		9477033D246E73C4000E952C /* ActorId.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActorId.swift; sourceTree = "<group>"; };
+		94879A6B246FFFCA00F0189E /* DocumentTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentTest.swift; sourceTree = "<group>"; };
 		94E2677F246805BD00C54C0E /* libautomerge.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libautomerge.a; sourceTree = "<group>"; };
 		94E26781246805ED00C54C0E /* automerge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = automerge.h; sourceTree = "<group>"; };
 		94E267842468099800C54C0E /* RSBackendTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSBackendTest.swift; sourceTree = "<group>"; };
@@ -176,6 +178,7 @@
 				OBJ_33 /* Proxy+CollectionTest.swift */,
 				OBJ_34 /* ProxyTest.swift */,
 				94E267842468099800C54C0E /* RSBackendTest.swift */,
+				94879A6B246FFFCA00F0189E /* DocumentTest.swift */,
 			);
 			path = Tests;
 			sourceTree = SOURCE_ROOT;
@@ -347,6 +350,7 @@
 				94E26786246809CC00C54C0E /* RSBackendTest.swift in Sources */,
 				OBJ_81 /* ContextTest.swift in Sources */,
 				OBJ_82 /* Proxy+CollectionTest.swift in Sources */,
+				94879A6D2470017300F0189E /* DocumentTest.swift in Sources */,
 				OBJ_83 /* ProxyTest.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

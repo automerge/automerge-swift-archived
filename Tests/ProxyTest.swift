@@ -102,6 +102,10 @@ class ProxyTest: XCTestCase {
             doc[\.deepObjList, "deepObjList"] = [DeepObj(list: [])]
             XCTAssertEqual(doc[\.deepObjList[0].list, "deepObjList[0].list"], [])
         })
+
+        let saved = document.save()
+        let abc = automerge_load(UInt(saved.count), saved)
+
     }
 
     // should allow empty list assignment inside deep object

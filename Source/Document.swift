@@ -12,7 +12,7 @@ public struct Document<T: Codable> {
 
         public init(
             actorId: ActorId = ActorId(),
-            backend: Backend?
+            backend: Backend? = RSBackend()
         ) {
             self.actorId = actorId
             self.backend = backend
@@ -24,7 +24,7 @@ public struct Document<T: Codable> {
 
     struct State {
         var seq: Int
-        var requests: [Any]
+        var requests: [RequestMetaData<T>]
         var version: Int
         var clock: Clock
         var canUndo: Bool
@@ -48,7 +48,7 @@ public struct Document<T: Codable> {
         self.state = State(seq: 0, requests: [], version: 0, clock: [:], canUndo: false, canRedo: false, backend: options.backend)
     }
 
-    public init(_ initialState: T, options: Options = Options(backend: DefaultBackend())) {
+    public init(_ initialState: T, options: Options = Options()) {
         var newDocument = Document<T>(options: options)
         newDocument.change(options: .init(message: "Initialization", undoable: true), execute: { doc in
             doc.set(object: initialState)
@@ -102,8 +102,18 @@ public struct Document<T: Codable> {
     /**
      * Returns the Automerge actor ID of the given document.
      */
-    var actor: ActorId {
+    public var actor: ActorId {
         return options.actorId
+    }
+
+    public var content: T {
+        let context = Context(doc: self, actorId: options.actorId)
+        return Proxy<T>.rootProxy(contex: context).value
+    }
+
+    public func getObjectId<Y: Codable>(_ keyPath: KeyPath<T, Y>, _ keyPathString: String) -> String? {
+        let context = Context(doc: self, actorId: options.actorId)
+        return Proxy<Y>.rootProxy(contex: context)[keyPath, keyPathString]?.objectId
     }
 
     public struct ChangeOptions {
@@ -209,15 +219,18 @@ public struct Document<T: Codable> {
                                   undoable: options?.undoable ?? true
             )
 
-            if let backend = self.options.backend {
-                let(newBackend, patch) = backend.applyLocalChange(request: request)
-                state.backend = newBackend
+        if let backend = self.options.backend {
+            let(newBackend, patch) = backend.applyLocalChange(request: request)
+            state.backend = newBackend
 
-                applyPatchToDoc(patch: patch, state: state, fromBackend: false, context: context)
-                return request
-            } else {
-                fatalError()
-            }
+            applyPatchToDoc(patch: patch, state: &state, fromBackend: true, context: context)
+            return request
+        } else {
+            let context = context ?? Context(doc: self, actorId: actor)
+            state.requests.append(RequestMetaData(request: request, before: self))
+            updateRootObject(update: context.updated, state: state)
+            return request
+        }
     }
 
 
@@ -266,11 +279,12 @@ public struct Document<T: Codable> {
      * and to `false` if the patch is a transient local (optimistically applied)
      * change from the frontend.
      */
-    private mutating func applyPatchToDoc(patch: Patch, state: State, fromBackend: Bool, context: Context?) {
-        var state = state
+    private mutating func applyPatchToDoc(patch: Patch, state: inout State, fromBackend: Bool, context: Context?) {
         var updated = [String: [String: Any]]()
         var newRoot = interpretPatch(patch: patch.diffs, obj: root, updated: &updated)
-        newRoot?[CACHE] = context?.updated
+        let cache = newRoot?[CACHE]
+        newRoot?[CACHE] = context?.updated ?? cache
+        updated[ROOT_ID] = newRoot
 
         if fromBackend {
             if let clockValue = patch.clock[actor.actorId], clockValue > state.seq {
@@ -281,8 +295,9 @@ public struct Document<T: Codable> {
             state.canUndo = patch.canUndo
             state.canRedo = patch.canRedo
         }
-        self.root = newRoot!
-        self.state = state
+
+        updateRootObject(update: updated, state: state)
+        self.root[CACHE] = context?.updated ?? cache
     }
 
     //    function applyPatchToDoc(doc, patch, state, fromBackend) {
@@ -302,6 +317,126 @@ public struct Document<T: Codable> {
     //      }
     //      return updateRootObject(doc, updated, state)
     //    }
+
+    /**
+     * Applies `patch` to the document root object `doc`. This patch must come
+     * from the backend; it may be the result of a local change or a remote change.
+     * If it is the result of a local change, the `seq` field from the change
+     * request should be included in the patch, so that we can match them up here.
+     */
+
+    mutating func applyPatch(patch: Patch) {
+        var state = self.state
+        if let backend = options.backend {
+//            state.backend = patch.st
+            applyPatchToDoc(patch: patch, state: &state, fromBackend: true, context: nil)
+        }
+
+        var baseDoc: Document<T>
+        if state.requests.count > 0 {
+            baseDoc = state.requests[0].before
+            if patch.actor == actor.actorId && patch.seq != nil {
+                precondition(state.requests[0].request.seq == patch.seq, "Mismatched sequence number: patch \(String(describing: patch.seq)) does not match next request \(state.requests[0].request.seq)")
+                state.requests = Array(state.requests.dropFirst())
+            } else {
+
+            }
+        } else {
+            baseDoc = self
+            state.requests = []
+        }
+
+        baseDoc.applyPatchToDoc(patch: patch, state: &state, fromBackend: true, context: nil)
+        if state.requests.isEmpty {
+            self = baseDoc
+            self.state = state
+        } else {
+            state.requests[0].before = baseDoc
+            updateRootObject(update: [:], state: state)
+        }
+
+    }
+//    function applyPatch(doc, patch) {
+//      const state = copyObject(doc[STATE])
+//
+//      if (doc[OPTIONS].backend) {
+//        if (!patch.state) {
+//          throw new RangeError('When an immediate backend is used, a patch must contain the new backend state')
+//        }
+//        state.backendState = patch.state
+//        return applyPatchToDoc(doc, patch, state, true)
+//      }
+//
+//      let baseDoc
+//
+//      if (state.requests.length > 0) {
+//        baseDoc = state.requests[0].before
+//        if (patch.actocr === getActorId(doc) && patch.seq !== undefined) {
+//          if (state.requests[0].seq !== patch.seq) {
+//            throw new RangeError(`Mismatched sequence number: patch ${patch.seq} does not match next request ${state.requests[0].seq}`)
+//          }
+//          state.requests = state.requests.slice(1).map(copyObject)
+//        } else {
+//          state.requests = state.requests.slice().map(copyObject)
+//        }
+//      } else {
+//        baseDoc = doc
+//        state.requests = []
+//      }
+//
+//      let newDoc = applyPatchToDoc(baseDoc, patch, state, true)
+//      if (state.requests.length === 0) {
+//        return newDoc
+//      } else {
+//        state.requests[0].before = newDoc
+//        return updateRootObject(doc, {}, state)
+//      }
+//    }
+
+    /**
+    * Takes a set of objects that have been updated (in `updated`) and an updated state object
+    * `state`, and returns a new immutable document root object based on `doc` that reflects
+    * those updates.
+    */
+    mutating func updateRootObject(update: [String: [String: Any]], state: State) {
+        var update = update
+        var newDoc = update[ROOT_ID]
+        if newDoc == nil {
+            newDoc = cache[ROOT_ID]
+            update[ROOT_ID] = newDoc
+        }
+        for objectId in cache.keys where update[objectId] == nil {
+             update[objectId] = cache[objectId]
+        }
+
+        newDoc?[CACHE] = update
+        self.root = newDoc!
+        self.state = state
+    }
+
+
+//    function updateRootObject(doc, updated, state) {
+//      let newDoc = updated[ROOT_ID]
+//      if (!newDoc) {
+//        newDoc = cloneRootObject(doc[CACHE][ROOT_ID])
+//        updated[ROOT_ID] = newDoc
+//      }
+//      Object.defineProperty(newDoc, OPTIONS,  {value: doc[OPTIONS]})
+//      Object.defineProperty(newDoc, CACHE,    {value: updated})
+//      Object.defineProperty(newDoc, STATE,    {value: state})
+//
+//
+//      for (let objectId of Object.keys(doc[CACHE])) {
+//        if (!updated[objectId]) {
+//          updated[objectId] = doc[CACHE][objectId]
+//        }
+//      }
+//
+//      if (doc[OPTIONS].freeze) {
+//        Object.freeze(updated)
+//      }
+//      return newDoc
+//    }
 
     public func save() -> [UInt8] {
         return options.backend?.save() ?? []

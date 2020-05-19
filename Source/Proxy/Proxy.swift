@@ -44,45 +44,51 @@ public final class Proxy<T: Codable> {
     let path: [Context.KeyPathElement]
     var value: T!
 
-    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Y>, key: String) -> Y {
+    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Y>, keyPathString: String) -> Y {
         get {
-            return getObjectByKeyPath(key.keyPath)!
+            return getObjectByKeyPath(keyPathString.keyPath)!
         }
         set {
-            return setMapKey(key.keyPath, newValue: newValue)
+            return setMapKey(keyPathString.keyPath, newValue: newValue)
         }
     }
 
-    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Optional<Y>>, key: String) -> Y? {
+    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Y?>, keyPathString: String) -> Y? {
         get {
-            return getObjectByKeyPath(key.keyPath)
+            return getObjectByKeyPath(keyPathString.keyPath)
         }
         set {
-            return setMapKey(key.keyPath, newValue: newValue)
+            return setMapKey(keyPathString.keyPath, newValue: newValue)
         }
     }
 
-    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, [Y]>, key: String) -> [Y] {
+    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, [Y]>, keyPathString: String) -> [Y] {
         get {
-            return getObjectByKeyPath(key.keyPath)!
+            return getObjectByKeyPath(keyPathString.keyPath)!
         }
         set {
-            return setMapKey(key.keyPath, newValue: newValue)
+            return setMapKey(keyPathString.keyPath, newValue: newValue)
         }
     }
 
-    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Optional<[Y]>>, key: String) -> [Y]? {
+    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, [Y]?>, keyPathString: String) -> [Y]? {
         get {
-            return getObjectByKeyPath(key.keyPath)
+            return getObjectByKeyPath(keyPathString.keyPath)
         }
         set {
-            return setMapKey(key.keyPath, newValue: newValue)
+            return setMapKey(keyPathString.keyPath, newValue: newValue)
         }
     }
 
-    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Array<Y>>, key: String) -> Proxy<[Y]> {
+    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, [Y]>, keyPathString: String) -> Proxy<[Y]> {
         get {
-            getCollectionProxy(key.keyPath)
+            getCollectionProxy(keyPathString.keyPath)
+        }
+    }
+
+    subscript<Y: Codable>(keyPath: KeyPath<T, Y>, keyPathString: String) -> Proxy<Y>? {
+        get {
+            return getProxyByKeyPath(keyPathString.keyPath)
         }
     }
 
@@ -138,6 +144,34 @@ public final class Proxy<T: Codable> {
             case let listObjects as [[String: Any]]:
                 let objectId = listObjects[index][OBJECT_ID] as! String
                 return Proxy<Y?>(contex: contex, objectId: objectId, path: path + [.init(key: .index(index), objectId: objectId)]).value
+            default:
+                fatalError()
+            }
+        }
+    }
+
+    private func getProxyByKeyPath<Y: Codable>(_ keyPath: [Key]) -> Proxy<Y>? {
+        let (path, taregtObjectId) = getPathFrom(keyPath: keyPath, path: self.path, objectId: objectId)
+        switch keyPath.last! {
+        case .string(let key):
+            switch contex.getObject(objectId: taregtObjectId)[key] {
+            case is Primitive:
+                return nil
+            case let objectType as [String: Any]:
+                let objectId = objectType[OBJECT_ID] as! String
+                return Proxy<Y>(contex: contex, objectId: objectId, path: path + [.init(key: .string(key), objectId: objectId)])
+            case .none:
+                return nil
+            default:
+                fatalError()
+            }
+        case .index(let index):
+            switch contex.getObject(objectId: taregtObjectId)[LIST_VALUES] {
+            case is [Primitive]:
+                return nil
+            case let listObjects as [[String: Any]]:
+                let objectId = listObjects[index][OBJECT_ID] as! String
+                return Proxy<Y>(contex: contex, objectId: objectId, path: path + [.init(key: .index(index), objectId: objectId)])
             default:
                 fatalError()
             }

@@ -60,7 +60,8 @@ func updateListObject(patch: ObjectDiff, obj: [String: Any]?, updated: inout [St
     }
     var object = updated[objectId]
     var list = object![LIST_VALUES] as! [Any?]
-    var conflicts = Array(object![CONFLICTS] as! [Key: [String: Any]])
+    let abcd = object![CONFLICTS] as! [Key: [String: Any]]
+    var conflicts = Array(abcd)
     patch.edits?.iterate(
         insertCallback: { index, insertions in
             let blanks = Array<[String: Any]?>(repeating: nil, count: insertions)

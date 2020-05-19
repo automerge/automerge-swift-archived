@@ -9,7 +9,7 @@ import Foundation
 import XCTest
 @testable import Automerge
 
-struct DocWithList: Codable {
+struct DocWithList: Codable, Equatable {
     var list: [Double]
     var empty: [Double]
     var nested: [[Double]]
@@ -179,17 +179,21 @@ class ProxyCollectionTest: XCTestCase {
     }
 
     // setAtIndex4()
-    func testListObject9() {
-        let backend = BackendMock()
-        var document = Document(DocWithList(list: [], empty: [], nested: [[0], [2]], deepObj: DeepObj(list: [])),
-                           options: .init(backend: backend))
-
-        document.change({ doc in
-            let proxy: Proxy = doc[\.nested[0], "nested[0]"]
-            proxy[0] = 1
-            XCTAssertEqual(proxy[0], 1)
-            XCTAssertEqual(doc[\.nested[0], "nested[0]"], [1])
-        })
-    }
+//    func testListObject9() {
+//        struct DocWithList: Codable, Equatable {
+//            var nested: [[Double]]
+//        }
+//        let backend = BackendMock()
+//        var document = Document(DocWithList(nested: [[0], [2]]),
+//                           options: .init(backend: backend))
+//
+//        XCTAssertEqual(document.content, DocWithList(nested: [[0], [2]]))
+//        document.change({ doc in
+//            let proxy: Proxy<[Double]> = doc[\.nested[0], "nested[0]"]
+//            proxy[0] = 1
+//            XCTAssertEqual(proxy[0], 1)
+//            XCTAssertEqual(doc[\.nested[0], "nested[0]"], [1])
+//        })
+//    }
 
 }

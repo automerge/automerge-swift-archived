@@ -60,14 +60,14 @@ public final class Context {
 
     func setValue<T>(objectId: String, key: Key?, value: T, insert: Bool) -> Diff {
         switch value {
-        case  let value as Double:
-            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .double(value))
-            ops.append(operation)
-            return .value(.double(value))
         case  let value as Int:
             let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .int(value))
             ops.append(operation)
             return .value(.int(value))
+        case  let value as Double:
+            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .double(value))
+            ops.append(operation)
+            return .value(.double(value))
         case let string as String:
             let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .string(string))
             ops.append(operation)
@@ -92,6 +92,10 @@ public final class Context {
             return .object(createNestedObjects(obj: objectId, key: key, value: text, insert: insert))
         case let table as Table:
             return .object(createNestedObjects(obj: objectId, key: key, value: table, insert: insert))
+        case is Optional<Any>:
+            let operation = Op(action: .del, obj: objectId, key: key!, insert: insert)
+            ops.append(operation)
+            return .value(.null)
         default:
             fatalError()
         }
@@ -377,10 +381,10 @@ public final class Context {
      */
     private func getValueDescription(value: Any) -> Diff {
         switch value {
-        case let double as Double:
-            return .value(.init(value: .double(double)))
         case let int as Int:
             return .value(.init(value: .int(int)))
+        case let double as Double:
+            return .value(.init(value: .double(double)))
         case let date as Date:
             return .value(.init(value: .double(date.timeIntervalSince1970), datatype: .timestamp))
         case let counter as Counter:
