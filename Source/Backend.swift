@@ -12,10 +12,19 @@ public protocol Backend {
     func applyLocalChange(request: Request) -> (Backend, Patch)
 
     func save() -> [UInt8]
+
+    func getPatch() -> Patch
     
 }
 
 public struct DefaultBackend: Backend {
+
+    public func getPatch() -> Patch {
+        return Patch(clock: [:], version: 0, canUndo: false, canRedo: false, diffs: ObjectDiff(objectId: UUID().uuidString, type: .map))
+    }
+
+
+    public init(data: [UInt8]) { }
 
     public init() {}
 
@@ -39,8 +48,20 @@ public class RSBackend: Backend {
         self.init(automerge: automerge_init())
     }
 
-    public convenience init(document: [UInt8]) {
-        self.init(automerge: automerge_load(UInt(document.count), document))
+    public required init(data: [UInt8]) {
+        self.automerge = automerge_load(UInt(data.count), data)
+        self.encoder = JSONEncoder()
+        self.encoder.outputFormatting = .prettyPrinted
+        self.decoder = JSONDecoder()
+        encoder.dateEncodingStrategy = .custom({ (date, encoder) throws in
+            var container = encoder.singleValueContainer()
+            let seconds: UInt = UInt(date.timeIntervalSince1970)
+            try container.encode(seconds)
+        })
+        decoder.dateDecodingStrategy = .custom({ (decoder) throws in
+            var container = try decoder.unkeyedContainer()
+            return try Date(timeIntervalSince1970: container.decode(TimeInterval.self))
+        })
     }
 
     init(automerge: OpaquePointer) {
@@ -65,9 +86,13 @@ public class RSBackend: Backend {
 
     public func save() -> [UInt8] {
         let length = automerge_save(automerge)
-        return Array<UInt8>.init(unsafeUninitializedCapacity: length) { (buffer, size) in
-            automerge_read_binary(automerge, buffer.baseAddress!)
-        }
+        var data = Array<UInt8>(repeating: 0, count: length)
+        automerge_read_binary(automerge, &data)
+//        let data = Array<UInt8>.init(unsafeUninitializedCapacity: length) { (buffer, size) in
+//            automerge_read_binary(automerge, buffer.baseAddress!)
+//        }
+
+        return data
     }
 
     public func applyLocalChange(request: Request) -> (Backend, Patch) {
@@ -82,6 +107,16 @@ public class RSBackend: Backend {
 
         return (RSBackend(automerge: automerge_clone(automerge)), patch)
     }
-    
+
+    public func getPatch() -> Patch {
+        let length = automerge_get_patch(automerge)
+        var buffer = Array<Int8>(repeating: 0, count: length)
+        buffer.append(0)
+        automerge_read_json(automerge, &buffer)
+        let newString = String(cString: buffer)
+        let patch = try! decoder.decode(Patch.self, from: newString.data(using: .utf8)!)
+
+        return patch
+    }
 }
 

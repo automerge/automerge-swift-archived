@@ -16,18 +16,67 @@ final class RSBackendTest: XCTestCase {
          XCTAssertEqual(backend.save(), [])
     }
 
-//    func testloadDocument() {
-//        let initialDocumentState: [UInt8] = [133, 111, 74, 131, 31, 191, 200, 9, 0, 150, 1, 1, 16, 215, 202, 121, 173, 249, 60, 66, 186, 135, 225, 16, 161, 85, 162, 112, 99, 1, 134, 37, 223, 236, 30, 174, 126, 157, 190, 175, 242, 188, 108, 88, 110, 150, 81, 218, 234, 100, 85, 222, 197, 241, 27, 82, 177, 54, 11, 88, 9, 49, 6, 1, 2, 127, 0, 3, 2, 127, 1, 11, 2, 127, 2, 19, 6, 127, 217, 207, 243, 245, 5, 29, 18, 127, 16, 73, 110, 105, 116, 32, 119, 105, 116, 104, 32, 115, 99, 104, 101, 109, 101, 32, 2, 127, 0, 1, 4, 0, 1, 127, 0, 2, 4, 0, 1, 127, 1, 13, 12, 126, 6, 115, 99, 104, 101, 109, 97, 3, 105, 110, 116, 17, 2, 2, 0, 19, 2, 2, 1, 28, 1, 2, 34, 3, 126, 4, 0, 46, 3, 126, 0, 19, 47, 1, 1, 64, 2, 2, 0]
-//        let backend = RSBackend(document: initialDocumentState)
-//
-//        let abc = backend.save()
-//        XCTAssertEqual(backend.save(), initialDocumentState)
-//    }
+    func testloadDocument() {
+        let initialDocumentState: [UInt8] = [133,111,74,131,67,87,31,164,0,162,1,1,16,216,174,219,98,163,198,72,226,186,232,37,141,162,111,106,34,1,66,129,104,19,111,146,163,48,114,216,197,112,88,253,81,69,231,3,107,17,68,57,99,190,132,215,172,44,149,155,164,1,6,1,2,127,0,3,2,127,1,11,2,127,2,19,7,127,155,170,164,139,163,46,29,16,127,14,73,110,105,116,105,97,108,105,122,97,116,105,111,110,32,2,127,0,1,4,0,1,127,0,2,4,0,1,127,1,9,4,0,1,127,0,11,4,0,1,127,0,13,9,127,5,98,105,114,100,115,0,1,17,2,2,0,19,2,2,1,28,2,1,1,34,3,126,5,0,46,3,126,0,70,47,4,84,101,115,116,64,2,2,0]
+        let backend = RSBackend(data: initialDocumentState)
+
+        let abc = backend.save()
+        XCTAssertEqual(backend.save(), initialDocumentState)
+    }
 
     func testApplayLocal() {
         let backend = RSBackend()
         let request = Request(requestType: .change, message: "Test", time: Date(), actor: "111111", seq: 1, version: 0, ops: [Op(action: .set, obj: ROOT_ID, key: "bird", value: .string("magpie"))], undoable: false)
         backend.applyLocalChange(request: request)
+    }
+
+    func testInsertPerformance() {
+        struct TravelList: Codable, Equatable {
+            var trips: [Trip]
+            let categories: [Category]
+
+            static var initialScheme: TravelList = TravelList(trips: [], categories: [Category(id: "bar", customName: nil)])
+        }
+
+        struct Trip: Codable, Equatable {
+            public let name: String
+            public let startDate: Date
+            public var optional: String?
+
+            init(name: String, startDate: Date = Date(), optional: String? = nil) {
+                self.name = name
+                self.startDate = startDate
+                self.optional = optional
+            }
+        }
+        struct Category: Codable, Equatable {
+            let id: String
+            let customName: String?
+        }
+
+
+        measure() {
+            var automerge = Document(TravelList.initialScheme)
+            let trip = Trip(name: "Italien 2019", startDate: Date())
+            for _ in 0...10  {
+                automerge.change {
+                    $0[\.trips, "trips"].append(trip)
+                }
+            }
+            XCTAssertEqual(automerge.content.trips.count, 11)
+        }
+    }
+
+    func testLoadPerformance() {
+        struct Schema: Codable, Equatable {
+            var birds: [String]
+        }
+        let automerge = Document(Schema(birds: ["Test"]))
+
+        let document = automerge.save()
+        let newDocument = Document<Schema>(document, actorId: ActorId())
+        XCTAssertEqual(newDocument.content, automerge.content)
+
     }
 
 }

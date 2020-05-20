@@ -21,8 +21,7 @@ class ProxyCollectionTest: XCTestCase {
 
     // should have a length property
     func testListObject1() {
-        let backend = BackendMock()
-        var document = Document<DocWithList>(options: .init(backend: backend))
+        var document = Document(DocWithList(list: [], empty: [], nested: [], deepObj: DeepObj(list: [])))
         document.change({ doc in
             doc[\.list, "list"] = [1, 2, 3]
             doc[\.empty, "empty"] = []
@@ -42,8 +41,7 @@ class ProxyCollectionTest: XCTestCase {
 
     // should allow entries to be fetched by index
     func testListObject2() {
-        let backend = BackendMock()
-        var document = Document<DocWithList>(options: .init(backend: backend))
+        var document = Document(DocWithList(list: [], empty: [], nested: [], deepObj: DeepObj(list: [])))
         document.change({ doc in
             doc[\.list, "list"] = [1, 2, 3]
             doc[\.empty, "empty"] = []
@@ -61,8 +59,7 @@ class ProxyCollectionTest: XCTestCase {
 
     // should support iteration
     func testListObject3() {
-        let backend = BackendMock()
-        var document = Document<DocWithList>(options: .init(backend: backend))
+        var document = Document(DocWithList(list: [], empty: [], nested: [], deepObj: DeepObj(list: [])))
         document.change({ doc in
             doc[\.list, "list"] = [1, 2, 3]
             doc[\.empty, "empty"] = []
@@ -83,8 +80,7 @@ class ProxyCollectionTest: XCTestCase {
 
     // splice()
     func testListObject4() {
-        let backend = BackendMock()
-        var document = Document<DocWithList>(options: .init(backend: backend))
+        var document = Document(DocWithList(list: [], empty: [], nested: [], deepObj: DeepObj(list: [])))
         document.change({ doc in
             doc[\.list, "list"] = [1, 2, 3]
 
@@ -114,8 +110,7 @@ class ProxyCollectionTest: XCTestCase {
 
     // append()
     func testListObject5() {
-        let backend = BackendMock()
-        var document = Document<DocWithList>(options: .init(backend: backend))
+        var document = Document(DocWithList(list: [], empty: [], nested: [], deepObj: DeepObj(list: [])))
         document.change({ doc in
             doc[\.list, "list"] = [1, 2, 3]
         })
@@ -132,8 +127,7 @@ class ProxyCollectionTest: XCTestCase {
 
     // setAtIndex()
     func testListObject6() {
-        let backend = BackendMock()
-        var document = Document<DocWithList>(options: .init(backend: backend))
+        var document = Document(DocWithList(list: [], empty: [], nested: [], deepObj: DeepObj(list: [])))
         document.change({ doc in
             doc[\.list, "list"] = [1, 2, 3]
         })
@@ -149,8 +143,7 @@ class ProxyCollectionTest: XCTestCase {
 
     // setAtIndex2()
     func testListObject7() {
-        let backend = BackendMock()
-        var document = Document<DocWithList>(options: .init(backend: backend))
+        var document = Document(DocWithList(list: [], empty: [], nested: [], deepObj: DeepObj(list: [])))
         document.change({ doc in
             doc[\.list, "list"] = [1, 2, 3]
         })
@@ -164,8 +157,7 @@ class ProxyCollectionTest: XCTestCase {
 
     // setAtIndex3()
     func testListObject8() {
-        let backend = BackendMock()
-        var document = Document<TestStruct>(options: .init(backend: backend))
+        var document = Document(TestStruct(key1: nil, key2: "", deepObj: DeepObj(list: []), deepObjList: []))
         document.change({ doc in
             doc[\.deepObjList, "deepObjList"] = [DeepObj(list: [])]
         })
@@ -179,21 +171,19 @@ class ProxyCollectionTest: XCTestCase {
     }
 
     // setAtIndex4()
-//    func testListObject9() {
-//        struct DocWithList: Codable, Equatable {
-//            var nested: [[Double]]
-//        }
-//        let backend = BackendMock()
-//        var document = Document(DocWithList(nested: [[0], [2]]),
-//                           options: .init(backend: backend))
-//
-//        XCTAssertEqual(document.content, DocWithList(nested: [[0], [2]]))
-//        document.change({ doc in
-//            let proxy: Proxy<[Double]> = doc[\.nested[0], "nested[0]"]
-//            proxy[0] = 1
-//            XCTAssertEqual(proxy[0], 1)
-//            XCTAssertEqual(doc[\.nested[0], "nested[0]"], [1])
-//        })
-//    }
+    func testListObject9() {
+        struct DocWithList: Codable, Equatable {
+            var nested: [[Double]]
+        }
+        var document = Document(DocWithList(nested: [[0], [2]]))
+
+        XCTAssertEqual(document.content, DocWithList(nested: [[0], [2]]))
+        document.change({ doc in
+            let proxy: Proxy<[Double]> = doc[\.nested[0], "nested[0]"]
+            proxy[0] = 1
+            XCTAssertEqual(proxy[0], 1)
+            XCTAssertEqual(doc[\.nested[0], "nested[0]"], [1])
+        })
+    }
 
 }

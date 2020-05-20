@@ -10,6 +10,11 @@ import Foundation
 
 final class BackendMock: Backend {
 
+    func getPatch() -> Patch {
+        fatalError()
+    }
+
+
     private let applyLocalChange: (Request) -> Patch
 
     init(applyLocalChange: @escaping (Request) -> Patch = { _ in return Patch(clock: [:], version: 0, canUndo: false, canRedo: false, diffs: ObjectDiff(objectId: UUID().uuidString, type: .map)) }) {

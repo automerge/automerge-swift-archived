@@ -62,7 +62,8 @@ class DictionaryDecoder {
 private func removeConflicts(_ dict: [String: Any]) -> Any {
     var dict = dict
     dict[CONFLICTS] = nil
-    for key in dict.keys {
+    dict[CACHE] = nil
+    for key in dict.keys where key != OBJECT_ID {
         if let childDict = dict[key] as? [String: Any] {
             dict[key] = removeConflicts(childDict)
         }
@@ -84,7 +85,13 @@ private func removeConflicts(_ dict: [String: Any]) -> Any {
 
 private func removeListValues(list: [Any]) -> [Any?] {
     if let objects = list as? [[String: Any]] {
-        return objects.map(removeConflicts)
+        let mapped = objects.map(removeConflicts).map { any -> Any in
+            if let dict = any as? [String: Any], let list = dict[LIST_VALUES] as? [Any] {
+                return list
+            }
+            return any
+        }
+        return mapped
     }
     if let primitives = list as? [Primitive] {
         return primitives.map(\.value)

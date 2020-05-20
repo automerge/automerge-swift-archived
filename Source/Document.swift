@@ -12,14 +12,14 @@ public struct Document<T: Codable> {
 
         public init(
             actorId: ActorId = ActorId(),
-            backend: Backend? = RSBackend()
+            backend: Backend = RSBackend()
         ) {
             self.actorId = actorId
             self.backend = backend
         }
         
         let actorId: ActorId
-        let backend: Backend?
+        var backend: Backend
     }
 
     struct State {
@@ -29,11 +29,9 @@ public struct Document<T: Codable> {
         var clock: Clock
         var canUndo: Bool
         var canRedo: Bool
-
-        var backend: Backend?
     }
 
-    let options: Options
+    var options: Options
     var state: State
     var root: [String: Any]
     var change: Bool = false
@@ -45,7 +43,7 @@ public struct Document<T: Codable> {
             CONFLICTS: [Key: [String: Any]]()
         ]
         self.root[CACHE] = [ROOT_ID: root]
-        self.state = State(seq: 0, requests: [], version: 0, clock: [:], canUndo: false, canRedo: false, backend: options.backend)
+        self.state = State(seq: 0, requests: [], version: 0, clock: [:], canUndo: false, canRedo: false)
     }
 
     public init(_ initialState: T, options: Options = Options()) {
@@ -55,6 +53,22 @@ public struct Document<T: Codable> {
         })
         self = newDocument
     }
+
+    public init(_ data: [UInt8], actorId: ActorId) {
+        let backend = RSBackend(data: data)
+        var doc = Document<T>(options: .init(actorId: actorId, backend: backend))
+
+        let patch = backend.getPatch()
+        doc.applyPatch(patch: patch)
+        self = doc
+    }
+
+//    function load(data, options) {
+//      const state = backend.load(data)
+//      const patch = backend.getPatch(state)
+//      patch.state = state
+//      return Frontend.applyPatch(init(options), patch)
+//    }
     
     init(root: [String: Any], state: State, options: Options) {
         self.options = options
@@ -219,18 +233,12 @@ public struct Document<T: Codable> {
                                   undoable: options?.undoable ?? true
             )
 
-        if let backend = self.options.backend {
-            let(newBackend, patch) = backend.applyLocalChange(request: request)
-            state.backend = newBackend
+        let backend = self.options.backend
+        let(newBackend, patch) = backend.applyLocalChange(request: request)
+        self.options.backend = newBackend
 
-            applyPatchToDoc(patch: patch, state: &state, fromBackend: true, context: context)
-            return request
-        } else {
-            let context = context ?? Context(doc: self, actorId: actor)
-            state.requests.append(RequestMetaData(request: request, before: self))
-            updateRootObject(update: context.updated, state: state)
-            return request
-        }
+        applyPatchToDoc(patch: patch, fromBackend: true, context: context)
+        return request
     }
 
 
@@ -279,7 +287,7 @@ public struct Document<T: Codable> {
      * and to `false` if the patch is a transient local (optimistically applied)
      * change from the frontend.
      */
-    private mutating func applyPatchToDoc(patch: Patch, state: inout State, fromBackend: Bool, context: Context?) {
+    private mutating func applyPatchToDoc(patch: Patch, fromBackend: Bool, context: Context?) {
         var updated = [String: [String: Any]]()
         var newRoot = interpretPatch(patch: patch.diffs, obj: root, updated: &updated)
         let cache = newRoot?[CACHE]
@@ -296,8 +304,7 @@ public struct Document<T: Codable> {
             state.canRedo = patch.canRedo
         }
 
-        updateRootObject(update: updated, state: state)
-        self.root[CACHE] = context?.updated ?? cache
+        updateRootObject(update: &updated, state: state)
     }
 
     //    function applyPatchToDoc(doc, patch, state, fromBackend) {
@@ -326,35 +333,7 @@ public struct Document<T: Codable> {
      */
 
     mutating func applyPatch(patch: Patch) {
-        var state = self.state
-        if let backend = options.backend {
-//            state.backend = patch.st
-            applyPatchToDoc(patch: patch, state: &state, fromBackend: true, context: nil)
-        }
-
-        var baseDoc: Document<T>
-        if state.requests.count > 0 {
-            baseDoc = state.requests[0].before
-            if patch.actor == actor.actorId && patch.seq != nil {
-                precondition(state.requests[0].request.seq == patch.seq, "Mismatched sequence number: patch \(String(describing: patch.seq)) does not match next request \(state.requests[0].request.seq)")
-                state.requests = Array(state.requests.dropFirst())
-            } else {
-
-            }
-        } else {
-            baseDoc = self
-            state.requests = []
-        }
-
-        baseDoc.applyPatchToDoc(patch: patch, state: &state, fromBackend: true, context: nil)
-        if state.requests.isEmpty {
-            self = baseDoc
-            self.state = state
-        } else {
-            state.requests[0].before = baseDoc
-            updateRootObject(update: [:], state: state)
-        }
-
+        applyPatchToDoc(patch: patch, fromBackend: true, context: nil)
     }
 //    function applyPatch(doc, patch) {
 //      const state = copyObject(doc[STATE])
@@ -398,8 +377,7 @@ public struct Document<T: Codable> {
     * `state`, and returns a new immutable document root object based on `doc` that reflects
     * those updates.
     */
-    mutating func updateRootObject(update: [String: [String: Any]], state: State) {
-        var update = update
+    mutating func updateRootObject(update: inout [String: [String: Any]], state: State) {
         var newDoc = update[ROOT_ID]
         if newDoc == nil {
             newDoc = cache[ROOT_ID]
@@ -408,8 +386,8 @@ public struct Document<T: Codable> {
         for objectId in cache.keys where update[objectId] == nil {
              update[objectId] = cache[objectId]
         }
-
         newDoc?[CACHE] = update
+
         self.root = newDoc!
         self.state = state
     }
@@ -439,7 +417,7 @@ public struct Document<T: Codable> {
 //    }
 
     public func save() -> [UInt8] {
-        return options.backend?.save() ?? []
+        return options.backend.save()
     }
 }
 
