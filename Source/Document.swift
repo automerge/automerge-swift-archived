@@ -54,8 +54,17 @@ public struct Document<T: Codable> {
         self = newDocument
     }
 
-    public init(_ data: [UInt8], actorId: ActorId) {
+    public init(_ data: [UInt8], actorId: ActorId = ActorId()) {
         let backend = RSBackend(data: data)
+        var doc = Document<T>(options: .init(actorId: actorId, backend: backend))
+
+        let patch = backend.getPatch()
+        doc.applyPatch(patch: patch)
+        self = doc
+    }
+
+    public init(changes: [[UInt8]], actorId: ActorId = ActorId()) {
+        let backend = RSBackend(changes: changes)
         var doc = Document<T>(options: .init(actorId: actorId, backend: backend))
 
         let patch = backend.getPatch()
@@ -131,6 +140,10 @@ public struct Document<T: Codable> {
     }
 
     public struct ChangeOptions {
+        public init(message: String = "", undoable: Bool = true) {
+            self.message = message
+            self.undoable = undoable
+        }
         let message: String
         let undoable: Bool
     }
@@ -418,6 +431,36 @@ public struct Document<T: Codable> {
 
     public func save() -> [UInt8] {
         return options.backend.save()
+    }
+
+    /**
+     * Returns `true` if undo is currently possible on the document `doc` (because
+     * there is a local change that has not already been undone); `false` if not.
+     */
+    public var canUndo: Bool {
+        return state.canUndo
+    }
+//    function canUndo(doc) {
+//      return !!doc[STATE].canUndo && !isUndoRedoInFlight(doc)
+//    }
+
+    /**
+     * Fetches the conflicts on the property `key` of `object`, which may be any
+     * object in a document. If `object` is a list, then `key` must be a list
+     * index; if `object` is a map, then `key` must be a property name.
+     */
+    public func conflicts<Y>(for keyPath: WritableKeyPath<T, Y>, _ keyPathString: String) -> Y? {
+        return nil
+    }
+//    function getConflicts(object, key) {
+//      if (object[CONFLICTS] && object[CONFLICTS][key] &&
+//          Object.keys(object[CONFLICTS][key]).length > 1) {
+//        return object[CONFLICTS][key]
+//      }
+//    }
+
+    public func allChanges() -> [[UInt8]] {
+        return options.backend.getChanges()
     }
 }
 
