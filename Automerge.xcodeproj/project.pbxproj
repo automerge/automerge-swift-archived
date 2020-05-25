@@ -21,6 +21,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		94339B50247BA70A00A461F1 /* AutomergeTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94339B4E247BA65800A461F1 /* AutomergeTest.swift */; };
 		9477033E246E73C4000E952C /* ActorId.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9477033D246E73C4000E952C /* ActorId.swift */; };
 		94879A6D2470017300F0189E /* DocumentTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94879A6B246FFFCA00F0189E /* DocumentTest.swift */; };
 		94E26780246805BD00C54C0E /* libautomerge.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 94E2677F246805BD00C54C0E /* libautomerge.a */; };
@@ -70,6 +71,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		94339B4E247BA65800A461F1 /* AutomergeTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomergeTest.swift; sourceTree = "<group>"; };
 		9477033D246E73C4000E952C /* ActorId.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActorId.swift; sourceTree = "<group>"; };
 		94879A6B246FFFCA00F0189E /* DocumentTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentTest.swift; sourceTree = "<group>"; };
 		94E2677F246805BD00C54C0E /* libautomerge.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libautomerge.a; sourceTree = "<group>"; };
@@ -179,6 +181,7 @@
 				OBJ_34 /* ProxyTest.swift */,
 				94E267842468099800C54C0E /* RSBackendTest.swift */,
 				94879A6B246FFFCA00F0189E /* DocumentTest.swift */,
+				94339B4E247BA65800A461F1 /* AutomergeTest.swift */,
 			);
 			path = Tests;
 			sourceTree = SOURCE_ROOT;
@@ -346,6 +349,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 0;
 			files = (
+				94339B50247BA70A00A461F1 /* AutomergeTest.swift in Sources */,
 				OBJ_80 /* BackendMock.swift in Sources */,
 				94E26786246809CC00C54C0E /* RSBackendTest.swift in Sources */,
 				OBJ_81 /* ContextTest.swift in Sources */,

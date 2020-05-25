@@ -42,13 +42,14 @@ public final class Proxy<T: Codable> {
     let objectId: String
     let contex: Context
     let path: [Context.KeyPathElement]
-    var value: T!
+    public internal(set) var value: T!
 
     public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Y>, keyPathString: String) -> Y {
         get {
             return getObjectByKeyPath(keyPathString.keyPath)!
         }
         set {
+            value?[keyPath: keyPath] = newValue
             return setMapKey(keyPathString.keyPath, newValue: newValue)
         }
     }
@@ -58,6 +59,7 @@ public final class Proxy<T: Codable> {
             return getObjectByKeyPath(keyPathString.keyPath)
         }
         set {
+            value?[keyPath: keyPath] = newValue
             return setMapKey(keyPathString.keyPath, newValue: newValue)
         }
     }
@@ -67,6 +69,7 @@ public final class Proxy<T: Codable> {
             return getObjectByKeyPath(keyPathString.keyPath)!
         }
         set {
+            value?[keyPath: keyPath] = newValue
             return setMapKey(keyPathString.keyPath, newValue: newValue)
         }
     }
@@ -76,6 +79,7 @@ public final class Proxy<T: Codable> {
             return getObjectByKeyPath(keyPathString.keyPath)
         }
         set {
+            value?[keyPath: keyPath] = newValue
             return setMapKey(keyPathString.keyPath, newValue: newValue)
         }
     }

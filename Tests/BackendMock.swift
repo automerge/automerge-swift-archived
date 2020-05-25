@@ -14,7 +14,6 @@ final class BackendMock: Backend {
         fatalError()
     }
 
-
     private let applyLocalChange: (Request) -> Patch
 
     init(applyLocalChange: @escaping (Request) -> Patch = { _ in return Patch(clock: [:], version: 0, canUndo: false, canRedo: false, diffs: ObjectDiff(objectId: UUID().uuidString, type: .map)) }) {
@@ -24,8 +23,13 @@ final class BackendMock: Backend {
     func applyLocalChange(request: Request) -> (Backend, Patch) {
         return (self, applyLocalChange(request))
     }
+
     func save() -> [UInt8] {
         return []
     }
+
+    public func getChanges() -> [[UInt8]] {
+           return []
+       }
 
 }

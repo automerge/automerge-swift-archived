@@ -60,6 +60,15 @@ public final class Context {
 
     func setValue<T>(objectId: String, key: Key?, value: T, insert: Bool) -> Diff {
         switch value {
+        case let bool as Bool:
+            if let int = Int("\(value)") { // This is Hacky...
+                let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .int(int))
+                ops.append(operation)
+                return .value(.int(int))
+            }
+            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .bool(bool))
+            ops.append(operation)
+            return .value(.bool(bool))
         case  let value as Int:
             let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .int(value))
             ops.append(operation)

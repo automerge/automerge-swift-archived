@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct ActorId {
+public struct ActorId: Equatable {
 
     public init() {
         self.actorId = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
