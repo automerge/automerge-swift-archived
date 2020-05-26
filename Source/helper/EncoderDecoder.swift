@@ -63,6 +63,7 @@ private func removeConflicts(_ dict: [String: Any]) -> Any {
     var dict = dict
     dict[CONFLICTS] = nil
     dict[CACHE] = nil
+    dict[OBJECT_ID] = nil
     for key in dict.keys where key != OBJECT_ID {
         if let childDict = dict[key] as? [String: Any] {
             dict[key] = removeConflicts(childDict)

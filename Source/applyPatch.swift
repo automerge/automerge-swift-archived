@@ -311,7 +311,11 @@ func getValue(patch: Diff, object: [String: Any]?, updated: inout [String: [Stri
             return interpretPatch(patch: objectDiff, obj: object, updated: &updated)
         }
     case .value(let valueDiff):
-        return valueDiff.value
+        if valueDiff.datatype == .counter {
+            return [COUNTER_VALUE: valueDiff.value]
+        } else {
+            return valueDiff.value
+        }
     }
 }
 

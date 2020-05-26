@@ -7,6 +7,65 @@
 
 import Foundation
 
+extension Proxy {
+
+    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, [Y]>, keyPathString: String) -> [Y] {
+        get {
+            return getObjectByKeyPath(keyPathString.keyPath)!
+        }
+        set {
+            value?[keyPath: keyPath] = newValue
+            return setMapKey(keyPathString.keyPath, newValue: newValue)
+        }
+    }
+
+    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, [Y]?>, keyPathString: String) -> [Y]? {
+        get {
+            return getObjectByKeyPath(keyPathString.keyPath)
+        }
+        set {
+            value?[keyPath: keyPath] = newValue
+            return setMapKey(keyPathString.keyPath, newValue: newValue)
+        }
+    }
+
+    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, [Y]>, keyPathString: String) -> Proxy<[Y]> {
+        get {
+            getCollectionProxy(keyPathString.keyPath)
+        }
+    }
+
+    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, [Y]?>, keyPathString: String) -> Proxy<[Y]>? {
+        get {
+            getCollectionProxy(keyPathString.keyPath)
+        }
+    }
+
+    func getCollectionProxy<Y: Codable>(_ keyPath: [Key]) -> Proxy<[Y]> {
+           let (path, taregtObjectId) = getPathFrom(keyPath: keyPath, path: self.path, objectId: objectId)
+           switch keyPath.last! {
+           case .string(let key):
+               switch context.getObject(objectId: taregtObjectId)[key] {
+               case let objectType as [String: Any]:
+                   let listId = objectType[OBJECT_ID] as! String
+                   return Proxy<[Y]>(contex: context, objectId: listId, path: path + [.init(key: .string(key), objectId: listId)])
+               default:
+                   fatalError()
+               }
+           case .index(let index):
+               switch context.getObject(objectId: taregtObjectId)[LIST_VALUES] {
+               case let listObjects as [[String: Any]]:
+                   let objectType = listObjects[index]
+                   let listId = objectType[OBJECT_ID] as! String
+                   return Proxy<[Y]>(contex: context, objectId: listId, path: path + [.init(key: .index(index), objectId: listId)])
+               default:
+                   fatalError("Unsupported proxy at \(index), implement later")
+               }
+           }
+       }
+
+}
+
 extension Proxy: Collection, Sequence where T: Collection {
 
     public typealias Index = T.Index
@@ -34,7 +93,7 @@ extension Proxy: MutableCollection where T: MutableCollection, T.Element: Encoda
         set {
             value[position] = newValue
             let encoded: Any = (try? DictionaryEncoder().encode(newValue)) ?? newValue
-            contex.setListIndex(path: path, index: position, value: encoded)
+            context.setListIndex(path: path, index: position, value: encoded)
         }
     }
 
@@ -51,7 +110,7 @@ extension Proxy: RangeReplaceableCollection where T: RangeReplaceableCollection,
     public func replaceSubrange<C, R>(_ subrange: R, with newElements: C) where C : Collection, R : RangeExpression, Element == C.Element, Index == R.Bound {
         let start = subrange.relative(to: self).startIndex
         let deleteCount = subrange.relative(to: self).endIndex - subrange.relative(to: self).startIndex
-        contex.splice(path: path, start: start, deletions: deleteCount, insertions: Array(newElements))
+        context.splice(path: path, start: start, deletions: deleteCount, insertions: Array(newElements))
         value.replaceSubrange(subrange, with: newElements)
     }
 

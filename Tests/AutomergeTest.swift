@@ -57,18 +57,18 @@ class AutomergeTest: XCTestCase {
         XCTAssertEqual(s2.content.foo, "bar")
     }
 
-//    // should not register any conflicts on repeated assignment
-//    func testSerialUse2() {
-//        struct Scheme: Codable, Equatable { var foo: String?}
-//        var s1 = Document(Scheme(foo: nil))
-//        s1.change { $0[\.foo, "foo"] = "bar" }
-//        XCTAssertNil(s1.conflicts(for: \.foo!, "foo"), nil)
-//        s1.change { $0[\.foo, "foo"] = "bar" }
-//        XCTAssertEqual(s1.conflicts(for: \.foo, "foo"), nil)
-//        s1.change { $0[\.foo, "foo"] = "bar" }
-//        XCTAssertEqual(s1.conflicts(for: \.foo, "foo"), nil)
-//
-//    }
+    //    // should not register any conflicts on repeated assignment
+    //    func testSerialUse2() {
+    //        struct Scheme: Codable, Equatable { var foo: String?}
+    //        var s1 = Document(Scheme(foo: nil))
+    //        s1.change { $0[\.foo, "foo"] = "bar" }
+    //        XCTAssertNil(s1.conflicts(for: \.foo!, "foo"), nil)
+    //        s1.change { $0[\.foo, "foo"] = "bar" }
+    //        XCTAssertEqual(s1.conflicts(for: \.foo, "foo"), nil)
+    //        s1.change { $0[\.foo, "foo"] = "bar" }
+    //        XCTAssertEqual(s1.conflicts(for: \.foo, "foo"), nil)
+    //
+    //    }
 
     // should group several changes
     func testSerialUseChanges1() {
@@ -103,20 +103,20 @@ class AutomergeTest: XCTestCase {
         XCTAssertEqual(s2.content, Scheme(value: "c"))
     }
 
-//    // should not record conflicts when writing the same field several times within one change
-//    func testSerialUseChanges3() {
-//        struct Scheme: Codable, Equatable { var value: String? }
-//        let s1 = Document(Scheme(value: nil))
-//        var s2 = s1
-//        s2.change { doc in
-//            doc[\.value, "value"] = "a"
-//            doc[\.value, "value"] = "b"
-//            doc[\.value, "value"] = "c"
-//        }
-//
-//        XCTAssertEqual(s2.content, Scheme(value: "c"))
-//        //Check Conflicts
-//    }
+    //    // should not record conflicts when writing the same field several times within one change
+    //    func testSerialUseChanges3() {
+    //        struct Scheme: Codable, Equatable { var value: String? }
+    //        let s1 = Document(Scheme(value: nil))
+    //        var s2 = s1
+    //        s2.change { doc in
+    //            doc[\.value, "value"] = "a"
+    //            doc[\.value, "value"] = "b"
+    //            doc[\.value, "value"] = "c"
+    //        }
+    //
+    //        XCTAssertEqual(s2.content, Scheme(value: "c"))
+    //        //Check Conflicts
+    //    }
 
     // should return the unchanged state object if nothing changed
     func testSerialUseChanges4() {
@@ -247,320 +247,276 @@ class AutomergeTest: XCTestCase {
         XCTAssertEqual(s1.content.style?.fontSize, 12)
     }
 
-}
+    // should handle assignment of multiple nested properties
+    func testSerialUseNestedMaps4() {
+        struct Scheme: Codable, Equatable {
+            struct Style: Codable, Equatable { let bold: Bool; let fontSize: Int; let typeface: String? }
+            var style: Style?
+        }
+        var s1 = Document(Scheme(style: nil))
+        s1.change {
+            $0[\.style, "style"] = .init(bold: false, fontSize: 12, typeface: nil)
+            $0[\.style, "style"] = .init(bold: true, fontSize: 14, typeface: "Optima")
+        }
+        XCTAssertEqual(s1.content, Scheme(style: .init(bold: true, fontSize: 14, typeface: "Optima")))
+        XCTAssertEqual(s1.content.style, .init(bold: true, fontSize: 14, typeface: "Optima"))
+        XCTAssertEqual(s1.content.style?.bold, true)
+        XCTAssertEqual(s1.content.style?.fontSize, 14)
+        XCTAssertEqual(s1.content.style?.typeface, "Optima")
+    }
 
-//
-//    it('should handle assignment of an object literal', () => {
-//      s1 = Automerge.change(s1, doc => {
-//        doc.textStyle = {bold: false, fontSize: 12}
-//      })
-//      assert.deepStrictEqual(s1, {textStyle: {bold: false, fontSize: 12}})
-//      assert.deepStrictEqual(s1.textStyle, {bold: false, fontSize: 12})
-//      assert.strictEqual(s1.textStyle.bold, false)
-//      assert.strictEqual(s1.textStyle.fontSize, 12)
-//    })
-//
-//    it('should handle assignment of multiple nested properties', () => {
-//      s1 = Automerge.change(s1, doc => {
-//        doc['textStyle'] = {bold: false, fontSize: 12}
-//        Object.assign(doc.textStyle, {typeface: 'Optima', fontSize: 14})
-//      })
-//      assert.strictEqual(s1.textStyle.typeface, 'Optima')
-//      assert.strictEqual(s1.textStyle.bold, false)
-//      assert.strictEqual(s1.textStyle.fontSize, 14)
-//      assert.deepStrictEqual(s1.textStyle, {typeface: 'Optima', bold: false, fontSize: 14})
-//    })
-//
-//    it('should handle arbitrary-depth nesting', () => {
-//      s1 = Automerge.change(s1, doc => {
-//        doc.a = {b: {c: {d: {e: {f: {g: 'h'}}}}}}
-//      })
-//      s1 = Automerge.change(s1, doc => {
-//        doc.a.b.c.d.e.f.i = 'j'
-//      })
-//      assert.deepStrictEqual(s1, {a: { b: { c: { d: { e: { f: { g: 'h', i: 'j'}}}}}}})
-//      assert.strictEqual(s1.a.b.c.d.e.f.g, 'h')
-//      assert.strictEqual(s1.a.b.c.d.e.f.i, 'j')
-//    })
-//
-//    it('should allow an old object to be replaced with a new one', () => {
-//      s1 = Automerge.change(s1, 'change 1', doc => {
-//        doc.myPet = {species: 'dog', legs: 4, breed: 'dachshund'}
-//      })
-//      s2 = Automerge.change(s1, 'change 2', doc => {
-//        doc.myPet = {species: 'koi', variety: '紅白', colors: {red: true, white: true, black: false}}
-//      })
-//      assert.deepStrictEqual(s1.myPet, {
-//        species: 'dog', legs: 4, breed: 'dachshund'
-//      })
-//      assert.strictEqual(s1.myPet.breed, 'dachshund')
-//      assert.deepStrictEqual(s2.myPet, {
-//        species: 'koi', variety: '紅白',
-//        colors: {red: true, white: true, black: false}
-//      })
-//      assert.strictEqual(s2.myPet.breed, undefined)
-//      assert.strictEqual(s2.myPet.variety, '紅白')
-//    })
-//
-//    it('should allow fields to be changed between primitive and nested map', () => {
-//      s1 = Automerge.change(s1, doc => doc.color = '#ff7f00')
-//      assert.strictEqual(s1.color, '#ff7f00')
-//      s1 = Automerge.change(s1, doc => doc.color = {red: 255, green: 127, blue: 0})
-//      assert.deepStrictEqual(s1.color, {red: 255, green: 127, blue: 0})
-//      s1 = Automerge.change(s1, doc => doc.color = '#ff7f00')
-//      assert.strictEqual(s1.color, '#ff7f00')
-//    })
-//
-//    it('should not allow several references to the same map object', () => {
-//      s1 = Automerge.change(s1, doc => doc.object = {})
-//      assert.throws(() => {
-//        Automerge.change(s1, doc => { doc.x = doc.object })
-//      }, /Cannot create a reference to an existing document object/)
-//      assert.throws(() => {
-//        Automerge.change(s1, doc => { doc.x = s1.object })
-//      }, /Cannot create a reference to an existing document object/)
-//      assert.throws(() => {
-//        Automerge.change(s1, doc => { doc.x = {}; doc.y = doc.x })
-//      }, /Cannot create a reference to an existing document object/)
-//    })
-//
-//    it('should handle deletion of properties within a map', () => {
-//      s1 = Automerge.change(s1, 'set style', doc => {
-//        doc.textStyle = {typeface: 'Optima', bold: false, fontSize: 12}
-//      })
-//      s1 = Automerge.change(s1, 'non-bold', doc => delete doc.textStyle['bold'])
-//      assert.strictEqual(s1.textStyle.bold, undefined)
-//      assert.deepStrictEqual(s1.textStyle, {typeface: 'Optima', fontSize: 12})
-//    })
-//
-//    it('should handle deletion of references to a map', () => {
-//      s1 = Automerge.change(s1, 'make rich text doc', doc => {
-//        Object.assign(doc, {title: 'Hello', textStyle: {typeface: 'Optima', fontSize: 12}})
-//      })
-//      s1 = Automerge.change(s1, doc => delete doc['textStyle'])
-//      assert.strictEqual(s1.textStyle, undefined)
-//      assert.deepStrictEqual(s1, {title: 'Hello'})
-//    })
-//
-//    it('should validate field names', () => {
-//      s1 = Automerge.change(s1, doc => doc.nested = {})
-//      assert.throws(() => { Automerge.change(s1, doc => doc.nested[''] = 'x') }, /must not be an empty string/)
-//      assert.throws(() => { Automerge.change(s1, doc => doc.nested = {'': 'x'}) }, /must not be an empty string/)
-//    })
-//  })
-//
-//  describe('lists', () => {
-//    it('should allow elements to be inserted', () => {
-//      s1 = Automerge.change(s1, doc => doc.noodles = [])
-//      s1 = Automerge.change(s1, doc => doc.noodles.insertAt(0, 'udon', 'soba'))
-//      s1 = Automerge.change(s1, doc => doc.noodles.insertAt(1, 'ramen'))
-//      assert.deepStrictEqual(s1, {noodles: ['udon', 'ramen', 'soba']})
-//      assert.deepStrictEqual(s1.noodles, ['udon', 'ramen', 'soba'])
-//      assert.strictEqual(s1.noodles[0], 'udon')
-//      assert.strictEqual(s1.noodles[1], 'ramen')
-//      assert.strictEqual(s1.noodles[2], 'soba')
-//      assert.strictEqual(s1.noodles.length, 3)
-//    })
-//
-//    it('should handle assignment of a list literal', () => {
-//      s1 = Automerge.change(s1, doc => doc.noodles = ['udon', 'ramen', 'soba'])
-//      assert.deepStrictEqual(s1, {noodles: ['udon', 'ramen', 'soba']})
-//      assert.deepStrictEqual(s1.noodles, ['udon', 'ramen', 'soba'])
-//      assert.strictEqual(s1.noodles[0], 'udon')
-//      assert.strictEqual(s1.noodles[1], 'ramen')
-//      assert.strictEqual(s1.noodles[2], 'soba')
-//      assert.strictEqual(s1.noodles[3], undefined)
-//      assert.strictEqual(s1.noodles.length, 3)
-//    })
-//
-//    it('should only allow numeric indexes', () => {
-//      s1 = Automerge.change(s1, doc => doc.noodles = ['udon', 'ramen', 'soba'])
-//      s1 = Automerge.change(s1, doc => doc.noodles[1] = 'Ramen!')
-//      assert.strictEqual(s1.noodles[1], 'Ramen!')
-//      s1 = Automerge.change(s1, doc => doc.noodles['1'] = 'RAMEN!!!')
-//      assert.strictEqual(s1.noodles[1], 'RAMEN!!!')
-//      assert.throws(() => { Automerge.change(s1, doc => doc.noodles['favourite'] = 'udon') }, /list index must be a number/)
-//      assert.throws(() => { Automerge.change(s1, doc => doc.noodles[''         ] = 'udon') }, /list index must be a number/)
-//      assert.throws(() => { Automerge.change(s1, doc => doc.noodles['1e6'      ] = 'udon') }, /list index must be a number/)
-//    })
-//
-//    it('should handle deletion of list elements', () => {
-//      s1 = Automerge.change(s1, doc => doc.noodles = ['udon', 'ramen', 'soba'])
-//      s1 = Automerge.change(s1, doc => delete doc.noodles[1])
-//      assert.deepStrictEqual(s1.noodles, ['udon', 'soba'])
-//      s1 = Automerge.change(s1, doc => doc.noodles.deleteAt(1))
-//      assert.deepStrictEqual(s1.noodles, ['udon'])
-//      assert.strictEqual(s1.noodles[0], 'udon')
-//      assert.strictEqual(s1.noodles[1], undefined)
-//      assert.strictEqual(s1.noodles[2], undefined)
-//      assert.strictEqual(s1.noodles.length, 1)
-//    })
-//
-//    it('should handle assignment of individual list indexes', () => {
-//      s1 = Automerge.change(s1, doc => doc.japaneseFood = ['udon', 'ramen', 'soba'])
-//      s1 = Automerge.change(s1, doc => doc.japaneseFood[1] = 'sushi')
-//      assert.deepStrictEqual(s1.japaneseFood, ['udon', 'sushi', 'soba'])
-//      assert.strictEqual(s1.japaneseFood[0], 'udon')
-//      assert.strictEqual(s1.japaneseFood[1], 'sushi')
-//      assert.strictEqual(s1.japaneseFood[2], 'soba')
-//      assert.strictEqual(s1.japaneseFood[3], undefined)
-//      assert.strictEqual(s1.japaneseFood.length, 3)
-//    })
-//
-//    it('should treat out-by-one assignment as insertion', () => {
-//      s1 = Automerge.change(s1, doc => doc.japaneseFood = ['udon'])
-//      s1 = Automerge.change(s1, doc => doc.japaneseFood[1] = 'sushi')
-//      assert.deepStrictEqual(s1.japaneseFood, ['udon', 'sushi'])
-//      assert.strictEqual(s1.japaneseFood[0], 'udon')
-//      assert.strictEqual(s1.japaneseFood[1], 'sushi')
-//      assert.strictEqual(s1.japaneseFood[2], undefined)
-//      assert.strictEqual(s1.japaneseFood.length, 2)
-//    })
-//
-//    it('should not allow out-of-range assignment', () => {
-//      s1 = Automerge.change(s1, doc => doc.japaneseFood = ['udon'])
-//      assert.throws(() => { Automerge.change(s1, doc => doc.japaneseFood[4] = 'ramen') }, /is out of bounds/)
-//    })
-//
-//    it('should allow bulk assignment of multiple list indexes', () => {
-//      s1 = Automerge.change(s1, doc => doc.noodles = ['udon', 'ramen', 'soba'])
-//      s1 = Automerge.change(s1, doc => Object.assign(doc.noodles, {0: 'うどん', 2: 'そば'}))
-//      assert.deepStrictEqual(s1.noodles, ['うどん', 'ramen', 'そば'])
-//      assert.strictEqual(s1.noodles[0], 'うどん')
-//      assert.strictEqual(s1.noodles[1], 'ramen')
-//      assert.strictEqual(s1.noodles[2], 'そば')
-//      assert.strictEqual(s1.noodles.length, 3)
-//    })
-//
-//    it('should handle nested objects', () => {
-//      s1 = Automerge.change(s1, doc => doc.noodles = [{type: 'ramen', dishes: ['tonkotsu', 'shoyu']}])
-//      s1 = Automerge.change(s1, doc => doc.noodles.push({type: 'udon', dishes: ['tempura udon']}))
-//      s1 = Automerge.change(s1, doc => doc.noodles[0].dishes.push('miso'))
-//      assert.deepStrictEqual(s1, {noodles: [
-//        {type: 'ramen', dishes: ['tonkotsu', 'shoyu', 'miso']},
-//        {type: 'udon', dishes: ['tempura udon']}
-//      ]})
-//      assert.deepStrictEqual(s1.noodles[0], {
-//        type: 'ramen', dishes: ['tonkotsu', 'shoyu', 'miso']
-//      })
-//      assert.deepStrictEqual(s1.noodles[1], {
-//        type: 'udon', dishes: ['tempura udon']
-//      })
-//    })
-//
-//    it('should handle nested lists', () => {
-//      s1 = Automerge.change(s1, doc => doc.noodleMatrix = [['ramen', 'tonkotsu', 'shoyu']])
-//      s1 = Automerge.change(s1, doc => doc.noodleMatrix.push(['udon', 'tempura udon']))
-//      s1 = Automerge.change(s1, doc => doc.noodleMatrix[0].push('miso'))
-//      assert.deepStrictEqual(s1.noodleMatrix, [['ramen', 'tonkotsu', 'shoyu', 'miso'], ['udon', 'tempura udon']])
-//      assert.deepStrictEqual(s1.noodleMatrix[0], ['ramen', 'tonkotsu', 'shoyu', 'miso'])
-//      assert.deepStrictEqual(s1.noodleMatrix[1], ['udon', 'tempura udon'])
-//    })
-//
-//    it('should handle replacement of the entire list', () => {
-//      s1 = Automerge.change(s1, doc => doc.noodles = ['udon', 'soba', 'ramen'])
-//      s1 = Automerge.change(s1, doc => doc.japaneseNoodles = doc.noodles.slice())
-//      s1 = Automerge.change(s1, doc => doc.noodles = ['wonton', 'pho'])
-//      assert.deepStrictEqual(s1, {
-//        noodles: ['wonton', 'pho'],
-//        japaneseNoodles: ['udon', 'soba', 'ramen']
-//      })
-//      assert.deepStrictEqual(s1.noodles, ['wonton', 'pho'])
-//      assert.strictEqual(s1.noodles[0], 'wonton')
-//      assert.strictEqual(s1.noodles[1], 'pho')
-//      assert.strictEqual(s1.noodles[2], undefined)
-//      assert.strictEqual(s1.noodles.length, 2)
-//    })
-//
-//    it('should allow assignment to change the type of a list element', () => {
-//      s1 = Automerge.change(s1, doc => doc.noodles = ['udon', 'soba', 'ramen'])
-//      assert.deepStrictEqual(s1.noodles, ['udon', 'soba', 'ramen'])
-//      s1 = Automerge.change(s1, doc => doc.noodles[1] = {type: 'soba', options: ['hot', 'cold']})
-//      assert.deepStrictEqual(s1.noodles, ['udon', {type: 'soba', options: ['hot', 'cold']}, 'ramen'])
-//      s1 = Automerge.change(s1, doc => doc.noodles[1] = ['hot soba', 'cold soba'])
-//      assert.deepStrictEqual(s1.noodles, ['udon', ['hot soba', 'cold soba'], 'ramen'])
-//      s1 = Automerge.change(s1, doc => doc.noodles[1] = 'soba is the best')
-//      assert.deepStrictEqual(s1.noodles, ['udon', 'soba is the best', 'ramen'])
-//    })
-//
-//    it('should allow list creation and assignment in the same change callback', () => {
-//      s1 = Automerge.change(Automerge.init(), doc => {
-//        doc.letters = ['a', 'b', 'c']
-//        doc.letters[1] = 'd'
-//      })
-//      assert.strictEqual(s1.letters[1], 'd')
-//    })
-//
-//    it('should allow adding and removing list elements in the same change callback', () => {
-//      s1 = Automerge.change(Automerge.init(), doc => doc.noodles = [])
-//      s1 = Automerge.change(s1, doc => {
-//        doc.noodles.push('udon')
-//        doc.noodles.deleteAt(0)
-//      })
-//      assert.deepStrictEqual(s1, {noodles: []})
-//      // do the add-remove cycle twice, test for #151 (https://github.com/automerge/automerge/issues/151)
-//      s1 = Automerge.change(s1, doc => {
-//        doc.noodles.push('soba')
-//        doc.noodles.deleteAt(0)
-//      })
-//      assert.deepStrictEqual(s1, {noodles: []})
-//    })
-//
-//    it('should handle arbitrary-depth nesting', () => {
-//      s1 = Automerge.change(s1, doc => doc.maze = [[[[[[[['noodles', ['here']]]]]]]]])
-//      s1 = Automerge.change(s1, doc => doc.maze[0][0][0][0][0][0][0][1].unshift('found'))
-//      assert.deepStrictEqual(s1.maze, [[[[[[[['noodles', ['found', 'here']]]]]]]]])
-//      assert.deepStrictEqual(s1.maze[0][0][0][0][0][0][0][1][1], 'here')
-//    })
-//
-//    it('should not allow several references to the same list object', () => {
-//      s1 = Automerge.change(s1, doc => doc.list = [])
-//      assert.throws(() => {
-//        Automerge.change(s1, doc => { doc.x = doc.list })
-//      }, /Cannot create a reference to an existing document object/)
-//      assert.throws(() => {
-//        Automerge.change(s1, doc => { doc.x = s1.list })
-//      }, /Cannot create a reference to an existing document object/)
-//      assert.throws(() => {
-//        Automerge.change(s1, doc => { doc.x = []; doc.y = doc.x })
-//      }, /Cannot create a reference to an existing document object/)
-//    })
-//  })
-//
-//  describe('counters', () => {
-//    it('should coalesce assignments and increments', () => {
-//      const s1 = Automerge.change(Automerge.init(), doc => doc.birds = {})
-//      const s2 = Automerge.change(s1, doc => {
-//        doc.birds.wrens = new Automerge.Counter(1)
-//        doc.birds.wrens.increment(2)
-//      })
-//      assert.deepStrictEqual(s1, {birds: {}})
-//      assert.deepStrictEqual(s2, {birds: {wrens: new Automerge.Counter(3)}})
-//      const changes = Automerge.getAllChanges(s2).map(decodeChange)
-//      assert.deepStrictEqual(changes[1], {
-//        hash: changes[1].hash, actor: Automerge.getActorId(s2), seq: 2, startOp: 2,
-//        time: changes[1].time, message: '', deps: [changes[0].hash], ops: [
-//          {obj: Automerge.getObjectId(s2.birds), action: 'set', key: 'wrens', insert: false, value: 3, datatype: 'counter', pred: []}
-//        ]
-//      })
-//    })
-//
-//    it('should coalesce multiple increments', () => {
-//      const s1 = Automerge.change(Automerge.init(), doc => doc.birds = {wrens: new Automerge.Counter()})
-//      const s2 = Automerge.change(s1, doc => {
-//        doc.birds.wrens.increment(2)
-//        doc.birds.wrens.decrement()
-//        doc.birds.wrens.increment(3)
-//      })
-//      assert.deepStrictEqual(s1, {birds: {wrens: new Automerge.Counter(0)}})
-//      assert.deepStrictEqual(s2, {birds: {wrens: new Automerge.Counter(4)}})
-//      const changes = Automerge.getAllChanges(s2).map(decodeChange), actor = Automerge.getActorId(s2)
-//      assert.deepStrictEqual(changes[1], {
-//        hash: changes[1].hash, actor, seq: 2, startOp: 3, time: changes[1].time,
-//        message: '', deps: [changes[0].hash], ops: [
-//          {obj: Automerge.getObjectId(s2.birds), action: 'inc', key: 'wrens', insert: false, value: 4, pred: [`2@${actor}`]}
-//        ]
-//      })
-//    })
-//  })
-//})
+    // should handle arbitrary-depth nesting
+    func testSerialUseNestedMaps5() {
+        struct A: Codable, Equatable { var b: B }
+        struct B: Codable, Equatable { var c: C }
+        struct C: Codable, Equatable { var d: D }
+        struct D: Codable, Equatable { var e: E }
+        struct E: Codable, Equatable { var f: F }
+        struct F: Codable, Equatable { var g: String; var i: String? }
+        struct Scheme: Codable, Equatable {
+            var a: A
+        }
+        var s1 = Document(Scheme(a: A(b: B(c: C(d: D(e: E(f: F(g: "h", i: nil))))))))
+        s1.change {
+            $0[\.a.b.c.d.e.f.i, "a.b.c.d.e.f.i"] = "j"
+        }
+        XCTAssertEqual(s1.content, Scheme(a: A(b: B(c: C(d: D(e: E(f: F(g: "h", i: "j"))))))))
+        XCTAssertEqual(s1.content.a.b.c.d.e.f.g, "h")
+        XCTAssertEqual(s1.content.a.b.c.d.e.f.i, "j")
+    }
+
+    // should allow an old object to be replaced with a new one
+    func testSerialUseNestedMaps6() {
+        struct Scheme: Codable, Equatable {
+            struct Pet: Codable, Equatable { let species: String; let legs: Int?; let breed: String?; let colors: [String: Bool]?; let variety: String? }
+            var myPet: Pet?
+        }
+        var s1 = Document(Scheme(myPet: nil))
+        s1.change {
+            $0[\.myPet, "myPet"] = .init(species: "dog", legs: 4, breed: "dachshund", colors: nil, variety: nil)
+        }
+        var s2 = s1
+        s2.change {
+            $0[\.myPet, "myPet"] = .init(species: "koi", legs: nil, breed: nil, colors: ["red": true, "white": true, "black": false], variety: "紅白")
+        }
+        XCTAssertEqual(s1.content, Scheme(myPet: .init(species: "dog", legs: 4, breed: "dachshund", colors: nil, variety: nil)))
+        XCTAssertEqual(s1.content.myPet?.breed, "dachshund")
+        XCTAssertEqual(s2.content, Scheme(myPet: .init(species: "koi", legs: nil, breed: nil, colors: ["red": true, "white": true, "black": false], variety: "紅白")))
+        XCTAssertEqual(s2.content.myPet?.breed, nil)
+        XCTAssertEqual(s2.content.myPet?.variety, "紅白")
+    }
+
+    // should handle deletion of properties within a map
+    func testSerialUseNestedMaps7() {
+        struct Scheme: Codable, Equatable {
+            struct Style: Codable, Equatable { var bold: Bool?; let fontSize: Int; let typeface: String? }
+            var style: Style?
+        }
+        var s1 = Document(Scheme(style: nil))
+        s1.change { $0[\.style, "style"] = .init(bold: false, fontSize: 12, typeface: "Optima") }
+        s1.change { $0[\.style!.bold, "style.bold"] = nil }
+        XCTAssertEqual(s1.content.style, .init(bold: nil, fontSize: 12, typeface: "Optima"))
+        XCTAssertEqual(s1.content.style?.bold, nil)
+    }
+
+    // should handle deletion of references to a map
+    func testSerialUseNestedMaps8() {
+        struct Scheme: Codable, Equatable {
+            struct Style: Codable, Equatable { var bold: Bool?; let fontSize: Int; let typeface: String? }
+            var style: Style?
+            let title: String
+        }
+        var s1 = Document(Scheme(style: nil, title: "Hello"))
+        s1.change { $0[\.style, "style"] = .init(bold: false, fontSize: 12, typeface: "Optima") }
+        s1.change { $0[\.style, "style"] = nil }
+        XCTAssertEqual(s1.content.style, nil)
+        XCTAssertEqual(s1.content, Scheme(style: nil, title: "Hello"))
+    }
+
+    // should allow elements to be inserted
+    func testSerialUseLists1() {
+        struct Scheme: Codable, Equatable {
+            var noodles: [String]
+        }
+        var s1 = Document(Scheme(noodles: []))
+        s1.change { $0[\.noodles, "noodles"].insert(contentsOf: ["udon", "soba"], at: 0) }
+        s1.change { $0[\.noodles, "noodles"].insert("ramen", at: 1) }
+        XCTAssertEqual(s1.content.noodles, ["udon", "ramen", "soba"])
+        XCTAssertEqual(s1.content.noodles[0], "udon")
+        XCTAssertEqual(s1.content.noodles[1], "ramen")
+        XCTAssertEqual(s1.content.noodles[2], "soba")
+        XCTAssertEqual(s1.content.noodles.count, 3)
+    }
+
+    // should handle assignment of a list literal
+    func testSerialUseLists2() {
+        struct Scheme: Codable, Equatable {
+            var noodles: [String]
+        }
+        var s1 = Document(Scheme(noodles: []))
+        s1.change { $0[\.noodles, "noodles"] = ["udon", "ramen", "soba"] }
+        XCTAssertEqual(s1.content, Scheme(noodles: ["udon", "ramen", "soba"]))
+        XCTAssertEqual(s1.content.noodles, ["udon", "ramen", "soba"])
+        XCTAssertEqual(s1.content.noodles[0], "udon")
+        XCTAssertEqual(s1.content.noodles[1], "ramen")
+        XCTAssertEqual(s1.content.noodles[2], "soba")
+        XCTAssertEqual(s1.content.noodles.count, 3)
+    }
+
+    // should handle deletion of list elements
+    func testSerialUseLists3() {
+        struct Scheme: Codable, Equatable {
+            var noodles: [String]
+        }
+        var s1 = Document(Scheme(noodles:["udon", "ramen", "soba"]))
+        s1.change { $0[\.noodles, "noodles"].remove(at: 1) }
+        XCTAssertEqual(s1.content, Scheme(noodles: ["udon", "soba"]))
+        XCTAssertEqual(s1.content.noodles, ["udon", "soba"])
+        XCTAssertEqual(s1.content.noodles[0], "udon")
+        XCTAssertEqual(s1.content.noodles[1], "soba")
+        XCTAssertEqual(s1.content.noodles.count, 2)
+    }
+
+    // should handle assignment of individual list indexes
+    func testSerialUseLists4() {
+        struct Scheme: Codable, Equatable {
+            var japaneseFood: [String]
+        }
+        var s1 = Document(Scheme(japaneseFood: ["udon", "ramen", "soba"]))
+        s1.change { $0[\.japaneseFood[1], "japaneseFood[1]"] = "sushi" }
+        XCTAssertEqual(s1.content, Scheme(japaneseFood: ["udon", "sushi", "soba"]))
+        XCTAssertEqual(s1.content.japaneseFood, ["udon", "sushi", "soba"])
+        XCTAssertEqual(s1.content.japaneseFood[0], "udon")
+        XCTAssertEqual(s1.content.japaneseFood[1], "sushi")
+        XCTAssertEqual(s1.content.japaneseFood[2], "soba")
+        XCTAssertEqual(s1.content.japaneseFood.count, 3)
+    }
+
+    // should handle assignment of individual list indexes
+    func testSerialUseLists5() {
+        struct Scheme: Codable, Equatable {
+            var japaneseFood: [String]
+        }
+        var s1 = Document(Scheme(japaneseFood: ["udon", "ramen", "soba"]))
+        s1.change {
+            $0[\.japaneseFood[0], "japaneseFood[0]"] = "うどん"
+            $0[\.japaneseFood[2], "japaneseFood[2]"] = "そば"
+        }
+        XCTAssertEqual(s1.content, Scheme(japaneseFood: ["うどん", "ramen", "そば"]))
+        XCTAssertEqual(s1.content.japaneseFood, ["うどん", "ramen", "そば"])
+        XCTAssertEqual(s1.content.japaneseFood[0], "うどん")
+        XCTAssertEqual(s1.content.japaneseFood[1], "ramen")
+        XCTAssertEqual(s1.content.japaneseFood[2], "そば")
+        XCTAssertEqual(s1.content.japaneseFood.count, 3)
+    }
+
+    // should handle nested objects
+    func testSerialUseLists6() {
+        struct Noodle: Codable, Equatable {
+            enum TypeNoodle: String, Codable { case ramen, udon }
+            let type: TypeNoodle
+            var dishes: [String]
+        }
+        struct Scheme: Codable, Equatable {
+            var noodles: [Noodle]
+        }
+        var s1 = Document(Scheme(noodles: [.init(type: .ramen, dishes: ["tonkotsu", "shoyu"])]))
+        s1.change { $0[\.noodles, "noodles"].append(.init(type: .udon, dishes: ["tempura udon"])) }
+        s1.change { $0[\.noodles[0].dishes, "noodles[0].dishes"].append("miso") }
+        XCTAssertEqual(s1.content, Scheme(noodles: [.init(type: .ramen, dishes: ["tonkotsu", "shoyu", "miso"]), .init(type: .udon, dishes: ["tempura udon"])]))
+        XCTAssertEqual(s1.content.noodles[0], .init(type: .ramen, dishes: ["tonkotsu", "shoyu", "miso"]))
+        XCTAssertEqual(s1.content.noodles[1], .init(type: .udon, dishes: ["tempura udon"]))
+    }
+
+    // should handle assignment of individual list indexes
+    func testSerialUseLists7() {
+        struct Scheme: Codable, Equatable {
+            var noodles: [String]?
+            var japaneseFood: [String]?
+        }
+        var s1 = Document(Scheme(noodles: ["udon", "soba", "ramen"], japaneseFood: nil))
+        s1.change {
+            $0[\.japaneseFood, "japaneseFood"] = $0[\.noodles, "noodles"]
+            $0[\.noodles, "noodles"] = ["wonton", "pho"]
+        }
+        XCTAssertEqual(s1.content, Scheme(noodles: ["wonton", "pho"], japaneseFood: ["udon", "soba", "ramen"]))
+        XCTAssertEqual(s1.content.noodles, ["wonton", "pho"])
+        XCTAssertEqual(s1.content.noodles?[0], "wonton")
+        XCTAssertEqual(s1.content.noodles?[1], "pho")
+        XCTAssertEqual(s1.content.noodles?.count, 2)
+    }
+
+    // should allow list creation and assignment in the same change callback
+    func testSerialUseLists8() {
+        struct Scheme: Codable, Equatable {
+            var letters: [String]
+        }
+        var s1 = Document(Scheme(letters: []))
+        s1.change {
+            $0[\.letters, "letters"] = ["a", "b", "c"]
+            $0[\.letters[1], "letters[1]"] = "d"
+        }
+        XCTAssertEqual(s1.content, Scheme(letters: ["a", "d", "c"]))
+        XCTAssertEqual(s1.content.letters[1], "d")
+    }
+
+    // should allow adding and removing list elements in the same change callback
+    func testSerialUseLists9() {
+        struct Scheme: Codable, Equatable {
+            var noodles: [String]
+        }
+        var s1 = Document(Scheme(noodles: []))
+        s1.change {
+            $0[\.noodles, "noodles"].append("udon")
+            $0[\.noodles, "noodles"].remove(at: 0)
+        }
+        XCTAssertEqual(s1.content, Scheme(noodles: []))
+        // do the add-remove cycle twice, test for #151 (https://github.com/automerge/automerge/issues/151)
+        s1.change {
+            $0[\.noodles, "noodles"].append("soba")
+            $0[\.noodles, "noodles"].remove(at: 0)
+        }
+        XCTAssertEqual(s1.content, Scheme(noodles: []))
+    }
+
+    // should allow adding and removing list elements in the same change callback
+    func testSerialUseLists10() {
+        struct Scheme: Codable, Equatable {
+            var maze: [[[[[[[[String]]]]]]]]
+        }
+        var s1 = Document(Scheme(maze: [[[[[[[["noodles"]]]]]]]]))
+        s1.change {
+            $0[\.maze[0][0][0][0][0][0][0], "maze[0][0][0][0][0][0][0]"].append("found")
+        }
+        XCTAssertEqual(s1.content, Scheme(maze: [[[[[[[["noodles", "found"]]]]]]]]))
+        XCTAssertEqual(s1.content.maze[0][0][0][0][0][0][0][1], "found")
+    }
+
+    func testSerialUseCounter1() {
+        struct Scheme: Codable, Equatable {
+            var counter: Counter?
+        }
+        var s1 = Document(Scheme(counter: nil))
+        s1.change { $0[\.counter, "counter"] = 1 }
+        s1.change { $0[\.counter, "counter"]?.increment(2) }
+
+        XCTAssertEqual(s1.content, Scheme(counter: Counter(integerLiteral: 3)))
+    }
+
+    func testSerialUseCounter2() {
+        struct Scheme: Codable, Equatable {
+            var counter: Counter?
+        }
+        let s1 = Document(Scheme(counter: 0))
+        var s2 = s1
+        s2.change {
+            $0[\.counter, "counter"]?.increment(2)
+            $0[\.counter, "counter"]?.decrement()
+            $0[\.counter, "counter"]?.increment(3)
+        }
+
+        XCTAssertEqual(s1.content, Scheme(counter: 0))
+        XCTAssertEqual(s2.content, Scheme(counter: 4))
+    }
+
+}
