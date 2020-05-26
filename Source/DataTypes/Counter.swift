@@ -7,10 +7,22 @@
 
 import Foundation
 
-struct Counter: Codable, Equatable {
-    let value: Double
+public struct Counter: Codable, Equatable {
+    public let value: Int
+
+    public init(_ value: Int) {
+        self.value = value
+    }
 
     enum CodingKeys: String, CodingKey  {
-        case value = "_Counter_Value"
+        case value = "_counter_calue"
     }
+}
+
+extension Counter: ExpressibleByIntegerLiteral {
+
+    public init(integerLiteral value: Int) {
+        self = Counter(value)
+    }
+
 }

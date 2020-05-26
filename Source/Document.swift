@@ -131,6 +131,7 @@ public struct Document<T: Codable> {
 
     public var content: T {
         let context = Context(doc: self, actorId: options.actorId)
+        
         return Proxy<T>.rootProxy(contex: context).value
     }
 

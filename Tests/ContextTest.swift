@@ -273,7 +273,7 @@ class ContextTest: XCTestCase {
                     CONFLICTS: [
                         Key.string("values"): [
                             "actor1": dateValue,
-                            "actor2": Counter(value: 0),
+                            "actor2": Counter(0),
                             "actor3": 42,
                             "actor4": NSNull(),
                             "actor5": child
@@ -295,7 +295,7 @@ class ContextTest: XCTestCase {
             props: [
                 "values": [
                     "actor1": .value(.init(value: .double(dateValue.timeIntervalSince1970), datatype: .timestamp)),
-                    "actor2": .value(.init(value: .double(0), datatype: .counter)),
+                    "actor2": .value(.init(value: .int(0), datatype: .counter)),
                     "actor3": 42,
                     "actor4": .value(.init(value: .null)),
                     "actor5": .object(.init(objectId: objectId, type: .map, props: ["goldfinches": [actor.actorId: 3]]))
@@ -451,7 +451,8 @@ class ContextTest: XCTestCase {
     // should allow assignment of Counter values
     func testContextSetMapKey12() {
         //Given
-        let counter = Counter(value: 3)
+        let counter = Counter(3)
+        let encoder = DictionaryEncoder()
         let actor = ActorId()
         let context = Context(
             actorId: actor,
@@ -461,11 +462,11 @@ class ContextTest: XCTestCase {
             ops: []
         )
         // WHEN
-        context.setMapKey(path: [], key: "counter", value: counter)
+        context.setMapKey(path: [], key: "counter", value: try! encoder.encode(counter))
 
         //Then
         XCTAssertEqual(context.ops, [
-            Op(action: .set, obj: ROOT_ID, key: "counter", value: .double(3), datatype: .counter)
+            Op(action: .set, obj: ROOT_ID, key: "counter", value: .int(3), datatype: .counter)
         ])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, ObjectDiff(
@@ -473,7 +474,7 @@ class ContextTest: XCTestCase {
             type: .map,
             props: [
                 "counter": [
-                    actor.actorId: .value(.init(value: .double(3), datatype: .counter))
+                    actor.actorId: .value(.init(value: .int(3), datatype: .counter))
                 ]
             ]
             )
@@ -945,7 +946,7 @@ class ContextTest: XCTestCase {
 
     //should increment a counter
     func testCounter1() {
-        let counter = ["_Counter_Value": Primitive.double(0)]
+        let counter = [COUNTER_VALUE: Primitive.int(0)]
         let actor = ActorId()
         let context = Context(
             actorId: actor,
@@ -967,7 +968,7 @@ class ContextTest: XCTestCase {
 
         //Then
         XCTAssertEqual(context.ops, [
-            Op(action: .inc, obj: ROOT_ID, key: .string("counter"), value: .double(1))
+            Op(action: .inc, obj: ROOT_ID, key: .string("counter"), value: .int(1))
         ])
 
         XCTAssertEqual(applyPatch.callCount, 1)
@@ -976,7 +977,7 @@ class ContextTest: XCTestCase {
             type: .map,
             props: [
                 "counter": [
-                    actor.actorId: .value(.init(value: .double(1), datatype: .counter))
+                    actor.actorId: .value(.init(value: .int(1), datatype: .counter))
                 ]
             ]
         ))

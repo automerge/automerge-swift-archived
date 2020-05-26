@@ -90,11 +90,17 @@ public final class Context {
             ops.append(operation)
             return .value(.init(value: .double(date.timeIntervalSince1970), datatype: .timestamp))
         case let couter as Counter:
-            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .double(couter.value), datatype: .counter)
+            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .int(couter.value), datatype: .counter)
             ops.append(operation)
-            return .value(.init(value: .double(couter.value), datatype: .counter))
+            return .value(.init(value: .int(couter.value), datatype: .counter))
         case let value as [String: Any]:
-            return .object(createNestedObjects(obj: objectId, key: key, value: value, insert: insert))
+            if let counterValue = value[COUNTER_VALUE] as? Int {
+                let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .int(counterValue), datatype: .counter)
+                ops.append(operation)
+                return .value(.init(value: .int(counterValue), datatype: .counter))
+            } else {
+                return .object(createNestedObjects(obj: objectId, key: key, value: value, insert: insert))
+            }
         case let array as [Any]:
             return .object(createNestedObjects(obj: objectId, key: key, value: array, insert: insert))
         case let text as Text:
@@ -295,30 +301,30 @@ public final class Context {
         updated[ROOT_ID] = cache[ROOT_ID]
 
     }
-//    splice(path, start, deletions, insertions) {
-//      const objectId = path.length === 0 ? ROOT_ID : path[path.length - 1].objectId
-//      let list = this.getObject(objectId)
-//      if (start < 0 || deletions < 0 || start > list.length - deletions) {
-//        throw new RangeError()
-//      }
-//      if (deletions === 0 && insertions.length === 0) return
-//
-//      let patch = {diffs: {objectId: ROOT_ID, type: 'map'}}
-//      let subpatch = this.getSubpatch(patch, path)
-//      if (!subpatch.edits) subpatch.edits = []
-//
-//      if (deletions > 0) {
-//        for (let i = 0; i < deletions; i++) {
-//          this.addOp({action: 'del', obj: objectId, key: start})
-//          subpatch.edits.push({action: 'remove', index: start})
-//        }
-//      }
-//
-//      if (insertions.length > 0) {
-//        this.insertListItems(subpatch, start, insertions, false)
-//      }
-//      this.applyPatch(patch.diffs, this.cache[ROOT_ID], this.updated)
-//    }
+    //    splice(path, start, deletions, insertions) {
+    //      const objectId = path.length === 0 ? ROOT_ID : path[path.length - 1].objectId
+    //      let list = this.getObject(objectId)
+    //      if (start < 0 || deletions < 0 || start > list.length - deletions) {
+    //        throw new RangeError()
+    //      }
+    //      if (deletions === 0 && insertions.length === 0) return
+    //
+    //      let patch = {diffs: {objectId: ROOT_ID, type: 'map'}}
+    //      let subpatch = this.getSubpatch(patch, path)
+    //      if (!subpatch.edits) subpatch.edits = []
+    //
+    //      if (deletions > 0) {
+    //        for (let i = 0; i < deletions; i++) {
+    //          this.addOp({action: 'del', obj: objectId, key: start})
+    //          subpatch.edits.push({action: 'remove', index: start})
+    //        }
+    //      }
+    //
+    //      if (insertions.length > 0) {
+    //        this.insertListItems(subpatch, start, insertions, false)
+    //      }
+    //      this.applyPatch(patch.diffs, this.cache[ROOT_ID], this.updated)
+    //    }
 
     /**
      * Updates the map object at path `path`, setting the property with name
@@ -397,7 +403,7 @@ public final class Context {
         case let date as Date:
             return .value(.init(value: .double(date.timeIntervalSince1970), datatype: .timestamp))
         case let counter as Counter:
-            return .value(.init(value: .double(counter.value), datatype: .counter))
+            return .value(.init(value: .int(counter.value), datatype: .counter))
         case is NSNull:
             return .value(.init(value: .null))
         case let object as [String : Any]:
@@ -542,35 +548,35 @@ public final class Context {
 
         return subPatch
     }
-//    getSubpatch(patch, path) {
-//      let subpatch = patch.diffs, object = this.getObject(ROOT_ID)
-//
-//      for (let pathElem of path) {
-//        if (!subpatch.props) {
-//          subpatch.props = {}
-//        }
-//        if (!subpatch.props[pathElem.key]) {
-//          subpatch.props[pathElem.key] = this.getValuesDescriptions(path, object, pathElem.key)
-//        }
-//
-//        let nextOpId = null, values = subpatch.props[pathElem.key]
-//        for (let opId of Object.keys(values)) {
-//          if (values[opId].objectId === pathElem.objectId) {
-//            nextOpId = opId
-//          }
-//        }
-//        if (!nextOpId) {
-//          throw new RangeError(`Cannot find path object with objectId ${pathElem.objectId}`)
-//        }
-//        subpatch = values[nextOpId]
-//        object = this.getPropertyValue(object, pathElem.key, nextOpId)
-//      }
-//
-//      if (!subpatch.props) {
-//        subpatch.props = {}
-//      }
-//      return subpatch
-//    }
+    //    getSubpatch(patch, path) {
+    //      let subpatch = patch.diffs, object = this.getObject(ROOT_ID)
+    //
+    //      for (let pathElem of path) {
+    //        if (!subpatch.props) {
+    //          subpatch.props = {}
+    //        }
+    //        if (!subpatch.props[pathElem.key]) {
+    //          subpatch.props[pathElem.key] = this.getValuesDescriptions(path, object, pathElem.key)
+    //        }
+    //
+    //        let nextOpId = null, values = subpatch.props[pathElem.key]
+    //        for (let opId of Object.keys(values)) {
+    //          if (values[opId].objectId === pathElem.objectId) {
+    //            nextOpId = opId
+    //          }
+    //        }
+    //        if (!nextOpId) {
+    //          throw new RangeError(`Cannot find path object with objectId ${pathElem.objectId}`)
+    //        }
+    //        subpatch = values[nextOpId]
+    //        object = this.getPropertyValue(object, pathElem.key, nextOpId)
+    //      }
+    //
+    //      if (!subpatch.props) {
+    //        subpatch.props = {}
+    //      }
+    //      return subpatch
+    //    }
 
     /**
      * Returns the value at property `key` of object `object`. In the case of a conflict, returns
@@ -651,40 +657,40 @@ public final class Context {
             fatalError()
         }
         precondition(!(list[index] is Counter), "Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.")
-         applyAt(path: path) { subpatch in
+        applyAt(path: path) { subpatch in
             let valuePatch = setValue(objectId: objectId, key: .index(index), value: value, insert: false)
             subpatch.props?[.index(index)] = [actorId.actorId: valuePatch]
         }
 
     }
     
-//    setListIndex(path, index, value) {
-//      const objectId = path.length === 0 ? ROOT_ID : path[path.length - 1].objectId
-//      const list = this.getObject(objectId)
-//      if (index === list.length) {
-//        return this.splice(path, index, 0, [value])
-//      }
-//      if (index < 0 || index > list.length) {
-//        throw new RangeError(`List index ${index} is out of bounds for list of length ${list.length}`)
-//      }
-//      if (list[index] instanceof Counter) {
-//        throw new RangeError('Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.')
-//      }
-//
-//      // If the assigned list element value is the same as the existing value, and
-//      // the assignment does not resolve a conflict, do nothing
-//      if (list[index] !== value || Object.keys(list[CONFLICTS][index] || {}).length > 1 || value === undefined) {
-//        this.applyAtPath(path, subpatch => {
-//          const valuePatch = this.setValue(objectId, index, value, false)
-//          subpatch.props[index] = {[this.actorId]: valuePatch}
-//        })
-//      }
-//    }
+    //    setListIndex(path, index, value) {
+    //      const objectId = path.length === 0 ? ROOT_ID : path[path.length - 1].objectId
+    //      const list = this.getObject(objectId)
+    //      if (index === list.length) {
+    //        return this.splice(path, index, 0, [value])
+    //      }
+    //      if (index < 0 || index > list.length) {
+    //        throw new RangeError(`List index ${index} is out of bounds for list of length ${list.length}`)
+    //      }
+    //      if (list[index] instanceof Counter) {
+    //        throw new RangeError('Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.')
+    //      }
+    //
+    //      // If the assigned list element value is the same as the existing value, and
+    //      // the assignment does not resolve a conflict, do nothing
+    //      if (list[index] !== value || Object.keys(list[CONFLICTS][index] || {}).length > 1 || value === undefined) {
+    //        this.applyAtPath(path, subpatch => {
+    //          const valuePatch = this.setValue(objectId, index, value, false)
+    //          subpatch.props[index] = {[this.actorId]: valuePatch}
+    //        })
+    //      }
+    //    }
 
     /**
-    * Updates the table object at path `path`, adding a new entry `row`.
-    * Returns the objectId of the new row.
-    */
+     * Updates the table object at path `path`, adding a new entry `row`.
+     * Returns the objectId of the new row.
+     */
     func addTableRow(path: [KeyPathElement], row: [String: Any]) -> String {
         precondition(row[OBJECT_ID] == nil, "Cannot reuse an existing object as table row")
         precondition(row["id"] == nil, "A table row must not have an id property; it is generated automatically")
@@ -698,23 +704,23 @@ public final class Context {
     }
 
 
-//    addTableRow(path, row) {
-//      if (!isObject(row) || Array.isArray(row)) {
-//        throw new TypeError('A table row must be an object')
-//      }
-//      if (row[OBJECT_ID]) {
-//        throw new TypeError('Cannot reuse an existing object as table row')
-//      }
-//      if (row.id) {
-//        throw new TypeError('A table row must not have an "id" property; it is generated automatically')
-//      }
-//
-//      const valuePatch = this.setValue(path[path.length - 1].objectId, null, row, false)
-//      this.applyAtPath(path, subpatch => {
-//        subpatch.props[valuePatch.objectId] = {[valuePatch.objectId]: valuePatch}
-//      })
-//      return valuePatch.objectId
-//    }
+    //    addTableRow(path, row) {
+    //      if (!isObject(row) || Array.isArray(row)) {
+    //        throw new TypeError('A table row must be an object')
+    //      }
+    //      if (row[OBJECT_ID]) {
+    //        throw new TypeError('Cannot reuse an existing object as table row')
+    //      }
+    //      if (row.id) {
+    //        throw new TypeError('A table row must not have an "id" property; it is generated automatically')
+    //      }
+    //
+    //      const valuePatch = this.setValue(path[path.length - 1].objectId, null, row, false)
+    //      this.applyAtPath(path, subpatch => {
+    //        subpatch.props[valuePatch.objectId] = {[valuePatch.objectId]: valuePatch}
+    //      })
+    //      return valuePatch.objectId
+    //    }
 
     /**
      * Updates the table object at path `path`, deleting the row with ID `rowId`.
@@ -732,29 +738,31 @@ public final class Context {
             })
         }
     }
-//    deleteTableRow(path, rowId) {
-//      const objectId = path[path.length - 1].objectId, table = this.getObject(objectId)
-//
-//      if (table.byId(rowId)) {
-//        this.addOp({action: 'del', obj: objectId, key: rowId})
-//        this.applyAtPath(path, subpatch => {
-//          subpatch.props[rowId] = {}
-//        })
-//      }
-//    }
+    //    deleteTableRow(path, rowId) {
+    //      const objectId = path[path.length - 1].objectId, table = this.getObject(objectId)
+    //
+    //      if (table.byId(rowId)) {
+    //        this.addOp({action: 'del', obj: objectId, key: rowId})
+    //        this.applyAtPath(path, subpatch => {
+    //          subpatch.props[rowId] = {}
+    //        })
+    //      }
+    //    }
 
     /**
      * Adds the integer `delta` to the value of the counter located at property
      * `key` in the object at path `path`.
      */
-    func increment(path: [KeyPathElement], key: Key, delta: Double) {
+    func increment(path: [KeyPathElement], key: Key, delta: Int) {
         let objectId = path.count == 0 ? ROOT_ID : path[path.count - 1].objectId
         let object = getObject(objectId: objectId)
-        let counterValue: Double
+        let counterValue: Int
         switch key {
         case .string(let key):
-            if case .double(let value) = (object[key] as! [String: Primitive])["_Counter_Value"]! {
+            if case .int(let value) = (object[key] as! [String: Primitive])[COUNTER_VALUE]! {
                 counterValue = value
+            } else if case .double(let value) = (object[key] as! [String: Primitive])[COUNTER_VALUE]! {
+                counterValue = Int(value)
             }else {
                 fatalError()
             }
@@ -762,24 +770,24 @@ public final class Context {
             fatalError()
         }
         // TODO what if there is a conflicting value on the same key as the counter?
-        ops.append(Op(action: .inc, obj: objectId, key: key, value: .double(counterValue + delta)))
+        ops.append(Op(action: .inc, obj: objectId, key: key, value: .int(delta)))
         applyAt(path: path, callback: { subpatch in
-            subpatch.props?[key] = [actorId.actorId: .value(.init(value: .double(counterValue + delta), datatype: .counter))]
+            subpatch.props?[key] = [actorId.actorId: .value(.init(value: .int(counterValue + delta), datatype: .counter))]
         })
     }
-//    increment(path, key, delta) {
-//      const objectId = path.length === 0 ? ROOT_ID : path[path.length - 1].objectId
-//      const object = this.getObject(objectId)
-//      if (!(object[key] instanceof Counter)) {
-//        throw new TypeError('Only counter values can be incremented')
-//      }
-//
-//      // TODO what if there is a conflicting value on the same key as the counter?
-//      const value = object[key].value + delta
-//      this.addOp({action: 'inc', obj: objectId, key, value: delta})
-//      this.applyAtPath(path, subpatch => {
-//        subpatch.props[key] = {[this.actorId]: {value, datatype: 'counter'}}
-//      })
-//    }
+    //    increment(path, key, delta) {
+    //      const objectId = path.length === 0 ? ROOT_ID : path[path.length - 1].objectId
+    //      const object = this.getObject(objectId)
+    //      if (!(object[key] instanceof Counter)) {
+    //        throw new TypeError('Only counter values can be incremented')
+    //      }
+    //
+    //      // TODO what if there is a conflicting value on the same key as the counter?
+    //      const value = object[key].value + delta
+    //      this.addOp({action: 'inc', obj: objectId, key, value: delta})
+    //      this.applyAtPath(path, subpatch => {
+    //        subpatch.props[key] = {[this.actorId]: {value, datatype: 'counter'}}
+    //      })
+    //    }
 
 }
