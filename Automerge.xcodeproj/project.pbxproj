@@ -47,7 +47,6 @@
 		OBJ_61 /* Request.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_28 /* Request.swift */; };
 		OBJ_62 /* applyPatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_29 /* applyPatch.swift */; };
 		OBJ_69 /* Package.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_6 /* Package.swift */; };
-		OBJ_80 /* BackendMock.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_31 /* BackendMock.swift */; };
 		OBJ_81 /* ContextTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_32 /* ContextTest.swift */; };
 		OBJ_82 /* Proxy+CollectionTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_33 /* Proxy+CollectionTest.swift */; };
 		OBJ_83 /* ProxyTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_34 /* ProxyTest.swift */; };
@@ -98,7 +97,6 @@
 		OBJ_27 /* Proxy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Proxy.swift; sourceTree = "<group>"; };
 		OBJ_28 /* Request.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Request.swift; sourceTree = "<group>"; };
 		OBJ_29 /* applyPatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = applyPatch.swift; sourceTree = "<group>"; };
-		OBJ_31 /* BackendMock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackendMock.swift; sourceTree = "<group>"; };
 		OBJ_32 /* ContextTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextTest.swift; sourceTree = "<group>"; };
 		OBJ_33 /* Proxy+CollectionTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Proxy+CollectionTest.swift"; sourceTree = "<group>"; };
 		OBJ_34 /* ProxyTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProxyTest.swift; sourceTree = "<group>"; };
@@ -178,7 +176,6 @@
 		OBJ_30 /* Tests */ = {
 			isa = PBXGroup;
 			children = (
-				OBJ_31 /* BackendMock.swift */,
 				OBJ_32 /* ContextTest.swift */,
 				OBJ_33 /* Proxy+CollectionTest.swift */,
 				OBJ_34 /* ProxyTest.swift */,
@@ -354,7 +351,6 @@
 			buildActionMask = 0;
 			files = (
 				94339B50247BA70A00A461F1 /* AutomergeTest.swift in Sources */,
-				OBJ_80 /* BackendMock.swift in Sources */,
 				94E26786246809CC00C54C0E /* RSBackendTest.swift in Sources */,
 				OBJ_81 /* ContextTest.swift in Sources */,
 				OBJ_82 /* Proxy+CollectionTest.swift in Sources */,

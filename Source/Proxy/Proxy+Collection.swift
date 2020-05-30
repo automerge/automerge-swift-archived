@@ -48,7 +48,7 @@ extension Proxy {
                switch context.getObject(objectId: taregtObjectId)[key] {
                case let objectType as [String: Any]:
                    let listId = objectType[OBJECT_ID] as! String
-                   return Proxy<[Y]>(contex: context, objectId: listId, path: path + [.init(key: .string(key), objectId: listId)])
+                   return Proxy<[Y]>(context: context, objectId: listId, path: path + [.init(key: .string(key), objectId: listId)])
                default:
                    fatalError()
                }
@@ -57,7 +57,7 @@ extension Proxy {
                case let listObjects as [[String: Any]]:
                    let objectType = listObjects[index]
                    let listId = objectType[OBJECT_ID] as! String
-                   return Proxy<[Y]>(contex: context, objectId: listId, path: path + [.init(key: .index(index), objectId: listId)])
+                   return Proxy<[Y]>(context: context, objectId: listId, path: path + [.init(key: .index(index), objectId: listId)])
                default:
                    fatalError("Unsupported proxy at \(index), implement later")
                }
@@ -104,7 +104,7 @@ extension Proxy: RangeReplaceableCollection where T: RangeReplaceableCollection,
         let void: (ObjectDiff, [String: Any]?, inout [String: [String: Any]]) -> [String: Any]? = { _, _, _ in
             fatalError()
         }
-        self.init(contex: Context(actorId: ActorId(), applyPatch: void, updated: [:], cache: [:], ops: []), objectId: "", path: [])
+        self.init(context: Context(actorId: ActorId(), applyPatch: void, updated: [:], cache: [:], ops: []), objectId: "", path: [])
     }
 
     public func replaceSubrange<C, R>(_ subrange: R, with newElements: C) where C : Collection, R : RangeExpression, Element == C.Element, Index == R.Bound {
