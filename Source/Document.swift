@@ -189,6 +189,34 @@ public struct Document<T: Codable> {
         }
     }
 
+    @discardableResult
+    public mutating func change2(options: ChangeOptions, execute: (Proxy2<T>) -> Void) -> Request? {
+        if change {
+            fatalError("Calls to Automerge.change cannot be nested")
+        }
+        let context = Context(doc: self, actorId: self.options.actorId)
+        execute(.rootProxy(context: context))
+        if context.idUpdated {
+            return makeChange(requestType: .change, context: context, options: options)
+        } else {
+            return nil
+        }
+    }
+
+    @discardableResult
+    public mutating func change2(_ execute: (Proxy2<T>) -> Void) -> Request? {
+        if change {
+            fatalError("Calls to Automerge.change cannot be nested")
+        }
+        let context = Context(doc: self, actorId: self.options.actorId)
+        execute(.rootProxy(context: context))
+        if context.idUpdated {
+            return makeChange(requestType: .change, context: context, options: nil)
+        } else {
+            return nil
+        }
+    }
+
     //function change(doc, options, callback) {
     //  if (doc[OBJECT_ID] !== ROOT_ID) {
     //    throw new TypeError('The first argument to Automerge.change must be the document root')

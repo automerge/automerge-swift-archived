@@ -7,6 +7,90 @@
 
 import Foundation
 
+@dynamicMemberLookup
+public final class Proxy2<T: Codable> {
+
+    init(
+        context: Context,
+        objectId: String?,
+        path: [Context.KeyPathElement],
+        value: @escaping () -> T?
+    ) {
+        self.context = context
+        self.objectId = objectId
+        self.path = path
+        self.valueResolver = value
+    }
+
+    init(
+        context: Context,
+        objectId: String?,
+        path: [Context.KeyPathElement],
+        value: @autoclosure @escaping () -> T?
+    ) {
+        self.context = context
+        self.objectId = objectId
+        self.path = path
+        self.valueResolver = value
+    }
+
+    public let objectId: String?
+    let context: Context
+    let path: [Context.KeyPathElement]
+    private let valueResolver: () -> T?
+    public var _value: T {
+        return valueResolver()!
+    }
+
+    var conflicts: [Key: Any]? {
+        guard let objectId = objectId else {
+            return nil
+        }
+        let object = context.getObject(objectId: objectId)
+
+        return object[CONFLICTS] as? [Key: Any]
+    }
+
+
+    public subscript<Y>(dynamicMember dynamicMember: WritableKeyPath<T, Y>) -> Proxy2<Y> {
+        let fieldName = dynamicMember.fieldName!
+        let object = context.getObject(objectId: objectId!)
+        let objectId = object[OBJECT_ID] as? String
+
+        return Proxy2<Y>(context: context, objectId: nil, path: path + [.init(key: .string(fieldName), objectId: objectId ?? "")], value: self.valueResolver()?[keyPath: dynamicMember])
+    }
+
+    public subscript<Y>(dynamicMember dynamicMember: WritableKeyPath<T, Y?>) -> Proxy2<Y>? {
+        let fieldName = dynamicMember.fieldName!
+        let object = context.getObject(objectId: objectId!)
+        let objectId = object[OBJECT_ID] as? String
+
+        return Proxy2<Y>(context: context, objectId: nil, path: path + [.init(key: .string(fieldName), objectId: objectId ?? "")], value: self.valueResolver()?[keyPath: dynamicMember])
+    }
+
+
+    static func rootProxy<T>(context: Context) -> Proxy2<T> {
+        return Proxy2<T>(context: context, objectId: ROOT_ID, path: [], value: {
+            let object = context.getObject(objectId: ROOT_ID)
+           return try? DictionaryDecoder().decode(T.self, from: object)
+        })
+    }
+
+    public func set(_ newValue: T) {
+        let encoded: Any = (try? DictionaryEncoder().encode(newValue)) ?? newValue
+        switch path.last!.key {
+        case .string(let key):
+            let path = Array(self.path.dropLast())
+            context.setMapKey(path: path, key: key, value: encoded)
+        default:
+            fatalError()
+        }
+
+    }
+
+}
+
+
 public final class Proxy<T: Codable> {
 
     convenience init(
@@ -201,50 +285,5 @@ extension String {
         })
 
 
-    }
-}
-
-extension Proxy where T: NSObject {
-
-    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Y>) -> Y {
-        get {
-            return getObjectByKeyPath(NSExpression(forKeyPath: keyPath).keyPath.keyPath)!
-        }
-        set {
-            return setMapKey(NSExpression(forKeyPath: keyPath).keyPath.keyPath, newValue: newValue)
-        }
-    }
-
-    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Optional<Y>>) -> Y? {
-        get {
-            return getObjectByKeyPath(NSExpression(forKeyPath: keyPath).keyPath.keyPath)
-        }
-        set {
-            return setMapKey(NSExpression(forKeyPath: keyPath).keyPath.keyPath, newValue: newValue)
-        }
-    }
-
-    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, [Y]>) -> [Y] {
-        get {
-            return getObjectByKeyPath(NSExpression(forKeyPath: keyPath).keyPath.keyPath)!
-        }
-        set {
-            return setMapKey(NSExpression(forKeyPath: keyPath).keyPath.keyPath, newValue: newValue)
-        }
-    }
-
-    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Optional<[Y]>>) -> [Y]? {
-        get {
-            return getObjectByKeyPath(NSExpression(forKeyPath: keyPath).keyPath.keyPath)
-        }
-        set {
-            return setMapKey(NSExpression(forKeyPath: keyPath).keyPath.keyPath, newValue: newValue)
-        }
-    }
-
-    public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Array<Y>>) -> Proxy<[Y]> {
-        get {
-            getCollectionProxy(NSExpression(forKeyPath: keyPath).keyPath.keyPath)
-        }
     }
 }

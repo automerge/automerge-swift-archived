@@ -57,29 +57,28 @@ class AutomergeTest: XCTestCase {
         XCTAssertEqual(s2.content.foo, "bar")
     }
 
-    //    // should not register any conflicts on repeated assignment
-    //    func testSerialUse2() {
-    //        struct Scheme: Codable, Equatable { var foo: String?}
-    //        var s1 = Document(Scheme(foo: nil))
-    //        s1.change { $0[\.foo, "foo"] = "bar" }
-    //        XCTAssertNil(s1.conflicts(for: \.foo!, "foo"), nil)
-    //        s1.change { $0[\.foo, "foo"] = "bar" }
-    //        XCTAssertEqual(s1.conflicts(for: \.foo, "foo"), nil)
-    //        s1.change { $0[\.foo, "foo"] = "bar" }
-    //        XCTAssertEqual(s1.conflicts(for: \.foo, "foo"), nil)
-    //
-    //    }
+    // should not register any conflicts on repeated assignment
+    func testSerialUse2() {
+        struct Scheme: Codable, Equatable { var foo: String?}
+        var s1 = Document(Scheme(foo: nil))
+        s1.change { $0[\.foo, "foo"] = "bar" }
+        XCTAssertNil(s1.conflicts(for: \.foo!, "foo"))
+        s1.change { $0[\.foo, "foo"] = "bar" }
+        XCTAssertNil(s1.conflicts(for: \.foo, "foo"))
+        s1.change { $0[\.foo, "foo"] = "bar" }
+        XCTAssertNil(s1.conflicts(for: \.foo, "foo"))
+    }
 
     // should group several changes
     func testSerialUseChanges1() {
         struct Scheme: Codable, Equatable { var first: String?; var second: String?}
         let s1 = Document(Scheme(first: nil, second: nil))
         var s2 = s1
-        s2.change { doc in
-            doc[\.first, "first"] = "one"
-            XCTAssertEqual(doc[\.first, "first"], "one")
-            doc[\.second, "second"] = "two"
-            XCTAssertEqual(doc.value, Scheme(first: "one", second: "two"))
+        s2.change2 { doc in
+            doc.first.set("one")
+            XCTAssertEqual(doc.first._value, "one")
+            doc.second.set("two")
+            XCTAssertEqual(doc._value, Scheme(first: "one", second: "two"))
         }
 
         XCTAssertEqual(s1.content, Scheme(first: nil, second: nil))
@@ -91,38 +90,38 @@ class AutomergeTest: XCTestCase {
         struct Scheme: Codable, Equatable { var value: String? }
         let s1 = Document(Scheme(value: nil))
         var s2 = s1
-        s2.change { doc in
-            doc[\.value, "value"] = "a"
-            XCTAssertEqual(doc[\.value, "value"], "a")
-            doc[\.value, "value"] = "b"
-            doc[\.value, "value"] = "c"
-            XCTAssertEqual(doc.value.value, "c")
+        s2.change2 { doc in
+            doc.value.set("a")
+            XCTAssertEqual(doc.value._value, "a")
+            doc.value.set("b")
+            doc.value.set("c")
+            XCTAssertEqual(doc.value._value, "c")
         }
 
         XCTAssertEqual(s1.content, Scheme(value: nil))
         XCTAssertEqual(s2.content, Scheme(value: "c"))
     }
 
-    //    // should not record conflicts when writing the same field several times within one change
-    //    func testSerialUseChanges3() {
-    //        struct Scheme: Codable, Equatable { var value: String? }
-    //        let s1 = Document(Scheme(value: nil))
-    //        var s2 = s1
-    //        s2.change { doc in
-    //            doc[\.value, "value"] = "a"
-    //            doc[\.value, "value"] = "b"
-    //            doc[\.value, "value"] = "c"
-    //        }
-    //
-    //        XCTAssertEqual(s2.content, Scheme(value: "c"))
-    //        //Check Conflicts
-    //    }
+    // should not record conflicts when writing the same field several times within one change
+    func testSerialUseChanges3() {
+        struct Scheme: Codable, Equatable { var value: String? }
+        let s1 = Document(Scheme(value: nil))
+        var s2 = s1
+        s2.change2 { doc in
+            doc.value.set("a")
+            doc.value.set("b")
+            doc.value.set("c")
+        }
+
+        XCTAssertEqual(s2.content, Scheme(value: "c"))
+        XCTAssertNil(s1.conflicts(for: \.value, "value"))
+    }
 
     // should return the unchanged state object if nothing changed
     func testSerialUseChanges4() {
         struct Scheme: Codable, Equatable { var value: String? }
         var s1 = Document(Scheme(value: nil))
-        s1.change { _ in }
+        s1.change2 { _ in }
         XCTAssertEqual(s1.content, Scheme(value: nil))
     }
 
@@ -131,7 +130,7 @@ class AutomergeTest: XCTestCase {
         struct Scheme: Codable, Equatable { var now: Date? }
         let now = Date(timeIntervalSince1970: 0)
         var s1 = Document(Scheme(now: nil))
-        s1.change { $0[\.now, "now"] = now }
+        s1.change2 { $0.now.set(now) }
 
         let s2 = Document<Scheme>(changes: s1.allChanges())
         XCTAssertEqual(s2.content.now, now)
@@ -142,7 +141,7 @@ class AutomergeTest: XCTestCase {
         struct Scheme: Codable, Equatable { var list: [Date]? }
         let now = Date(timeIntervalSince1970: 0)
         var s1 = Document(Scheme(list: nil))
-        s1.change { $0[\.list, "list"] = [now] }
+        s1.change2 { $0.list.set([now]) }
 
         let s2 = Document<Scheme>(changes: s1.allChanges())
         XCTAssertEqual(s2.content.list, [now])
@@ -152,8 +151,8 @@ class AutomergeTest: XCTestCase {
     func testSerialUseRootObject1() {
         struct Scheme: Codable, Equatable { var foo: String?; var zip: String? }
         var s1 = Document(Scheme(foo: nil, zip: nil))
-        s1.change { $0[\.foo, "foo"] = "bar" }
-        s1.change { $0[\.zip, "zip"] = "zap" }
+        s1.change2 { $0.foo.set("bar") }
+        s1.change2 { $0.zip.set("zap") }
 
         XCTAssertEqual(s1.content.foo, "bar")
         XCTAssertEqual(s1.content.zip, "zap")
@@ -163,7 +162,7 @@ class AutomergeTest: XCTestCase {
     func testSerialUseRootObject2() {
         struct Scheme: Codable, Equatable { var number: Double?; }
         var s1 = Document(Scheme(number: nil))
-        s1.change { $0[\.number, "number"] = 1589032171.1 }
+        s1.change2 { $0.number.set(1589032171.1) }
 
         XCTAssertEqual(s1.content.number, 1589032171.1)
     }
@@ -172,9 +171,9 @@ class AutomergeTest: XCTestCase {
     func testSerialUseRootObject3() {
         struct Scheme: Codable, Equatable { var foo: String?; var zip: String? }
         var s1 = Document(Scheme(foo: nil, zip: nil))
-        s1.change(options: .init(message: "multi-assign"), execute: {
-            $0[\.foo, "foo"] = "bar"
-            $0[\.zip, "zip"] = "zap"
+        s1.change2(options: .init(message: "multi-assign"), execute: {
+            $0.foo.set("bar")
+            $0.zip.set("zap")
         })
 
         XCTAssertEqual(s1.content.foo, "bar")
@@ -186,12 +185,12 @@ class AutomergeTest: XCTestCase {
     func testSerialUseRootObject4() {
         struct Scheme: Codable, Equatable { var foo: String?; var zip: String? }
         var s1 = Document(Scheme(foo: nil, zip: nil))
-        s1.change(options: .init(message: "set foo"), execute: {
-            $0[\.foo, "foo"] = "bar"
-            $0[\.zip, "zip"] = nil
+        s1.change2(options: .init(message: "set foo"), execute: {
+            $0.foo.set("bar")
+            $0.zip.set(nil)
         })
-        s1.change(options: .init(message: "del foo"), execute: {
-            $0[\.foo, "foo"] = nil
+        s1.change2(options: .init(message: "del foo"), execute: {
+            $0.foo.set(nil)
         })
 
         XCTAssertEqual(s1.content.foo, nil)
@@ -206,7 +205,7 @@ class AutomergeTest: XCTestCase {
             var nested: Nested?
         }
         var s1 = Document(Scheme(nested: nil))
-        s1.change { $0[\.nested, "nested"] = .init() }
+        s1.change2 { $0.nested.set(.init()) }
         #warning("assert.strictEqual(OPID_PATTERN.test(Automerge.getObjectId(s1.nested)), true)")
         XCTAssertNotEqual(s1.getObjectId(\.nested, "nested"), "00000000-0000-0000-0000-000000000000")
     }
@@ -218,12 +217,12 @@ class AutomergeTest: XCTestCase {
             var nested: Nested?
         }
         var s1 = Document(Scheme(nested: nil))
-        s1.change {
-            $0[\.nested, "nested"] = .init(foo: nil)
-            $0[\.nested!.foo, "nested.foo"] = "bar"
+        s1.change2 {
+            $0.nested.set(.init(foo: nil))
+            $0.nested?.foo.set("bar")
         }
-        s1.change {
-            $0[\.nested!.one, "nested.one"] = 1
+        s1.change2 {
+            $0.nested?.one?.set(1)
         }
         XCTAssertEqual(s1.content, Scheme(nested: .init(foo: "bar", one: 1)))
         XCTAssertEqual(s1.content.nested, .init(foo: "bar", one: 1))

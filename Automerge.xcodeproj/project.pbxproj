@@ -25,6 +25,7 @@
 		9477033E246E73C4000E952C /* ActorId.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9477033D246E73C4000E952C /* ActorId.swift */; };
 		94879A6D2470017300F0189E /* DocumentTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94879A6B246FFFCA00F0189E /* DocumentTest.swift */; };
 		94AC589D247D3368006701E7 /* Proxy+Counter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94AC589C247D3368006701E7 /* Proxy+Counter.swift */; };
+		94B256912482B0E9008FC23D /* KeyPathIntrospection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94B256902482B0E9008FC23D /* KeyPathIntrospection.swift */; };
 		94E26780246805BD00C54C0E /* libautomerge.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 94E2677F246805BD00C54C0E /* libautomerge.a */; };
 		94E26786246809CC00C54C0E /* RSBackendTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94E267842468099800C54C0E /* RSBackendTest.swift */; };
 		OBJ_44 /* Backend.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_8 /* Backend.swift */; };
@@ -75,6 +76,7 @@
 		9477033D246E73C4000E952C /* ActorId.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActorId.swift; sourceTree = "<group>"; };
 		94879A6B246FFFCA00F0189E /* DocumentTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentTest.swift; sourceTree = "<group>"; };
 		94AC589C247D3368006701E7 /* Proxy+Counter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Proxy+Counter.swift"; sourceTree = "<group>"; };
+		94B256902482B0E9008FC23D /* KeyPathIntrospection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyPathIntrospection.swift; sourceTree = "<group>"; };
 		94E2677F246805BD00C54C0E /* libautomerge.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libautomerge.a; sourceTree = "<group>"; };
 		94E26781246805ED00C54C0E /* automerge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = automerge.h; sourceTree = "<group>"; };
 		94E267842468099800C54C0E /* RSBackendTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSBackendTest.swift; sourceTree = "<group>"; };
@@ -159,6 +161,7 @@
 			children = (
 				OBJ_20 /* ConflictsConverter.swift */,
 				OBJ_21 /* EncoderDecoder.swift */,
+				94B256902482B0E9008FC23D /* KeyPathIntrospection.swift */,
 			);
 			path = Helper;
 			sourceTree = "<group>";
@@ -334,6 +337,7 @@
 				OBJ_60 /* Proxy.swift in Sources */,
 				OBJ_61 /* Request.swift in Sources */,
 				OBJ_62 /* applyPatch.swift in Sources */,
+				94B256912482B0E9008FC23D /* KeyPathIntrospection.swift in Sources */,
 				94AC589D247D3368006701E7 /* Proxy+Counter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
