@@ -519,4 +519,318 @@ class AutomergeTest: XCTestCase {
         XCTAssertEqual(s2.content, Scheme(counter: 4))
     }
 
+    // should merge concurrent updates of different properties
+    func testConcurrentUse1() {
+        struct Scheme: Codable, Equatable {
+            var foo: String?; var hello: String?
+        }
+        let s1 = Document(Scheme(foo: "bar", hello: nil))
+        let s2 = Document(Scheme(foo: nil, hello: "world"))
+        var s3 = s1
+        s3.merge(s2)
+        XCTAssertEqual(s3.content.foo, "bar")
+        XCTAssertEqual(s3.content.hello, "world")
+        XCTAssertEqual(s3.content, Scheme(foo: "bar", hello: "world"))
+        XCTAssertEqual(s3.conflicts(for: \.foo, "foo"), nil)
+        XCTAssertEqual(s3.conflicts(for: \.hello, "hello"), nil)
+    }
+
+    // should add concurrent increments of the same property
+    func testConcurrentUse2() {
+        struct Scheme: Codable, Equatable {
+            var counter: Counter?
+        }
+        var s1 = Document(Scheme(counter: 0))
+        var s2 = Document<Scheme>(changes: s1.allChanges())
+        s1.change { $0[\.counter, "counter"]?.increment() }
+        s2.change { $0[\.counter, "counter"]?.increment(2) }
+        var s3 = s1
+        s3.merge(s2)
+        XCTAssertEqual(s1.content.counter?.value, 1)
+        XCTAssertEqual(s2.content.counter?.value, 2)
+        XCTAssertEqual(s3.content.counter?.value, 3)
+        XCTAssertEqual(s3.conflicts(for: \.counter, "counter"), nil)
+    }
+
+    // should add increments only to the values they precede
+    func testConcurrentUse3() {
+        struct Scheme: Codable, Equatable {
+            var counter: Counter?
+        }
+        var s1 = Document(Scheme(counter: 0))
+        s1.change { $0[\.counter, "counter"]?.increment() }
+        var s2 = Document(Scheme(counter: 100))
+        s2.change { $0[\.counter, "counter"]?.increment(3) }
+        var s3 = s1
+        s3.merge(s2)
+        if s1.actor > s2.actor {
+            XCTAssertEqual(s3.content.counter?.value, 1)
+        } else {
+            XCTAssertEqual(s3.content.counter?.value, 103)
+        }
+
+        XCTAssertEqual(s3.conflicts(for: \.counter, "counter"), [
+            "1@\(s1.actor)": 1,
+            "1@\(s2.actor)": 103
+        ])
+    }
+
+    // should detect concurrent updates of the same field
+    func testConcurrentUse4() {
+        struct Scheme: Codable, Equatable {
+            var field: String?
+        }
+        var s1 = Document(Scheme(field: "one"))
+        let s2 = Document(Scheme(field: "two"))
+        s1.merge(s2)
+        if s1.actor > s2.actor {
+            XCTAssertEqual(s1.content.field, "one")
+        } else {
+            XCTAssertEqual(s1.content.field, "two")
+        }
+        XCTAssertEqual(s1.conflicts(for: \.field, "field"), [
+            "1@\(s1.actor)": "one",
+            "1@\(s2.actor)": "two"
+        ])
+    }
+
+    // should detect concurrent updates of the same field
+    func testConcurrentUse5() {
+        struct Scheme: Codable, Equatable {
+            var birds: [String]
+        }
+        var s1 = Document(Scheme(birds: ["finch"]))
+        var s2 = Document<Scheme>(changes: s1.allChanges())
+        s1.change { $0[\.birds[0], "birds[0]"] = "greenfinch" }
+        s2.change { $0[\.birds[0], "birds[0]"] = "goldfinch" }
+        s1.merge(s2)
+        if s1.actor > s2.actor {
+            XCTAssertEqual(s1.content.birds, ["greenfinch"])
+        } else {
+            XCTAssertEqual(s1.content.birds, ["goldfinch"])
+        }
+        XCTAssertEqual(s1.conflicts(for: \.birds[0], "birds[0]"), [
+            "3@\(s1.actor)": "greenfinch",
+            "3@\(s2.actor)": "goldfinch"
+        ])
+    }
+
+//    // should handle changes within a conflicting list element
+//    func testConcurrentUse6() {
+//        struct Scheme: Codable, Equatable {
+//            struct Obj: Codable, Equatable {
+//                var map1: Bool?
+//                var map2: Bool?
+//                var key: Int?
+//            }
+//            var list: [Obj]
+//        }
+//        var s1 = Document(Scheme(list: [.init(map1: false, map2: false, key: 0)]))
+//        XCTAssertEqual(s1.content, Scheme(list: [.init(map1: false, map2: false, key: 0)]))
+//        var s2 = Document<Scheme>(changes: s1.allChanges())
+//        s1.change { $0[\.list[0], "list[0]"] = .init(map1: true, map2: nil, key: nil) }
+//        XCTAssertEqual(s1.content, Scheme(list: [.init(map1: true, map2: nil, key: nil)]))
+//        s1.change { $0[\.list[0].key, "list[0].key"] = 1 }
+//        s2.change { $0[\.list[0], "list[0]"] = .init(map1: nil, map2: true, key: nil) }
+//        s2.change { $0[\.list[0].key, "list[0].key"] = 2 }
+//        s1.merge(s2)
+//        if s1.actor > s2.actor {
+//            XCTAssertEqual(s1.content.list, [.init(map1: true, map2: nil, key: 1)])
+//        } else {
+//            XCTAssertEqual(s1.content.list, [.init(map1: nil, map2: true, key: 2)])
+//        }
+//        XCTAssertEqual(s1.conflicts(for: \.list[0], "list[0]"), [
+//            "3@\(s1.actor)": .init(map1: true, map2: nil, key: 1),
+//            "3@\(s2.actor)": .init(map1: nil, map2: true, key: 2)
+//        ])
+//    }
+
 }
+
+//describe('concurrent use', () => {
+
+//
+//  it('should handle changes within a conflicting list element', () => {
+//    s1 = Automerge.change(s1, doc => doc.list = ['hello'])
+//    s2 = Automerge.merge(s2, s1)
+//    s1 = Automerge.change(s1, doc => doc.list[0] = {map1: true})
+//    s1 = Automerge.change(s1, doc => doc.list[0].key = 1)
+//    s2 = Automerge.change(s2, doc => doc.list[0] = {map2: true})
+//    s2 = Automerge.change(s2, doc => doc.list[0].key = 2)
+//    s3 = Automerge.merge(s1, s2)
+//    if (Automerge.getActorId(s1) > Automerge.getActorId(s2)) {
+//      assert.deepStrictEqual(s3.list, [{map1: true, key: 1}])
+//    } else {
+//      assert.deepStrictEqual(s3.list, [{map2: true, key: 2}])
+//    }
+//    assert.deepStrictEqual(Automerge.getConflicts(s3.list, 0), {
+//      [`3@${Automerge.getActorId(s1)}`]: {map1: true, key: 1},
+//      [`3@${Automerge.getActorId(s2)}`]: {map2: true, key: 2}
+//    })
+//  })
+//
+//  it('should not merge concurrently assigned nested maps', () => {
+//    s1 = Automerge.change(s1, doc => doc.config = {background: 'blue'})
+//    s2 = Automerge.change(s2, doc => doc.config = {logo_url: 'logo.png'})
+//    s3 = Automerge.merge(s1, s2)
+//    assertEqualsOneOf(s3.config, {background: 'blue'}, {logo_url: 'logo.png'})
+//    assert.deepStrictEqual(Automerge.getConflicts(s3, 'config'), {
+//      [`1@${Automerge.getActorId(s1)}`]: {background: 'blue'},
+//      [`1@${Automerge.getActorId(s2)}`]: {logo_url: 'logo.png'}
+//    })
+//  })
+//
+//  it('should clear conflicts after assigning a new value', () => {
+//    s1 = Automerge.change(s1, doc => doc.field = 'one')
+//    s2 = Automerge.change(s2, doc => doc.field = 'two')
+//    s3 = Automerge.merge(s1, s2)
+//    s3 = Automerge.change(s3, doc => doc.field = 'three')
+//    assert.deepStrictEqual(s3, {field: 'three'})
+//    assert.strictEqual(Automerge.getConflicts(s3, 'field'), undefined)
+//    s2 = Automerge.merge(s2, s3)
+//    assert.deepStrictEqual(s2, {field: 'three'})
+//    assert.strictEqual(Automerge.getConflicts(s2, 'field'), undefined)
+//  })
+//
+//  it('should handle concurrent insertions at different list positions', () => {
+//    s1 = Automerge.change(s1, doc => doc.list = ['one', 'three'])
+//    s2 = Automerge.merge(s2, s1)
+//    s1 = Automerge.change(s1, doc => doc.list.splice(1, 0, 'two'))
+//    s2 = Automerge.change(s2, doc => doc.list.push('four'))
+//    s3 = Automerge.merge(s1, s2)
+//    assert.deepStrictEqual(s3, {list: ['one', 'two', 'three', 'four']})
+//    assert.strictEqual(Automerge.getConflicts(s3, 'list'), undefined)
+//  })
+//
+//  it('should handle concurrent insertions at the same list position', () => {
+//    s1 = Automerge.change(s1, doc => doc.birds = ['parakeet'])
+//    s2 = Automerge.merge(s2, s1)
+//    s1 = Automerge.change(s1, doc => doc.birds.push('starling'))
+//    s2 = Automerge.change(s2, doc => doc.birds.push('chaffinch'))
+//    s3 = Automerge.merge(s1, s2)
+//    assertEqualsOneOf(s3.birds, ['parakeet', 'starling', 'chaffinch'], ['parakeet', 'chaffinch', 'starling'])
+//    s2 = Automerge.merge(s2, s3)
+//    assert.deepStrictEqual(s2, s3)
+//  })
+//
+//  it('should handle concurrent assignment and deletion of a map entry', () => {
+//    // Add-wins semantics
+//    s1 = Automerge.change(s1, doc => doc.bestBird = 'robin')
+//    s2 = Automerge.merge(s2, s1)
+//    s1 = Automerge.change(s1, doc => delete doc['bestBird'])
+//    s2 = Automerge.change(s2, doc => doc.bestBird = 'magpie')
+//    s3 = Automerge.merge(s1, s2)
+//    assert.deepStrictEqual(s1, {})
+//    assert.deepStrictEqual(s2, {bestBird: 'magpie'})
+//    assert.deepStrictEqual(s3, {bestBird: 'magpie'})
+//    assert.strictEqual(Automerge.getConflicts(s3, 'bestBird'), undefined)
+//  })
+//
+//  it('should handle concurrent assignment and deletion of a list element', () => {
+//    // Concurrent assignment ressurects a deleted list element. Perhaps a little
+//    // surprising, but consistent with add-wins semantics of maps (see test above)
+//    s1 = Automerge.change(s1, doc => doc.birds = ['blackbird', 'thrush', 'goldfinch'])
+//    s2 = Automerge.merge(s2, s1)
+//    s1 = Automerge.change(s1, doc => doc.birds[1] = 'starling')
+//    s2 = Automerge.change(s2, doc => doc.birds.splice(1, 1))
+//    s3 = Automerge.merge(s1, s2)
+//    assert.deepStrictEqual(s1.birds, ['blackbird', 'starling', 'goldfinch'])
+//    assert.deepStrictEqual(s2.birds, ['blackbird', 'goldfinch'])
+//    assert.deepStrictEqual(s3.birds, ['blackbird', 'starling', 'goldfinch'])
+//  })
+//
+//  it('should handle insertion after a deleted list element', () => {
+//    s1 = Automerge.change(s1, doc => doc.birds = ['blackbird', 'thrush', 'goldfinch'])
+//    s2 = Automerge.merge(s2, s1)
+//    s1 = Automerge.change(s1, doc => doc.birds.splice(1, 2))
+//    s2 = Automerge.change(s2, doc => doc.birds.splice(2, 0, 'starling'))
+//    s3 = Automerge.merge(s1, s2)
+//    assert.deepStrictEqual(s3, {birds: ['blackbird', 'starling']})
+//    assert.deepStrictEqual(Automerge.merge(s2, s3), {birds: ['blackbird', 'starling']})
+//  })
+//
+//  it('should handle concurrent deletion of the same element', () => {
+//    s1 = Automerge.change(s1, doc => doc.birds = ['albatross','buzzard', 'cormorant'])
+//    s2 = Automerge.merge(s2, s1)
+//    s1 = Automerge.change(s1, doc => doc.birds.deleteAt(1)) // buzzard
+//    s2 = Automerge.change(s2, doc => doc.birds.deleteAt(1)) // buzzard
+//    s3 = Automerge.merge(s1, s2)
+//    assert.deepStrictEqual(s3.birds, ['albatross','cormorant'])
+//  })
+//
+//  it('should handle concurrent deletion of different elements', () => {
+//    s1 = Automerge.change(s1, doc => doc.birds =  ['albatross','buzzard', 'cormorant'])
+//    s2 = Automerge.merge(s2, s1)
+//    s1 = Automerge.change(s1, doc => doc.birds.deleteAt(0)) // albatross
+//    s2 = Automerge.change(s2, doc => doc.birds.deleteAt(1)) // buzzard
+//    s3 = Automerge.merge(s1, s2)
+//    assert.deepStrictEqual(s3.birds, ['cormorant'])
+//  })
+//
+//  it('should handle concurrent updates at different levels of the tree', () => {
+//    // A delete higher up in the tree overrides an update in a subtree
+//    s1 = Automerge.change(s1, doc => doc.animals = {birds: {pink: 'flamingo', black: 'starling'}, mammals: ['badger']})
+//    s2 = Automerge.merge(s2, s1)
+//    s1 = Automerge.change(s1, doc => doc.animals.birds.brown = 'sparrow')
+//    s2 = Automerge.change(s2, doc => delete doc.animals['birds'])
+//    s3 = Automerge.merge(s1, s2)
+//    assert.deepStrictEqual(s1.animals, {
+//      birds: {
+//        pink: 'flamingo', brown: 'sparrow', black: 'starling'
+//      },
+//      mammals: ['badger']
+//    })
+//    assert.deepStrictEqual(s2.animals, {mammals: ['badger']})
+//    assert.deepStrictEqual(s3.animals, {mammals: ['badger']})
+//  })
+//
+//  it('should not interleave sequence insertions at the same position', () => {
+//    s1 = Automerge.change(s1, doc => doc.wisdom = [])
+//    s2 = Automerge.merge(s2, s1)
+//    s1 = Automerge.change(s1, doc => doc.wisdom.push('to', 'be', 'is', 'to', 'do'))
+//    s2 = Automerge.change(s2, doc => doc.wisdom.push('to', 'do', 'is', 'to', 'be'))
+//    s3 = Automerge.merge(s1, s2)
+//    assertEqualsOneOf(s3.wisdom,
+//      ['to', 'be', 'is', 'to', 'do', 'to', 'do', 'is', 'to', 'be'],
+//      ['to', 'do', 'is', 'to', 'be', 'to', 'be', 'is', 'to', 'do'])
+//    // In case you're wondering: http://quoteinvestigator.com/2013/09/16/do-be-do/
+//  })
+//
+//  describe('multiple insertions at the same list position', () => {
+//    it('should handle insertion by greater actor ID', () => {
+//      s1 = Automerge.init('aaaa')
+//      s2 = Automerge.init('bbbb')
+//      s1 = Automerge.change(s1, doc => doc.list = ['two'])
+//      s2 = Automerge.merge(s2, s1)
+//      s2 = Automerge.change(s2, doc => doc.list.splice(0, 0, 'one'))
+//      assert.deepStrictEqual(s2.list, ['one', 'two'])
+//    })
+//
+//    it('should handle insertion by lesser actor ID', () => {
+//      s1 = Automerge.init('bbbb')
+//      s2 = Automerge.init('aaaa')
+//      s1 = Automerge.change(s1, doc => doc.list = ['two'])
+//      s2 = Automerge.merge(s2, s1)
+//      s2 = Automerge.change(s2, doc => doc.list.splice(0, 0, 'one'))
+//      assert.deepStrictEqual(s2.list, ['one', 'two'])
+//    })
+//
+//    it('should handle insertion regardless of actor ID', () => {
+//      s1 = Automerge.change(s1, doc => doc.list = ['two'])
+//      s2 = Automerge.merge(s2, s1)
+//      s2 = Automerge.change(s2, doc => doc.list.splice(0, 0, 'one'))
+//      assert.deepStrictEqual(s2.list, ['one', 'two'])
+//    })
+//
+//    it('should make insertion order consistent with causality', () => {
+//      s1 = Automerge.change(s1, doc => doc.list = ['four'])
+//      s2 = Automerge.merge(s2, s1)
+//      s2 = Automerge.change(s2, doc => doc.list.unshift('three'))
+//      s1 = Automerge.merge(s1, s2)
+//      s1 = Automerge.change(s1, doc => doc.list.unshift('two'))
+//      s2 = Automerge.merge(s2, s1)
+//      s2 = Automerge.change(s2, doc => doc.list.unshift('one'))
+//      assert.deepStrictEqual(s2.list, ['one', 'two', 'three', 'four'])
+//    })
+//  })
+//})

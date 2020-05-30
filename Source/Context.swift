@@ -60,6 +60,25 @@ public final class Context {
 
     func setValue<T>(objectId: String, key: Key?, value: T, insert: Bool) -> Diff {
         switch value {
+        case let number as NSNumber:
+            let numberType = CFNumberGetType(number)
+            switch CFNumberGetType(number) {
+            case .intType, .sInt8Type, .sInt16Type, .sInt32Type, .sInt64Type:
+                let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .int(number.intValue))
+                ops.append(operation)
+                return .value(.int(number.intValue))
+            case .charType:
+                let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .bool(number.boolValue))
+                ops.append(operation)
+                return .value(.bool(number.boolValue))
+            case .floatType, .float32Type, .float64Type, .cgFloatType:
+                let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .double(number.doubleValue))
+                ops.append(operation)
+                return .value(.double(number.doubleValue))
+            default:
+                fatalError("Unsuported")
+            }
+            fatalError()
         case let bool as Bool:
             if let int = Int("\(value)") { // This is Hacky...
                 let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .int(int))

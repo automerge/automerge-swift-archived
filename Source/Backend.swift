@@ -11,6 +11,8 @@ public protocol Backend {
 
     func applyLocalChange(request: Request) -> (Backend, Patch)
 
+    func apply(changes: [[UInt8]]) -> (Backend, Patch)
+
     func save() -> [UInt8]
 
     func getPatch() -> Patch
@@ -71,16 +73,30 @@ public final class RSBackend: Backend {
     }
 
     public func applyLocalChange(request: Request) -> (Backend, Patch) {
+        let copy = automerge_clone(automerge)
         let data = try! encoder.encode(request)
         let string = String(data: data, encoding: .utf8)
-        let length = automerge_apply_local_change(automerge, string)
+        let length = automerge_apply_local_change(copy, string)
         var buffer = Array<Int8>(repeating: 0, count: length)
-        buffer.append(0)
-        automerge_read_json(automerge, &buffer)
+        automerge_read_json(copy, &buffer)
         let newString = String(cString: buffer)
         let patch = try! decoder.decode(Patch.self, from: newString.data(using: .utf8)!)
 
-        return (RSBackend(automerge: automerge_clone(automerge)), patch)
+        return (RSBackend(automerge: copy!), patch)
+    }
+
+    public func apply(changes: [[UInt8]]) -> (Backend, Patch) {
+        let copy = automerge_clone(automerge)
+        for change in changes {
+            automerge_write_change(copy, UInt(change.count), change)
+        }
+        let length = automerge_apply_changes(copy)
+        var buffer = Array<Int8>(repeating: 0, count: length)
+        automerge_read_json(copy, &buffer)
+        let newString = String(cString: buffer)
+        let patch = try! decoder.decode(Patch.self, from: newString.data(using: .utf8)!)
+
+        return (RSBackend(automerge: copy!), patch)
     }
 
     public func getPatch() -> Patch {
@@ -106,4 +122,3 @@ public final class RSBackend: Backend {
         return resut
     }
 }
-

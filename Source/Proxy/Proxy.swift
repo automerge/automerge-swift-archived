@@ -10,11 +10,11 @@ import Foundation
 public final class Proxy<T: Codable> {
 
     convenience init(
-        contex: Context,
+        context: Context,
         objectId: String,
         path: [Context.KeyPathElement]
     ) {
-        let object = contex.getObject(objectId: objectId)
+        let object = context.getObject(objectId: objectId)
         let value: T?
         if let listValues = object[LIST_VALUES] as? [Primitive], let primitiveValues = listValues.map({ $0.value }) as? T {
             value = primitiveValues
@@ -24,16 +24,16 @@ public final class Proxy<T: Codable> {
              value = try? DictionaryDecoder().decode(T.self, from: object)
         }
 
-        self.init(contex: contex, objectId: objectId, path: path, value: value)
+        self.init(context: context, objectId: objectId, path: path, value: value)
     }
 
     init(
-        contex: Context,
+        context: Context,
         objectId: String,
         path: [Context.KeyPathElement],
         value: T?
     ) {
-        self.context = contex
+        self.context = context
         self.objectId = objectId
         self.path = path
         self.value = value
@@ -43,6 +43,11 @@ public final class Proxy<T: Codable> {
     let context: Context
     let path: [Context.KeyPathElement]
     public internal(set) var value: T!
+
+    var conflicts: [Key: Any]? {
+        let object = context.getObject(objectId: objectId)
+        return object[CONFLICTS] as? [Key: Any]
+    }
 
     public subscript<Y: Equatable & Codable>(keyPath: WritableKeyPath<T, Y>, keyPathString: String) -> Y {
         get {
@@ -71,7 +76,7 @@ public final class Proxy<T: Codable> {
     }
 
     func set(object: T) {
-        let dictionary = try! DictionaryEncoder().encode(object)
+        let dictionary = try! DictionaryEncoder().encode(object) as! [String: Any]
         for key in dictionary.keys {
             context.setMapKey(path: path, key: key, value: dictionary[key])
         }
@@ -86,7 +91,7 @@ public final class Proxy<T: Codable> {
                 return primitives.value as? Y
             case let objectType as [String: Any]:
                 let objectId = objectType[OBJECT_ID] as! String
-                return Proxy<Y?>(contex: context, objectId: objectId, path: path + [.init(key: .string(key), objectId: objectId)]).value
+                return Proxy<Y?>(context: context, objectId: objectId, path: path + [.init(key: .string(key), objectId: objectId)]).value
             case .none:
                 return nil
             default:
@@ -98,7 +103,7 @@ public final class Proxy<T: Codable> {
                 return primitives[index].value as? Y
             case let listObjects as [[String: Any]]:
                 let objectId = listObjects[index][OBJECT_ID] as! String
-                return Proxy<Y?>(contex: context, objectId: objectId, path: path + [.init(key: .index(index), objectId: objectId)]).value
+                return Proxy<Y?>(context: context, objectId: objectId, path: path + [.init(key: .index(index), objectId: objectId)]).value
             default:
                 fatalError()
             }
@@ -110,14 +115,14 @@ public final class Proxy<T: Codable> {
         switch keyPath.last! {
         case .string(let key):
             switch context.getObject(objectId: taregtObjectId)[key] {
-            case is Primitive:
-                return nil
+            case let primitive as Primitive:
+                return Proxy<Y>(context: context, objectId: taregtObjectId, path: path + [.init(key: .string(key), objectId: objectId)], value: primitive.value as! Y)
             case let objectType as [String: Any]:
                 if objectType[COUNTER_VALUE] != nil {
-                    return Proxy<Y>(contex: context, objectId: "", path: path + [.init(key: .string(key), objectId: objectId)], value: try! DictionaryDecoder().decode(Y.self, from: objectType))
+                    return Proxy<Y>(context: context, objectId: taregtObjectId, path: path + [.init(key: .string(key), objectId: objectId)], value: try! DictionaryDecoder().decode(Y.self, from: objectType))
                 }
                 let objectId = objectType[OBJECT_ID] as! String
-                return Proxy<Y>(contex: context, objectId: objectId, path: path + [.init(key: .string(key), objectId: objectId)])
+                return Proxy<Y>(context: context, objectId: objectId, path: path + [.init(key: .string(key), objectId: objectId)])
             case .none:
                 return nil
             default:
@@ -125,11 +130,11 @@ public final class Proxy<T: Codable> {
             }
         case .index(let index):
             switch context.getObject(objectId: taregtObjectId)[LIST_VALUES] {
-            case is [Primitive]:
-                return nil
+            case let primitives as [Primitive]:
+                return Proxy<Y>(context: context, objectId: taregtObjectId, path: path + [.init(key: .index(index), objectId: objectId)], value: primitives[index].value as! Y)
             case let listObjects as [[String: Any]]:
                 let objectId = listObjects[index][OBJECT_ID] as! String
-                return Proxy<Y>(contex: context, objectId: objectId, path: path + [.init(key: .index(index), objectId: objectId)])
+                return Proxy<Y>(context: context, objectId: objectId, path: path + [.init(key: .index(index), objectId: objectId)])
             default:
                 fatalError()
             }
@@ -137,8 +142,8 @@ public final class Proxy<T: Codable> {
     }
 
 
-    static func rootProxy<T>(contex: Context) -> Proxy<T> {
-        return Proxy<T>(contex: contex, objectId: ROOT_ID, path: [])
+    static func rootProxy<T>(context: Context) -> Proxy<T> {
+        return Proxy<T>(context: context, objectId: ROOT_ID, path: [])
     }
 
     func setMapKey<Y: Codable>(_ keyPath: [Key], newValue: [Y]) {
@@ -159,7 +164,8 @@ public final class Proxy<T: Codable> {
             let encoded: Any = (try? DictionaryEncoder().encode(newValue)) ?? newValue
             context.setMapKey(path: path, key: key, value: encoded)
         case .index(let index):
-            context.setListIndex(path: path, index: index, value: newValue)
+            let encoded: Any = (try? DictionaryEncoder().encode(newValue)) ?? newValue
+            context.setListIndex(path: path, index: index, value: encoded)
         }
     }
 

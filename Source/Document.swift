@@ -132,12 +132,12 @@ public struct Document<T: Codable> {
     public var content: T {
         let context = Context(doc: self, actorId: options.actorId)
         
-        return Proxy<T>.rootProxy(contex: context).value
+        return Proxy<T>.rootProxy(context: context).value
     }
 
     public func getObjectId<Y: Codable>(_ keyPath: KeyPath<T, Y>, _ keyPathString: String) -> String? {
         let context = Context(doc: self, actorId: options.actorId)
-        return Proxy<Y>.rootProxy(contex: context)[keyPath, keyPathString]?.objectId
+        return Proxy<Y>.rootProxy(context: context)[keyPath, keyPathString]?.objectId
     }
 
     public struct ChangeOptions {
@@ -167,7 +167,7 @@ public struct Document<T: Codable> {
             fatalError("Calls to Automerge.change cannot be nested")
         }
         let context = Context(doc: self, actorId: self.options.actorId)
-        execute(.rootProxy(contex: context))
+        execute(.rootProxy(context: context))
         if context.idUpdated {
             return makeChange(requestType: .change, context: context, options: options)
         } else {
@@ -181,7 +181,7 @@ public struct Document<T: Codable> {
             fatalError("Calls to Automerge.change cannot be nested")
         }
         let context = Context(doc: self, actorId: self.options.actorId)
-        execute(.rootProxy(contex: context))
+        execute(.rootProxy(context: context))
         if context.idUpdated {
             return makeChange(requestType: .change, context: context, options: nil)
         } else {
@@ -450,8 +450,20 @@ public struct Document<T: Codable> {
      * object in a document. If `object` is a list, then `key` must be a list
      * index; if `object` is a map, then `key` must be a property name.
      */
-    public func conflicts<Y>(for keyPath: WritableKeyPath<T, Y>, _ keyPathString: String) -> Y? {
-        return nil
+    public func conflicts<Y: Codable>(for keyPath: WritableKeyPath<T, Y>, _ keyPathString: String) -> [String: Y]? {
+        let context = Context(doc: self, actorId: options.actorId)
+        let proxy = Proxy<Y>.rootProxy(context: context)[keyPath, keyPathString]
+        let abcd = proxy?.conflicts
+        if let conflicts = proxy?.conflicts?[keyPathString.keyPath.last!] as? [Int: Any], conflicts.count > 1 {
+            fatalError()
+        }
+        guard let conflicts = proxy?.conflicts?[keyPathString.keyPath.last!] as? [String: Any], conflicts.count > 1 else {
+            return nil
+        }
+
+        let decoder = DictionaryDecoder()
+        let decoded = try? decoder.decode([String: Y].self, from: conflicts)
+        return decoded
     }
 //    function getConflicts(object, key) {
 //      if (object[CONFLICTS] && object[CONFLICTS][key] &&
@@ -463,6 +475,34 @@ public struct Document<T: Codable> {
     public func allChanges() -> [[UInt8]] {
         return options.backend.getChanges()
     }
+
+    public mutating func apply(changes: [[UInt8]]) {
+        let(newBackend, patch) = options.backend.apply(changes: changes)
+
+        self.options.backend = newBackend
+
+        applyPatch(patch: patch)
+    }
+
+//    function applyChanges(doc, changes) {
+//      const oldState = Frontend.getBackendState(doc)
+//      const [newState, patch] = backend.applyChanges(oldState, changes)
+//      patch.state = newState
+//      return Frontend.applyPatch(doc, patch)
+//    }
+
+    public mutating func merge(_ remoteDocument: Document<T>) {
+        precondition(actor != remoteDocument.actor, "Cannot merge an actor with itself")
+        apply(changes: remoteDocument.allChanges())
+    }
+
+//    function merge(localDoc, remoteDoc) {
+//      if (Frontend.getActorId(localDoc) === Frontend.getActorId(remoteDoc)) {
+//        throw new RangeError('Cannot merge an actor with itself')
+//      }
+//      // Just copy all changes from the remote doc; any duplicates will be ignored
+//      return applyChanges(localDoc, getAllChanges(remoteDoc))
+//    }
 }
 
 
