@@ -77,11 +77,12 @@ public struct Proxy2<T: Codable> {
 
     public func set(_ newValue: T) {
         let encoded: Any = (try? DictionaryEncoder().encode(newValue)) ?? newValue
-        let path = Array(self.path.dropLast())
         switch path.last!.key {
         case .string(let key):
+            let path = Array(self.path.dropLast())
             context.setMapKey(path: path, key: key, value: encoded)
         case .index(let index):
+            let path = Array(self.path.dropLast())
             context.setListIndex(path: path, index: index, value: encoded)
         }
     }
