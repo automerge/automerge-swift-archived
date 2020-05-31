@@ -786,7 +786,13 @@ public final class Context {
                 fatalError()
             }
         case .index(let index):
-            fatalError()
+            if let list = object[LIST_VALUES] as? [[String: Primitive]], case .int(let value) = list[index][COUNTER_VALUE]! {
+                counterValue = value
+            } else if let list = object[LIST_VALUES] as? [[String: Primitive]], case .double(let value) = list[index][COUNTER_VALUE]! {
+                counterValue = Int(value)
+            } else {
+                fatalError()
+            }
         }
         // TODO what if there is a conflicting value on the same key as the counter?
         ops.append(Op(action: .inc, obj: objectId, key: key, value: .int(delta)))
