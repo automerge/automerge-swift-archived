@@ -190,12 +190,13 @@ public struct Document<T: Codable> {
     }
 
     @discardableResult
-    public mutating func change2(options: ChangeOptions, execute: (Proxy2<T>) -> Void) -> Request? {
+    public mutating func change2(options: ChangeOptions, execute: (inout Proxy2<T>) -> Void) -> Request? {
         if change {
             fatalError("Calls to Automerge.change cannot be nested")
         }
         let context = Context(doc: self, actorId: self.options.actorId)
-        execute(.rootProxy(context: context))
+        var root: Proxy2<T> = .rootProxy(context: context)
+        execute(&root)
         if context.idUpdated {
             return makeChange(requestType: .change, context: context, options: options)
         } else {
@@ -204,12 +205,13 @@ public struct Document<T: Codable> {
     }
 
     @discardableResult
-    public mutating func change2(_ execute: (Proxy2<T>) -> Void) -> Request? {
+    public mutating func change2(_ execute: (inout Proxy2<T>) -> Void) -> Request? {
         if change {
             fatalError("Calls to Automerge.change cannot be nested")
         }
         let context = Context(doc: self, actorId: self.options.actorId)
-        execute(.rootProxy(context: context))
+        var root: Proxy2<T> = .rootProxy(context: context)
+        execute(&root)
         if context.idUpdated {
             return makeChange(requestType: .change, context: context, options: nil)
         } else {

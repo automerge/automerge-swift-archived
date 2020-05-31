@@ -8,7 +8,7 @@
 import Foundation
 
 @dynamicMemberLookup
-public final class Proxy2<T: Codable> {
+public struct Proxy2<T: Codable> {
 
     init(
         context: Context,
@@ -38,7 +38,8 @@ public final class Proxy2<T: Codable> {
     let context: Context
     let path: [Context.KeyPathElement]
     private let valueResolver: () -> T?
-    public var _value: T {
+
+    public func get() -> T {
         return valueResolver()!
     }
 
@@ -54,18 +55,16 @@ public final class Proxy2<T: Codable> {
 
     public subscript<Y>(dynamicMember dynamicMember: WritableKeyPath<T, Y>) -> Proxy2<Y> {
         let fieldName = dynamicMember.fieldName!
-        let object = context.getObject(objectId: objectId!)
-        let objectId = object[OBJECT_ID] as? String
-
-        return Proxy2<Y>(context: context, objectId: nil, path: path + [.init(key: .string(fieldName), objectId: objectId ?? "")], value: self.valueResolver()?[keyPath: dynamicMember])
+        let object = self.objectId.map { context.getObject(objectId: $0) }
+        let objectId = (object?[fieldName] as? [String: Any])?[OBJECT_ID] as? String
+        return Proxy2<Y>(context: context, objectId: objectId, path: path + [.init(key: .string(fieldName), objectId: objectId ?? "")], value: self.valueResolver()?[keyPath: dynamicMember])
     }
 
     public subscript<Y>(dynamicMember dynamicMember: WritableKeyPath<T, Y?>) -> Proxy2<Y>? {
         let fieldName = dynamicMember.fieldName!
-        let object = context.getObject(objectId: objectId!)
-        let objectId = object[OBJECT_ID] as? String
-
-        return Proxy2<Y>(context: context, objectId: nil, path: path + [.init(key: .string(fieldName), objectId: objectId ?? "")], value: self.valueResolver()?[keyPath: dynamicMember])
+        let object = self.objectId.map { context.getObject(objectId: $0) }
+        let objectId = (object?[fieldName] as? [String: Any])?[OBJECT_ID] as? String
+        return Proxy2<Y>(context: context, objectId: objectId, path: path + [.init(key: .string(fieldName), objectId: objectId ?? "")], value: self.valueResolver()?[keyPath: dynamicMember])
     }
 
 
@@ -78,14 +77,13 @@ public final class Proxy2<T: Codable> {
 
     public func set(_ newValue: T) {
         let encoded: Any = (try? DictionaryEncoder().encode(newValue)) ?? newValue
+        let path = Array(self.path.dropLast())
         switch path.last!.key {
         case .string(let key):
-            let path = Array(self.path.dropLast())
             context.setMapKey(path: path, key: key, value: encoded)
-        default:
-            fatalError()
+        case .index(let index):
+            context.setListIndex(path: path, index: index, value: encoded)
         }
-
     }
 
 }
@@ -243,12 +241,11 @@ public final class Proxy<T: Codable> {
 
     func setMapKey<Y: Codable>(_ keyPath: [Key], newValue: Y) {
         let (path, _) = getPathFrom(keyPath: keyPath, path: self.path, objectId: objectId)
+        let encoded: Any = (try? DictionaryEncoder().encode(newValue)) ?? newValue
         switch keyPath.last! {
         case .string(let key):
-            let encoded: Any = (try? DictionaryEncoder().encode(newValue)) ?? newValue
             context.setMapKey(path: path, key: key, value: encoded)
         case .index(let index):
-            let encoded: Any = (try? DictionaryEncoder().encode(newValue)) ?? newValue
             context.setListIndex(path: path, index: index, value: encoded)
         }
     }

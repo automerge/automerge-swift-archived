@@ -76,9 +76,9 @@ class AutomergeTest: XCTestCase {
         var s2 = s1
         s2.change2 { doc in
             doc.first.set("one")
-            XCTAssertEqual(doc.first._value, "one")
+            XCTAssertEqual(doc.first.get(), "one")
             doc.second.set("two")
-            XCTAssertEqual(doc._value, Scheme(first: "one", second: "two"))
+            XCTAssertEqual(doc.get(), Scheme(first: "one", second: "two"))
         }
 
         XCTAssertEqual(s1.content, Scheme(first: nil, second: nil))
@@ -92,10 +92,10 @@ class AutomergeTest: XCTestCase {
         var s2 = s1
         s2.change2 { doc in
             doc.value.set("a")
-            XCTAssertEqual(doc.value._value, "a")
+            XCTAssertEqual(doc.value.get(), "a")
             doc.value.set("b")
             doc.value.set("c")
-            XCTAssertEqual(doc.value._value, "c")
+            XCTAssertEqual(doc.value.get(), "c")
         }
 
         XCTAssertEqual(s1.content, Scheme(value: nil))
@@ -208,6 +208,7 @@ class AutomergeTest: XCTestCase {
         s1.change2 { $0.nested.set(.init()) }
         #warning("assert.strictEqual(OPID_PATTERN.test(Automerge.getObjectId(s1.nested)), true)")
         XCTAssertNotEqual(s1.getObjectId(\.nested, "nested"), "00000000-0000-0000-0000-000000000000")
+        XCTAssertEqual(s1.content, Scheme(nested: .init()))
     }
 
     // should handle assignment of a nested property
@@ -218,7 +219,7 @@ class AutomergeTest: XCTestCase {
         }
         var s1 = Document(Scheme(nested: nil))
         s1.change2 {
-            $0.nested.set(.init(foo: nil))
+            $0.nested.set(.init(foo: nil, one: nil))
             $0.nested?.foo.set("bar")
         }
         s1.change2 {
@@ -237,8 +238,8 @@ class AutomergeTest: XCTestCase {
             var style: Style?
         }
         var s1 = Document(Scheme(style: nil))
-        s1.change {
-            $0[\.style, "style"] = .init(bold: false, fontSize: 12)
+        s1.change2 {
+            $0.style?.set(.init(bold: false, fontSize: 12))
         }
         XCTAssertEqual(s1.content, Scheme(style: .init(bold: false, fontSize: 12)))
         XCTAssertEqual(s1.content.style, .init(bold: false, fontSize: 12))
@@ -253,9 +254,9 @@ class AutomergeTest: XCTestCase {
             var style: Style?
         }
         var s1 = Document(Scheme(style: nil))
-        s1.change {
-            $0[\.style, "style"] = .init(bold: false, fontSize: 12, typeface: nil)
-            $0[\.style, "style"] = .init(bold: true, fontSize: 14, typeface: "Optima")
+        s1.change2 {
+            $0.style?.set(.init(bold: false, fontSize: 12, typeface: nil))
+            $0.style?.set(.init(bold: true, fontSize: 14, typeface: "Optima"))
         }
         XCTAssertEqual(s1.content, Scheme(style: .init(bold: true, fontSize: 14, typeface: "Optima")))
         XCTAssertEqual(s1.content.style, .init(bold: true, fontSize: 14, typeface: "Optima"))
@@ -276,8 +277,8 @@ class AutomergeTest: XCTestCase {
             var a: A
         }
         var s1 = Document(Scheme(a: A(b: B(c: C(d: D(e: E(f: F(g: "h", i: nil))))))))
-        s1.change {
-            $0[\.a.b.c.d.e.f.i, "a.b.c.d.e.f.i"] = "j"
+        s1.change2 {
+            $0.a.b.c.d.e.f.i?.set("j")
         }
         XCTAssertEqual(s1.content, Scheme(a: A(b: B(c: C(d: D(e: E(f: F(g: "h", i: "j"))))))))
         XCTAssertEqual(s1.content.a.b.c.d.e.f.g, "h")
@@ -291,12 +292,12 @@ class AutomergeTest: XCTestCase {
             var myPet: Pet?
         }
         var s1 = Document(Scheme(myPet: nil))
-        s1.change {
-            $0[\.myPet, "myPet"] = .init(species: "dog", legs: 4, breed: "dachshund", colors: nil, variety: nil)
+        s1.change2 {
+            $0.myPet?.set(.init(species: "dog", legs: 4, breed: "dachshund", colors: nil, variety: nil))
         }
         var s2 = s1
-        s2.change {
-            $0[\.myPet, "myPet"] = .init(species: "koi", legs: nil, breed: nil, colors: ["red": true, "white": true, "black": false], variety: "紅白")
+        s2.change2 {
+            $0.myPet?.set(.init(species: "koi", legs: nil, breed: nil, colors: ["red": true, "white": true, "black": false], variety: "紅白"))
         }
         XCTAssertEqual(s1.content, Scheme(myPet: .init(species: "dog", legs: 4, breed: "dachshund", colors: nil, variety: nil)))
         XCTAssertEqual(s1.content.myPet?.breed, "dachshund")
@@ -312,8 +313,8 @@ class AutomergeTest: XCTestCase {
             var style: Style?
         }
         var s1 = Document(Scheme(style: nil))
-        s1.change { $0[\.style, "style"] = .init(bold: false, fontSize: 12, typeface: "Optima") }
-        s1.change { $0[\.style!.bold, "style.bold"] = nil }
+        s1.change2 { $0.style?.set(.init(bold: false, fontSize: 12, typeface: "Optima")) }
+        s1.change2 { $0.style?.bold.set(nil) }
         XCTAssertEqual(s1.content.style, .init(bold: nil, fontSize: 12, typeface: "Optima"))
         XCTAssertEqual(s1.content.style?.bold, nil)
     }
@@ -326,8 +327,8 @@ class AutomergeTest: XCTestCase {
             let title: String
         }
         var s1 = Document(Scheme(style: nil, title: "Hello"))
-        s1.change { $0[\.style, "style"] = .init(bold: false, fontSize: 12, typeface: "Optima") }
-        s1.change { $0[\.style, "style"] = nil }
+        s1.change2 { $0.style?.set(.init(bold: false, fontSize: 12, typeface: "Optima")) }
+        s1.change2 { $0.style.set(nil) }
         XCTAssertEqual(s1.content.style, nil)
         XCTAssertEqual(s1.content, Scheme(style: nil, title: "Hello"))
     }
@@ -338,8 +339,16 @@ class AutomergeTest: XCTestCase {
             var noodles: [String]
         }
         var s1 = Document(Scheme(noodles: []))
-        s1.change { $0[\.noodles, "noodles"].insert(contentsOf: ["udon", "soba"], at: 0) }
-        s1.change { $0[\.noodles, "noodles"].insert("ramen", at: 1) }
+        s1.change2({
+            var abc = $0.noodles
+            abc.insert(contentsOf: ["udon", "soba"], at: 0)
+        })
+        s1.change2({
+            var abc = $0.noodles
+            abc.insert("ramen", at: 1)
+        })
+//        s1.change2 { $0.noodles.insert(contentsOf: ["udon", "soba"], at: 0) }
+//        s1.change2 { $0.noodles.insert("ramen", at: 1) }
         XCTAssertEqual(s1.content.noodles, ["udon", "ramen", "soba"])
         XCTAssertEqual(s1.content.noodles[0], "udon")
         XCTAssertEqual(s1.content.noodles[1], "ramen")
@@ -353,7 +362,7 @@ class AutomergeTest: XCTestCase {
             var noodles: [String]
         }
         var s1 = Document(Scheme(noodles: []))
-        s1.change { $0[\.noodles, "noodles"] = ["udon", "ramen", "soba"] }
+        s1.change2 { $0.noodles.set(["udon", "ramen", "soba"]) }
         XCTAssertEqual(s1.content, Scheme(noodles: ["udon", "ramen", "soba"]))
         XCTAssertEqual(s1.content.noodles, ["udon", "ramen", "soba"])
         XCTAssertEqual(s1.content.noodles[0], "udon")
@@ -368,7 +377,10 @@ class AutomergeTest: XCTestCase {
             var noodles: [String]
         }
         var s1 = Document(Scheme(noodles:["udon", "ramen", "soba"]))
-        s1.change { $0[\.noodles, "noodles"].remove(at: 1) }
+        s1.change2 {
+            var noodles = $0.noodles
+            noodles.remove(at: 1)
+        }
         XCTAssertEqual(s1.content, Scheme(noodles: ["udon", "soba"]))
         XCTAssertEqual(s1.content.noodles, ["udon", "soba"])
         XCTAssertEqual(s1.content.noodles[0], "udon")
@@ -382,7 +394,7 @@ class AutomergeTest: XCTestCase {
             var japaneseFood: [String]
         }
         var s1 = Document(Scheme(japaneseFood: ["udon", "ramen", "soba"]))
-        s1.change { $0[\.japaneseFood[1], "japaneseFood[1]"] = "sushi" }
+        s1.change2 { $0.japaneseFood[0].set("sushi") }
         XCTAssertEqual(s1.content, Scheme(japaneseFood: ["udon", "sushi", "soba"]))
         XCTAssertEqual(s1.content.japaneseFood, ["udon", "sushi", "soba"])
         XCTAssertEqual(s1.content.japaneseFood[0], "udon")
