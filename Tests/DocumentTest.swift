@@ -171,6 +171,7 @@ class DocumentTest: XCTestCase {
 
     #warning("missing Counter tests")
 
+    // should handle counters inside maps
     func testCounters1() {
         struct Schema: Codable, Equatable {
             var wrens: Counter?
@@ -190,58 +191,34 @@ class DocumentTest: XCTestCase {
         ], undoable: true))
     }
 
-//        it('should handle counters inside lists', () => {
-//          const [doc1, req1] = Frontend.change(Frontend.init(), doc => {
-//            doc.counts = [new Frontend.Counter(1)]
-//            assert.strictEqual(doc.counts[0].value, 1)
-//          })
-//          const [doc2, req2] = Frontend.change(doc1, doc => {
-//            doc.counts[0].increment(2)
-//            assert.strictEqual(doc.counts[0].value, 3)
-//          })
-//          const counts = Frontend.getObjectId(doc2.counts), actor = Frontend.getActorId(doc2)
-//          assert.deepStrictEqual(doc1, {counts: [new Frontend.Counter(1)]})
-//          assert.deepStrictEqual(doc2, {counts: [new Frontend.Counter(3)]})
-//          assert.deepStrictEqual(req1, {
-//            requestType: 'change', actor, seq: 1, time: req1.time, message: '', version: 0, ops: [
-//              {obj: ROOT_ID, action: 'makeList', key: 'counts', child: counts},
-//              {obj: counts, action: 'set', key: 0, insert: true, value: 1, datatype: 'counter'}
-//            ]
-//          })
-//          assert.deepStrictEqual(req2, {
-//            requestType: 'change', actor, seq: 2, time: req2.time, message: '', version: 0, ops: [
-//              {obj: counts, action: 'inc', key: 0, value: 2}
-//            ]
-//          })
-//        })
-//
-//        it('should refuse to overwrite a property with a counter value', () => {
-//          const [doc1, req1] = Frontend.change(Frontend.init(), doc => {
-//            doc.counter = new Frontend.Counter()
-//            doc.list = [new Frontend.Counter()]
-//          })
-//          assert.throws(() => Frontend.change(doc1, doc => doc.counter++), /Cannot overwrite a Counter object/)
-//          assert.throws(() => Frontend.change(doc1, doc => doc.list[0] = 3), /Cannot overwrite a Counter object/)
-//        })
-//
-//        it('should make counter objects behave like primitive numbers', () => {
-//          const [doc1, req1] = Frontend.change(Frontend.init(), doc => doc.birds = new Frontend.Counter(3))
-//          assert.equal(doc1.birds, 3) // they are equal according to ==, but not strictEqual according to ===
-//          assert.notStrictEqual(doc1.birds, 3)
-//          assert(doc1.birds < 4)
-//          assert(doc1.birds >= 0)
-//          assert(!(doc1.birds <= 2))
-//          assert.strictEqual(doc1.birds + 10, 13)
-//          assert.strictEqual(`I saw ${doc1.birds} birds`, 'I saw 3 birds')
-//          assert.strictEqual(['I saw', doc1.birds, 'birds'].join(' '), 'I saw 3 birds')
-//        })
-//
-//        it('should allow counters to be serialized to JSON', () => {
-//          const [doc1, req1] = Frontend.change(Frontend.init(), doc => doc.birds = new Frontend.Counter())
-//          assert.strictEqual(JSON.stringify(doc1), '{"birds":0}')
-//        })
-//      })
-//    })
+    // should handle counters inside lists
+    func testCounters2() {
+        struct Schema: Codable, Equatable {
+            var counts: [Counter]?
+        }
+
+        var doc1 = Document(Schema())
+        let req1 = doc1.change2 {
+            $0.counts?.set([1])
+            XCTAssertEqual($0.counts?.get(), [1])
+        }
+        var doc2 = doc1
+        let req2 = doc2.change2 {
+            $0.counts?[0].increment(2)
+            XCTAssertEqual($0.counts?.get(), [3])
+        }
+        let actor = doc2.actor
+        XCTAssertEqual(doc1.content, Schema(counts: [1]))
+        XCTAssertEqual(doc2.content, Schema(counts: [3]))
+        XCTAssertEqual(req1, Request(requestType: .change, message: "", time: req1!.time, actor: actor.actorId, seq: 1, version: 0, ops: [
+            Op(action: .makeList, obj: ROOT_ID, key: "counts", child: req1!.ops[0].child),
+            Op(action: .set, obj: req1!.ops[1].obj, key: 0, insert: true, value: .int(1), datatype: .counter)
+        ], undoable: true))
+        XCTAssertEqual(req2, Request(requestType: .change, message: "", time: req2!.time, actor: actor.actorId, seq: 2, version: 1, ops: [
+            Op(action: .inc, obj: req2!.ops[0].obj, key: 0, value: .int(2))
+        ], undoable: true))
+    }
+
 //
 //    // should use version and sequence number from the backend
 //    func testBackendConcurrency1() {
