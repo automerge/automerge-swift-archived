@@ -394,7 +394,7 @@ class AutomergeTest: XCTestCase {
             var japaneseFood: [String]
         }
         var s1 = Document(Scheme(japaneseFood: ["udon", "ramen", "soba"]))
-        s1.change2 { $0.japaneseFood[0].set("sushi") }
+        s1.change2 { $0.japaneseFood[1].set("sushi") }
         XCTAssertEqual(s1.content, Scheme(japaneseFood: ["udon", "sushi", "soba"]))
         XCTAssertEqual(s1.content.japaneseFood, ["udon", "sushi", "soba"])
         XCTAssertEqual(s1.content.japaneseFood[0], "udon")
@@ -409,9 +409,9 @@ class AutomergeTest: XCTestCase {
             var japaneseFood: [String]
         }
         var s1 = Document(Scheme(japaneseFood: ["udon", "ramen", "soba"]))
-        s1.change {
-            $0[\.japaneseFood[0], "japaneseFood[0]"] = "うどん"
-            $0[\.japaneseFood[2], "japaneseFood[2]"] = "そば"
+        s1.change2 {
+            $0.japaneseFood[0].set("うどん")
+            $0.japaneseFood[2].set("そば")
         }
         XCTAssertEqual(s1.content, Scheme(japaneseFood: ["うどん", "ramen", "そば"]))
         XCTAssertEqual(s1.content.japaneseFood, ["うどん", "ramen", "そば"])
@@ -432,8 +432,14 @@ class AutomergeTest: XCTestCase {
             var noodles: [Noodle]
         }
         var s1 = Document(Scheme(noodles: [.init(type: .ramen, dishes: ["tonkotsu", "shoyu"])]))
-        s1.change { $0[\.noodles, "noodles"].append(.init(type: .udon, dishes: ["tempura udon"])) }
-        s1.change { $0[\.noodles[0].dishes, "noodles[0].dishes"].append("miso") }
+        s1.change2 {
+            var noodles = $0.noodles
+            noodles.append(.init(type: .udon, dishes: ["tempura udon"]))
+        }
+        s1.change2 {
+            var dishes: Proxy2<[String]> = $0.noodles[0].dishes
+            dishes.append("miso")
+        }
         XCTAssertEqual(s1.content, Scheme(noodles: [.init(type: .ramen, dishes: ["tonkotsu", "shoyu", "miso"]), .init(type: .udon, dishes: ["tempura udon"])]))
         XCTAssertEqual(s1.content.noodles[0], .init(type: .ramen, dishes: ["tonkotsu", "shoyu", "miso"]))
         XCTAssertEqual(s1.content.noodles[1], .init(type: .udon, dishes: ["tempura udon"]))
@@ -446,9 +452,9 @@ class AutomergeTest: XCTestCase {
             var japaneseFood: [String]?
         }
         var s1 = Document(Scheme(noodles: ["udon", "soba", "ramen"], japaneseFood: nil))
-        s1.change {
-            $0[\.japaneseFood, "japaneseFood"] = $0[\.noodles, "noodles"]
-            $0[\.noodles, "noodles"] = ["wonton", "pho"]
+        s1.change2 {
+            $0.japaneseFood.set($0.noodles?.get())
+            $0.noodles?.set(["wonton", "pho"])
         }
         XCTAssertEqual(s1.content, Scheme(noodles: ["wonton", "pho"], japaneseFood: ["udon", "soba", "ramen"]))
         XCTAssertEqual(s1.content.noodles, ["wonton", "pho"])
@@ -463,9 +469,9 @@ class AutomergeTest: XCTestCase {
             var letters: [String]
         }
         var s1 = Document(Scheme(letters: []))
-        s1.change {
-            $0[\.letters, "letters"] = ["a", "b", "c"]
-            $0[\.letters[1], "letters[1]"] = "d"
+        s1.change2 {
+            $0.letters.set(["a", "b", "c"])
+            $0.letters[1].set("d")
         }
         XCTAssertEqual(s1.content, Scheme(letters: ["a", "d", "c"]))
         XCTAssertEqual(s1.content.letters[1], "d")
@@ -477,15 +483,17 @@ class AutomergeTest: XCTestCase {
             var noodles: [String]
         }
         var s1 = Document(Scheme(noodles: []))
-        s1.change {
-            $0[\.noodles, "noodles"].append("udon")
-            $0[\.noodles, "noodles"].remove(at: 0)
+        s1.change2 {
+            var noodle = $0.noodles
+            noodle.append("udon")
+            noodle.remove(at: 0)
         }
         XCTAssertEqual(s1.content, Scheme(noodles: []))
         // do the add-remove cycle twice, test for #151 (https://github.com/automerge/automerge/issues/151)
-        s1.change {
-            $0[\.noodles, "noodles"].append("soba")
-            $0[\.noodles, "noodles"].remove(at: 0)
+        s1.change2 {
+            var noodle = $0.noodles
+            noodle.append("soba")
+            noodle.remove(at: 0)
         }
         XCTAssertEqual(s1.content, Scheme(noodles: []))
     }
@@ -496,8 +504,9 @@ class AutomergeTest: XCTestCase {
             var maze: [[[[[[[[String]]]]]]]]
         }
         var s1 = Document(Scheme(maze: [[[[[[[["noodles"]]]]]]]]))
-        s1.change {
-            $0[\.maze[0][0][0][0][0][0][0], "maze[0][0][0][0][0][0][0]"].append("found")
+        s1.change2 {
+            var maze: Proxy2<[String]> = $0.maze[0][0][0][0][0][0][0]
+            maze.append("found")
         }
         XCTAssertEqual(s1.content, Scheme(maze: [[[[[[[["noodles", "found"]]]]]]]]))
         XCTAssertEqual(s1.content.maze[0][0][0][0][0][0][0][1], "found")
@@ -508,8 +517,8 @@ class AutomergeTest: XCTestCase {
             var counter: Counter?
         }
         var s1 = Document(Scheme(counter: nil))
-        s1.change { $0[\.counter, "counter"] = 1 }
-        s1.change { $0[\.counter, "counter"]?.increment(2) }
+        s1.change2 { $0.counter?.set(1) }
+        s1.change2 { $0.counter?.increment(2) }
 
         XCTAssertEqual(s1.content, Scheme(counter: Counter(integerLiteral: 3)))
     }
@@ -520,10 +529,10 @@ class AutomergeTest: XCTestCase {
         }
         let s1 = Document(Scheme(counter: 0))
         var s2 = s1
-        s2.change {
-            $0[\.counter, "counter"]?.increment(2)
-            $0[\.counter, "counter"]?.decrement()
-            $0[\.counter, "counter"]?.increment(3)
+        s2.change2 {
+            $0.counter?.increment(2)
+            $0.counter?.decrement()
+            $0.counter?.increment(3)
         }
 
         XCTAssertEqual(s1.content, Scheme(counter: 0))
@@ -553,8 +562,8 @@ class AutomergeTest: XCTestCase {
         }
         var s1 = Document(Scheme(counter: 0))
         var s2 = Document<Scheme>(changes: s1.allChanges())
-        s1.change { $0[\.counter, "counter"]?.increment() }
-        s2.change { $0[\.counter, "counter"]?.increment(2) }
+        s1.change2 { $0.counter?.increment() }
+        s2.change2 { $0.counter?.increment(2) }
         var s3 = s1
         s3.merge(s2)
         XCTAssertEqual(s1.content.counter?.value, 1)
@@ -569,9 +578,9 @@ class AutomergeTest: XCTestCase {
             var counter: Counter?
         }
         var s1 = Document(Scheme(counter: 0))
-        s1.change { $0[\.counter, "counter"]?.increment() }
+        s1.change2 { $0.counter?.increment() }
         var s2 = Document(Scheme(counter: 100))
-        s2.change { $0[\.counter, "counter"]?.increment(3) }
+        s2.change2 { $0.counter?.increment(3) }
         var s3 = s1
         s3.merge(s2)
         if s1.actor > s2.actor {
@@ -612,8 +621,8 @@ class AutomergeTest: XCTestCase {
         }
         var s1 = Document(Scheme(birds: ["finch"]))
         var s2 = Document<Scheme>(changes: s1.allChanges())
-        s1.change { $0[\.birds[0], "birds[0]"] = "greenfinch" }
-        s2.change { $0[\.birds[0], "birds[0]"] = "goldfinch" }
+        s1.change2 { $0.birds[0].set("greenfinch") }
+        s2.change2 { $0.birds[0].set("goldfinch") }
         s1.merge(s2)
         if s1.actor > s2.actor {
             XCTAssertEqual(s1.content.birds, ["greenfinch"])
