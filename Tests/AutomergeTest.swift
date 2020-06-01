@@ -635,59 +635,79 @@ class AutomergeTest: XCTestCase {
         ])
     }
 
-//    // should handle changes within a conflicting list element
-//    func testConcurrentUse6() {
-//        struct Scheme: Codable, Equatable {
-//            struct Obj: Codable, Equatable {
-//                var map1: Bool?
-//                var map2: Bool?
-//                var key: Int?
-//            }
-//            var list: [Obj]
-//        }
-//        var s1 = Document(Scheme(list: [.init(map1: false, map2: false, key: 0)]))
-//        XCTAssertEqual(s1.content, Scheme(list: [.init(map1: false, map2: false, key: 0)]))
-//        var s2 = Document<Scheme>(changes: s1.allChanges())
-//        s1.change { $0[\.list[0], "list[0]"] = .init(map1: true, map2: nil, key: nil) }
-//        XCTAssertEqual(s1.content, Scheme(list: [.init(map1: true, map2: nil, key: nil)]))
-//        s1.change { $0[\.list[0].key, "list[0].key"] = 1 }
-//        s2.change { $0[\.list[0], "list[0]"] = .init(map1: nil, map2: true, key: nil) }
-//        s2.change { $0[\.list[0].key, "list[0].key"] = 2 }
-//        s1.merge(s2)
-//        if s1.actor > s2.actor {
-//            XCTAssertEqual(s1.content.list, [.init(map1: true, map2: nil, key: 1)])
-//        } else {
-//            XCTAssertEqual(s1.content.list, [.init(map1: nil, map2: true, key: 2)])
-//        }
-//        XCTAssertEqual(s1.conflicts(for: \.list[0], "list[0]"), [
-//            "3@\(s1.actor)": .init(map1: true, map2: nil, key: 1),
-//            "3@\(s2.actor)": .init(map1: nil, map2: true, key: 2)
-//        ])
-//    }
+    // should handle changes within a conflicting list element
+    func testConcurrentUse6() {
+        struct Scheme: Codable, Equatable {
+            struct Obj: Codable, Equatable {
+                var map1: Bool?
+                var map2: Bool?
+                var key: Int?
+            }
+            var list: [Obj]
+        }
+        var s1 = Document(Scheme(list: [.init(map1: false, map2: false, key: 0)]))
+        XCTAssertEqual(s1.content, Scheme(list: [.init(map1: false, map2: false, key: 0)]))
+        var s2 = Document<Scheme>(changes: s1.allChanges())
+        s1.change { $0[\.list[0], "list[0]"] = .init(map1: true, map2: nil, key: nil) }
+        XCTAssertEqual(s1.content, Scheme(list: [.init(map1: true, map2: nil, key: nil)]))
+        s1.change { $0[\.list[0].key, "list[0].key"] = 1 }
+        s2.change { $0[\.list[0], "list[0]"] = .init(map1: nil, map2: true, key: nil) }
+        s2.change { $0[\.list[0].key, "list[0].key"] = 2 }
+        s1.merge(s2)
+        if s1.actor > s2.actor {
+            XCTAssertEqual(s1.content.list, [.init(map1: true, map2: nil, key: 1)])
+        } else {
+            XCTAssertEqual(s1.content.list, [.init(map1: nil, map2: true, key: 2)])
+        }
+        XCTAssertEqual(s1.conflicts(for: \.list[0], "list[0]"), [
+            "3@\(s1.actor)": .init(map1: true, map2: nil, key: 1),
+            "3@\(s2.actor)": .init(map1: nil, map2: true, key: 2)
+        ])
+    }
 
+    //
+    //  it('should handle changes within a conflicting list element', () => {
+    //    s1 = Automerge.change(s1, doc => doc.list = ['hello'])
+    //    s2 = Automerge.merge(s2, s1)
+    //    s1 = Automerge.change(s1, doc => doc.list[0] = {map1: true})
+    //    s1 = Automerge.change(s1, doc => doc.list[0].key = 1)
+    //    s2 = Automerge.change(s2, doc => doc.list[0] = {map2: true})
+    //    s2 = Automerge.change(s2, doc => doc.list[0].key = 2)
+    //    s3 = Automerge.merge(s1, s2)
+    //    if (Automerge.getActorId(s1) > Automerge.getActorId(s2)) {
+    //      assert.deepStrictEqual(s3.list, [{map1: true, key: 1}])
+    //    } else {
+    //      assert.deepStrictEqual(s3.list, [{map2: true, key: 2}])
+    //    }
+    //    assert.deepStrictEqual(Automerge.getConflicts(s3.list, 0), {
+    //      [`3@${Automerge.getActorId(s1)}`]: {map1: true, key: 1},
+    //      [`3@${Automerge.getActorId(s2)}`]: {map2: true, key: 2}
+    //    })
+    //  })
+
+    // should not merge concurrently assigned nested maps
+    func testConcurrentUse7() {
+        struct Scheme: Codable, Equatable {
+            struct Config: Codable, Equatable {
+                var background: String?
+                var logo_url: String?
+            }
+            var config: Config
+        }
+        let s1 = Document(Scheme(config: .init(background: "blue")))
+        let s2 = Document(Scheme(config: .init(logo_url: "logo.png")))
+        var s3 = s1
+        s3.merge(s2)
+        XCTAssertTrue(s3.content == Scheme(config: .init(background: "blue")) || s3.content == Scheme(config: .init(logo_url: "logo.png")))
+        XCTAssertEqual(s3.conflicts(for: \.config, "config"), [
+            "1@\(s1.actor)": .init(background: "blue"),
+            "1@\(s2.actor)": .init(logo_url: "logo.png")
+        ])
+    }
 }
 
 //describe('concurrent use', () => {
 
-//
-//  it('should handle changes within a conflicting list element', () => {
-//    s1 = Automerge.change(s1, doc => doc.list = ['hello'])
-//    s2 = Automerge.merge(s2, s1)
-//    s1 = Automerge.change(s1, doc => doc.list[0] = {map1: true})
-//    s1 = Automerge.change(s1, doc => doc.list[0].key = 1)
-//    s2 = Automerge.change(s2, doc => doc.list[0] = {map2: true})
-//    s2 = Automerge.change(s2, doc => doc.list[0].key = 2)
-//    s3 = Automerge.merge(s1, s2)
-//    if (Automerge.getActorId(s1) > Automerge.getActorId(s2)) {
-//      assert.deepStrictEqual(s3.list, [{map1: true, key: 1}])
-//    } else {
-//      assert.deepStrictEqual(s3.list, [{map2: true, key: 2}])
-//    }
-//    assert.deepStrictEqual(Automerge.getConflicts(s3.list, 0), {
-//      [`3@${Automerge.getActorId(s1)}`]: {map1: true, key: 1},
-//      [`3@${Automerge.getActorId(s2)}`]: {map2: true, key: 2}
-//    })
-//  })
 //
 //  it('should not merge concurrently assigned nested maps', () => {
 //    s1 = Automerge.change(s1, doc => doc.config = {background: 'blue'})

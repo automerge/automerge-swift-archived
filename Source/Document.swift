@@ -483,7 +483,6 @@ public struct Document<T: Codable> {
     public func conflicts<Y: Codable>(for keyPath: WritableKeyPath<T, Y>, _ keyPathString: String) -> [String: Y]? {
         let context = Context(doc: self, actorId: options.actorId)
         let proxy = Proxy<Y>.rootProxy(context: context)[keyPath, keyPathString]
-        let abcd = proxy?.conflicts
         if let conflicts = proxy?.conflicts?[keyPathString.keyPath.last!] as? [Int: Any], conflicts.count > 1 {
             fatalError()
         }
