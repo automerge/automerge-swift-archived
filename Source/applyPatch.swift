@@ -80,8 +80,6 @@ func updateListObject(patch: ObjectDiff, obj: [String: Any]?, updated: inout [St
     return object
 }
 
-// 1. In: conflicts [], Out:
-
 //function updateListObject(patch, obj, updated) {
 //  const objectId = patch.objectId
 //  if (!updated[objectId]) {
