@@ -24,7 +24,6 @@ public struct Document<T: Codable> {
 
     struct State {
         var seq: Int
-        var requests: [RequestMetaData<T>]
         var version: Int
         var clock: Clock
         var canUndo: Bool
@@ -36,14 +35,14 @@ public struct Document<T: Codable> {
     var root: [String: Any]
     var change: Bool = false
 
-    init(options: Options) {
+    private init(options: Options) {
         self.options = options
         self.root = [
             OBJECT_ID: ROOT_ID,
             CONFLICTS: [Key: [String: Any]]()
         ]
         self.root[CACHE] = [ROOT_ID: root]
-        self.state = State(seq: 0, requests: [], version: 0, clock: [:], canUndo: false, canRedo: false)
+        self.state = State(seq: 0, version: 0, clock: [:], canUndo: false, canRedo: false)
     }
 
     public init(_ initialState: T, options: Options = Options()) {
@@ -78,12 +77,7 @@ public struct Document<T: Codable> {
 //      patch.state = state
 //      return Frontend.applyPatch(init(options), patch)
 //    }
-    
-    init(root: [String: Any], state: State, options: Options) {
-        self.options = options
-        self.root = root
-        self.state = state
-    }
+
 
     var cache: [String: [String: Any]] {
         get {
@@ -157,13 +151,12 @@ public struct Document<T: Codable> {
      * changed, returns the original `doc` and a `null` change request.
      */
     @discardableResult
-    public mutating func change(options: ChangeOptions, execute: (inout Proxy<T>) -> Void) -> Request? {
+    public mutating func change(options: ChangeOptions, execute: (Proxy<T>) -> Void) -> Request? {
         if change {
             fatalError("Calls to Automerge.change cannot be nested")
         }
         let context = Context(doc: self, actorId: self.options.actorId)
-        var root: Proxy<T> = .rootProxy(context: context)
-        execute(&root)
+        execute(.rootProxy(context: context))
         if context.idUpdated {
             return makeChange(requestType: .change, context: context, options: options)
         } else {
@@ -172,13 +165,12 @@ public struct Document<T: Codable> {
     }
 
     @discardableResult
-    public mutating func change(_ execute: (inout Proxy<T>) -> Void) -> Request? {
+    public mutating func change(_ execute: (Proxy<T>) -> Void) -> Request? {
         if change {
             fatalError("Calls to Automerge.change cannot be nested")
         }
         let context = Context(doc: self, actorId: self.options.actorId)
-        var root: Proxy<T> = .rootProxy(context: context)
-        execute(&root)
+        execute(.rootProxy(context: context))
         if context.idUpdated {
             return makeChange(requestType: .change, context: context, options: nil)
         } else {

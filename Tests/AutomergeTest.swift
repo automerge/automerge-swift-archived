@@ -7,7 +7,7 @@
 
 import Foundation
 import XCTest
- @testable import Automerge
+@testable import Automerge
 
 // /test/test.js
 class AutomergeTest: XCTestCase {
@@ -66,7 +66,7 @@ class AutomergeTest: XCTestCase {
         s1.change { $0.foo?.set("bar") }
         XCTAssertNil(s1.rootProxy().conflicts(dynamicMember: \.foo))
         s1.change { $0.foo?.set("bar") }
-       XCTAssertNil(s1.rootProxy().conflicts(dynamicMember: \.foo))
+        XCTAssertNil(s1.rootProxy().conflicts(dynamicMember: \.foo))
     }
 
     // should group several changes
@@ -347,8 +347,8 @@ class AutomergeTest: XCTestCase {
             var abc = $0.noodles
             abc.insert("ramen", at: 1)
         })
-//        s1.change { $0.noodles.insert(contentsOf: ["udon", "soba"], at: 0) }
-//        s1.change { $0.noodles.insert("ramen", at: 1) }
+        //        s1.change { $0.noodles.insert(contentsOf: ["udon", "soba"], at: 0) }
+        //        s1.change { $0.noodles.insert("ramen", at: 1) }
         XCTAssertEqual(s1.content.noodles, ["udon", "ramen", "soba"])
         XCTAssertEqual(s1.content.noodles[0], "udon")
         XCTAssertEqual(s1.content.noodles[1], "ramen")
@@ -736,8 +736,9 @@ class AutomergeTest: XCTestCase {
         var s1 = Document(Scheme(birds: ["parakeet"]))
         var s2 = Document<Scheme>(changes: s1.allChanges())
         s1.change {
+            $0.birds.set([])
             var proxy = $0.birds
-             proxy.append("starling")
+            proxy.append("starling")
         }
         s2.change({
             var proxy = $0.birds
@@ -799,8 +800,7 @@ class AutomergeTest: XCTestCase {
         var s1 = Document(Scheme(birds: ["blackbird", "thrush", "goldfinch"]))
         var s2 = Document<Scheme>(changes: s1.allChanges())
         s1.change {
-            var proxy = $0.birds
-            proxy.replaceSubrange(1...2, with: [])
+            $0.birds.replaceSubrange(1...2, with: [])
         }
         s2.change {
             var proxy = $0.birds
@@ -813,25 +813,25 @@ class AutomergeTest: XCTestCase {
         XCTAssertEqual(s2.content, Scheme(birds: ["blackbird", "starling"]))
     }
 
-//    // should handle concurrent deletion of the same element
-//    func testConcurrentUse14() {
-//        struct Scheme: Codable, Equatable {
-//            var birds: [String]
-//        }
-//        var s1 = Document(Scheme(birds: ["albatross", "buzzard", "cormorant"]))
-//        var s2 = Document<Scheme>(changes: s1.allChanges())
-//        s1.change {
-//            var proxy = $0.birds
-//            proxy.remove(at: 1)
-//        }
-//        s2.change {
-//            var proxy = $0.birds
-//            proxy.remove(at: 1)
-//        }
-//        var s3 = s1
-//        s3.merge(s2)
-//        XCTAssertEqual(s3.content, Scheme(birds: ["albatross", "cormorant"]))
-//    }
+    //    // should handle concurrent deletion of the same element
+    //    func testConcurrentUse14() {
+    //        struct Scheme: Codable, Equatable {
+    //            var birds: [String]
+    //        }
+    //        var s1 = Document(Scheme(birds: ["albatross", "buzzard", "cormorant"]))
+    //        var s2 = Document<Scheme>(changes: s1.allChanges())
+    //        s1.change {
+    //            var proxy = $0.birds
+    //            proxy.remove(at: 1)
+    //        }
+    //        s2.change {
+    //            var proxy = $0.birds
+    //            proxy.remove(at: 1)
+    //        }
+    //        var s3 = s1
+    //        s3.merge(s2)
+    //        XCTAssertEqual(s3.content, Scheme(birds: ["albatross", "cormorant"]))
+    //    }
 
     //  it('should handle concurrent deletion of the same element', () => {
     //    s1 = Automerge.change(s1, doc => doc.birds = ['albatross','buzzard', 'cormorant'])

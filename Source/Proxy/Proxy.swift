@@ -8,7 +8,7 @@
 import Foundation
 
 @dynamicMemberLookup
-public struct Proxy<T: Codable> {
+public final class Proxy<T: Codable> {
 
     init(
         context: Context,

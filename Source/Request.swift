@@ -7,11 +7,6 @@
 
 import Foundation
 
-struct RequestMetaData<T: Codable> {
-    let request: Request
-    var before: Document<T>
-}
-
 public struct Request: Equatable, Codable {
 
     public enum RequestType: String, Codable {

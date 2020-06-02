@@ -72,8 +72,8 @@ class ProxyCollectionTest: XCTestCase {
         document.change({ doc in
             doc.list.set([1, 2, 3])
 
-            var proxy: Proxy<[Int]> = doc.list
-            proxy.replaceSubrange(1...1, with: [])
+            doc.list.replaceSubrange(1...1, with: [])
+            let proxy: Proxy<[Int]> = doc.list
             XCTAssertEqual(proxy[0], 1)
             XCTAssertEqual(proxy[1], 3)
             XCTAssertEqual(proxy.count, 2)
@@ -127,7 +127,7 @@ class ProxyCollectionTest: XCTestCase {
         })
 
         document.change({ doc in
-            var proxy: Proxy<[Int]> = doc.list
+            let proxy: Proxy<[Int]> = doc.list
             proxy[1] = 1
             XCTAssertEqual(proxy[1], 1)
             XCTAssertEqual(doc.list.get(), [1, 1, 3])

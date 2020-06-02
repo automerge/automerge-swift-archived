@@ -57,7 +57,6 @@ public final class Context {
      * `{objectId, type, props}` if `value` is an object, or `{value, datatype}` if it is a
      * primitive value. For string, number, boolean, or null the datatype is omitted.
      */
-
     func setValue<T>(objectId: String, key: Key?, value: T, insert: Bool) -> Diff {
         switch value {
         case let number as NSNumber:
