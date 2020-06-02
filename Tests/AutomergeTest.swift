@@ -410,8 +410,8 @@ class AutomergeTest: XCTestCase {
         }
         var s1 = Document(Scheme(japaneseFood: ["udon", "ramen", "soba"]))
         s1.change {
-            $0.japaneseFood[0].set("うどん")
-            $0.japaneseFood[2].set("そば")
+            $0.japaneseFood[0] = "うどん"
+            $0.japaneseFood[2] = "そば"
         }
         XCTAssertEqual(s1.content, Scheme(japaneseFood: ["うどん", "ramen", "そば"]))
         XCTAssertEqual(s1.content.japaneseFood, ["うどん", "ramen", "そば"])
@@ -736,7 +736,6 @@ class AutomergeTest: XCTestCase {
         var s1 = Document(Scheme(birds: ["parakeet"]))
         var s2 = Document<Scheme>(changes: s1.allChanges())
         s1.change {
-            $0.birds.set([])
             var proxy = $0.birds
             proxy.append("starling")
         }
