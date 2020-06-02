@@ -515,8 +515,12 @@ public struct Document<T: Codable> {
 //      return makeChange(doc, 'undo', null, options)
 //    }
 
-    public func history() -> [Any] {
-        fatalError()
+    public func history() -> [Commit<T>] {
+        let actor = self.actor
+        let history = allChanges()
+        return history.enumerated().map({ index, change in
+            return Commit(snapshot: Document(changes: Array(history[0...index]), actorId: actor).content)
+        })
     }
 }
 
@@ -538,5 +542,8 @@ public struct Document<T: Codable> {
 //  })
 //}
 
+public struct Commit<T> {
+    public let snapshot: T
+}
 
 

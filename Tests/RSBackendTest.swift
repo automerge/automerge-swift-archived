@@ -58,13 +58,13 @@ final class RSBackendTest: XCTestCase {
         measure() {
             var automerge = Document(TravelList.initialScheme)
             let trip = Trip(name: "Italien 2019", startDate: Date())
-            for _ in 0...10  {
+            for _ in 0...100  {
                 automerge.change {
                     var proxy: Proxy<[Trip]> = $0.trips
                     proxy.append(trip)
                 }
             }
-            XCTAssertEqual(automerge.content.trips.count, 11)
+            XCTAssertEqual(automerge.content.trips.count, 101)
         }
     }
 

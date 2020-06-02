@@ -19,23 +19,23 @@ extension Proxy where T: Collection, T.Index == Int, T.Element: Codable {
     }
 
     public func conflicts(index: Int) -> [String: T.Element]? {
-            guard let objectId = objectId else {
-                return nil
-            }
-            let object = context.getObject(objectId: objectId)
-            guard let conflicts = object[CONFLICTS] as? [Key: Any], let realConflicts = conflicts[.index(index)] as? [String: Any], realConflicts.count > 1 else {
-                return nil
-            }
-            let decoder = DictionaryDecoder()
-            return try? decoder.decode([String: T.Element].self, from: realConflicts)
+        guard let objectId = objectId else {
+            return nil
         }
+        let object = context.getObject(objectId: objectId)
+        guard let conflicts = object[CONFLICTS] as? [Key: Any], let realConflicts = conflicts[.index(index)] as? [String: Any], realConflicts.count > 1 else {
+            return nil
+        }
+        let decoder = DictionaryDecoder()
+        return try? decoder.decode([String: T.Element].self, from: realConflicts)
+    }
 }
 
 extension Proxy: Collection, Sequence where T: Collection {
 
     public typealias Index = T.Index
     public typealias Element = T.Element
-
+    
     public var startIndex: Index { self.get().startIndex }
     public var endIndex: Index { self.get().endIndex }
 
