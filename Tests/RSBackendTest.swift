@@ -27,7 +27,7 @@ final class RSBackendTest: XCTestCase {
     func testApplayLocal() {
         let backend = RSBackend()
         let request = Request(requestType: .change, message: "Test", time: Date(), actor: "111111", seq: 1, version: 0, ops: [Op(action: .set, obj: ROOT_ID, key: "bird", value: .string("magpie"))], undoable: false)
-        backend.applyLocalChange(request: request)
+        _ = backend.applyLocalChange(request: request)
     }
 
     func testInsertPerformance() {
@@ -60,7 +60,8 @@ final class RSBackendTest: XCTestCase {
             let trip = Trip(name: "Italien 2019", startDate: Date())
             for _ in 0...10  {
                 automerge.change {
-                    $0[\.trips, "trips"].append(trip)
+                    var proxy: Proxy<[Trip]> = $0.trips
+                    proxy.append(trip)
                 }
             }
             XCTAssertEqual(automerge.content.trips.count, 11)

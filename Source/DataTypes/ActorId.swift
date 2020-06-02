@@ -9,8 +9,8 @@ import Foundation
 
 public struct ActorId: Equatable {
 
-    public init() {
-        self.actorId = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
+    public init(actorId: String = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()) {
+        self.actorId = actorId
     }
 
     let actorId: String
