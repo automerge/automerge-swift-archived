@@ -23,6 +23,7 @@
 /* Begin PBXBuildFile section */
 		94339B50247BA70A00A461F1 /* AutomergeTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94339B4E247BA65800A461F1 /* AutomergeTest.swift */; };
 		9477033E246E73C4000E952C /* ActorId.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9477033D246E73C4000E952C /* ActorId.swift */; };
+		94874A3C2486317000ECC4E7 /* XCTAssertEqualOneOf.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94874A3B2486317000ECC4E7 /* XCTAssertEqualOneOf.swift */; };
 		94879A6D2470017300F0189E /* DocumentTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94879A6B246FFFCA00F0189E /* DocumentTest.swift */; };
 		94AC589D247D3368006701E7 /* Proxy+Counter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94AC589C247D3368006701E7 /* Proxy+Counter.swift */; };
 		94B256912482B0E9008FC23D /* KeyPathIntrospection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94B256902482B0E9008FC23D /* KeyPathIntrospection.swift */; };
@@ -74,6 +75,7 @@
 /* Begin PBXFileReference section */
 		94339B4E247BA65800A461F1 /* AutomergeTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomergeTest.swift; sourceTree = "<group>"; };
 		9477033D246E73C4000E952C /* ActorId.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActorId.swift; sourceTree = "<group>"; };
+		94874A3B2486317000ECC4E7 /* XCTAssertEqualOneOf.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XCTAssertEqualOneOf.swift; sourceTree = "<group>"; };
 		94879A6B246FFFCA00F0189E /* DocumentTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentTest.swift; sourceTree = "<group>"; };
 		94AC589C247D3368006701E7 /* Proxy+Counter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Proxy+Counter.swift"; sourceTree = "<group>"; };
 		94B256902482B0E9008FC23D /* KeyPathIntrospection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyPathIntrospection.swift; sourceTree = "<group>"; };
@@ -185,6 +187,7 @@
 				94E267842468099800C54C0E /* RSBackendTest.swift */,
 				94879A6B246FFFCA00F0189E /* DocumentTest.swift */,
 				94339B4E247BA65800A461F1 /* AutomergeTest.swift */,
+				94874A3B2486317000ECC4E7 /* XCTAssertEqualOneOf.swift */,
 			);
 			path = Tests;
 			sourceTree = SOURCE_ROOT;
@@ -357,6 +360,7 @@
 				94339B50247BA70A00A461F1 /* AutomergeTest.swift in Sources */,
 				94E26786246809CC00C54C0E /* RSBackendTest.swift in Sources */,
 				OBJ_81 /* ContextTest.swift in Sources */,
+				94874A3C2486317000ECC4E7 /* XCTAssertEqualOneOf.swift in Sources */,
 				OBJ_82 /* Proxy+CollectionTest.swift in Sources */,
 				94879A6D2470017300F0189E /* DocumentTest.swift in Sources */,
 				OBJ_83 /* ProxyTest.swift in Sources */,

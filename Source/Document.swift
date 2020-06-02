@@ -49,7 +49,7 @@ public struct Document<T: Codable> {
     public init(_ initialState: T, options: Options = Options()) {
         var newDocument = Document<T>(options: options)
         newDocument.change(options: .init(message: "Initialization", undoable: true), execute: { doc in
-            doc.set(object: initialState)
+            doc.set(initialState)
         })
         self = newDocument
     }
@@ -132,12 +132,7 @@ public struct Document<T: Codable> {
     public var content: T {
         let context = Context(doc: self, actorId: options.actorId)
         
-        return Proxy<T>.rootProxy(context: context).value
-    }
-
-    public func getObjectId<Y: Codable>(_ keyPath: KeyPath<T, Y>, _ keyPathString: String) -> String? {
-        let context = Context(doc: self, actorId: options.actorId)
-        return Proxy<Y>.rootProxy(context: context)[keyPath, keyPathString]?.objectId
+        return Proxy<T>.rootProxy(context: context).get()
     }
 
     public struct ChangeOptions {
@@ -162,40 +157,12 @@ public struct Document<T: Codable> {
      * changed, returns the original `doc` and a `null` change request.
      */
     @discardableResult
-    public mutating func change(options: ChangeOptions, execute: (Proxy<T>) -> Void) -> Request? {
+    public mutating func change(options: ChangeOptions, execute: (inout Proxy<T>) -> Void) -> Request? {
         if change {
             fatalError("Calls to Automerge.change cannot be nested")
         }
         let context = Context(doc: self, actorId: self.options.actorId)
-        execute(.rootProxy(context: context))
-        if context.idUpdated {
-            return makeChange(requestType: .change, context: context, options: options)
-        } else {
-            return nil
-        }
-    }
-
-    @discardableResult
-    public mutating func change(_ execute: (Proxy<T>) -> Void) -> Request? {
-        if change {
-            fatalError("Calls to Automerge.change cannot be nested")
-        }
-        let context = Context(doc: self, actorId: self.options.actorId)
-        execute(.rootProxy(context: context))
-        if context.idUpdated {
-            return makeChange(requestType: .change, context: context, options: nil)
-        } else {
-            return nil
-        }
-    }
-
-    @discardableResult
-    public mutating func change2(options: ChangeOptions, execute: (inout Proxy2<T>) -> Void) -> Request? {
-        if change {
-            fatalError("Calls to Automerge.change cannot be nested")
-        }
-        let context = Context(doc: self, actorId: self.options.actorId)
-        var root: Proxy2<T> = .rootProxy(context: context)
+        var root: Proxy<T> = .rootProxy(context: context)
         execute(&root)
         if context.idUpdated {
             return makeChange(requestType: .change, context: context, options: options)
@@ -205,12 +172,12 @@ public struct Document<T: Codable> {
     }
 
     @discardableResult
-    public mutating func change2(_ execute: (inout Proxy2<T>) -> Void) -> Request? {
+    public mutating func change(_ execute: (inout Proxy<T>) -> Void) -> Request? {
         if change {
             fatalError("Calls to Automerge.change cannot be nested")
         }
         let context = Context(doc: self, actorId: self.options.actorId)
-        var root: Proxy2<T> = .rootProxy(context: context)
+        var root: Proxy<T> = .rootProxy(context: context)
         execute(&root)
         if context.idUpdated {
             return makeChange(requestType: .change, context: context, options: nil)
@@ -475,31 +442,11 @@ public struct Document<T: Codable> {
 //      return !!doc[STATE].canUndo && !isUndoRedoInFlight(doc)
 //    }
 
-    /**
-     * Fetches the conflicts on the property `key` of `object`, which may be any
-     * object in a document. If `object` is a list, then `key` must be a list
-     * index; if `object` is a map, then `key` must be a property name.
-     */
-    public func conflicts<Y: Codable>(for keyPath: WritableKeyPath<T, Y>, _ keyPathString: String) -> [String: Y]? {
-        let context = Context(doc: self, actorId: options.actorId)
-        let proxy = Proxy<Y>.rootProxy(context: context)[keyPath, keyPathString]
-        if let conflicts = proxy?.conflicts?[keyPathString.keyPath.last!] as? [Int: Any], conflicts.count > 1 {
-            fatalError()
-        }
-        guard let conflicts = proxy?.conflicts?[keyPathString.keyPath.last!] as? [String: Any], conflicts.count > 1 else {
-            return nil
-        }
 
-        let decoder = DictionaryDecoder()
-        let decoded = try? decoder.decode([String: Y].self, from: conflicts)
-        return decoded
+    public func rootProxy() -> Proxy<T> {
+        let context = Context(doc: self, actorId: self.options.actorId)
+        return .rootProxy(context: context)
     }
-//    function getConflicts(object, key) {
-//      if (object[CONFLICTS] && object[CONFLICTS][key] &&
-//          Object.keys(object[CONFLICTS][key]).length > 1) {
-//        return object[CONFLICTS][key]
-//      }
-//    }
 
     public func allChanges() -> [[UInt8]] {
         return options.backend.getChanges()
@@ -532,7 +479,64 @@ public struct Document<T: Codable> {
 //      // Just copy all changes from the remote doc; any duplicates will be ignored
 //      return applyChanges(localDoc, getAllChanges(remoteDoc))
 //    }
+
+    /**
+     Creates a request to perform an undo on the document `doc`, returning a
+     two-element array `[doc, request]` where `doc` is the updated document, and
+     `request` needs to be sent to the backend. `options` is an object as
+     described in the documentation for the `change` function; it may contain a
+     `message` property with an optional change description to attach to the undo.
+     Note that the undo does not take effect immediately: only after the request
+     is sent to the backend, and the backend responds with a patch, does the
+     user-visible document update actually happen.
+    */
+    @discardableResult
+    public mutating func undo(options: ChangeOptions = ChangeOptions()) -> Request? {
+        if !canUndo {
+            return nil
+        }
+        return makeChange(requestType: .undo, context: nil, options: options)
+    }
+
+
+//    function undo(doc, options) {
+//      if (typeof options === 'string') {
+//        options = {message: options}
+//      }
+//      if (options !== undefined && !isObject(options)) {
+//        throw new TypeError('Unsupported type of options')
+//      }
+//      if (!doc[STATE].canUndo) {
+//        throw new Error('Cannot undo: there is nothing to be undone')
+//      }
+//      if (isUndoRedoInFlight(doc)) {
+//        throw new Error('Can only have one undo in flight at any one time')
+//      }
+//      return makeChange(doc, 'undo', null, options)
+//    }
+
+    public func history() -> [Any] {
+        fatalError()
+    }
 }
+
+//function getHistory(doc) {
+//  const actor = Frontend.getActorId(doc)
+//  const history = getAllChanges(doc)
+//  return history.map((change, index) => {
+//    return {
+//      get change () {
+//        return decodeChange(change)
+//      },
+//      get snapshot () {
+//        const state = backend.loadChanges(backend.init(), history.slice(0, index + 1))
+//        const patch = backend.getPatch(state)
+//        patch.state = state
+//        return Frontend.applyPatch(init(actor), patch)
+//      }
+//    }
+//  })
+//}
 
 
 
