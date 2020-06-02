@@ -20,7 +20,6 @@ public enum Key: Equatable, Hashable, Codable {
             } else {
                 self = .string(string)
             }
-
         } else {
             self = .index(try container.decode(Int.self))
         }

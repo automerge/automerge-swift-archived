@@ -209,7 +209,7 @@ func applyProperties(props: Props?,
             switch key {
             case .string(let string):
                 object?[string] = nil
-            case .index(let index):
+            case .index:
                 fatalError()
             }
 
