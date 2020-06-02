@@ -2,12 +2,12 @@
 # automerge-swift
 A automerge frontend in Swift using the rs-backend
 
-## Usage (⚠️ Highly Experimental)
+## Usage (Experimental)
 
 ### 1. Define your types you want to store
-⚠️  <b>Default</b> Codable conformance required
+<b>Default</b> Codable conformance required
 
-⚠️ Do NOT provide custom Codable implementations or custom CodeingKeys
+⚠️ Do NOT provide custom Codable implementations or custom CodingKeys (I am working on custom CodingKey support)
 
 ```swift
 struct Trip: Codable {
@@ -30,21 +30,21 @@ let document = Automerge.Document(trip)
 ```
 
 ### 3. Mutate a document
-⚠️ Here is the ugly part, make sure to copy the static keypath into the dynamic string argument. (Missing dynamic feature of Swift. We should bring up a proposal to fix this)
 ```swift
 var mutableDocument = document
-mutableDocument.change { doc
-  doc[\.stops, "stops"].append(Stop(name: "Munich", night: 0))
-  doc[\.stops, "stops"].append(Stop(name: "Rome", night: 2))
+mutableDocument.change { doc in
+  let stops = doc.stops
+  stops.append(Stop(name: "Munich", night: 0))
+  stops.append(Stop(name: "Rome", night: 2))
 }
-mutableDocument.change { doc
-  doc[\.name, "name"] = "Summer 2021"
-  doc[\.stops[1].nights, "stops[1].nights"] = 3
+mutableDocument.change { doc in
+  doc.name.set("Summer 2021")
+  doc.stops[1].nights.set(3)
 }
 ```
 
 ### Future 🌈
-When the limitation of key paths would be lifted, API could look so much better. This should be the long term goal.
+We quite near the API goal. Custom assignment operators are missing for now
 ```swift
 var mutableDocument = document
 mutableDocument.change { doc
