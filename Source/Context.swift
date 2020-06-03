@@ -7,7 +7,7 @@
 
 import Foundation
 
-public final class Context {
+final class Context {
 
     struct KeyPathElement: Equatable {
         let key: Key
@@ -35,11 +35,10 @@ public final class Context {
         self.ops = ops
     }
 
-    let actorId: ActorId
-    let applyPatch: (ObjectDiff, [String: Any]?, inout [String: [String: Any]]) -> [String: Any]?
-    var updated: [String: [String: Any]]
-    var cache: [String: [String: Any]]
-    var instantiateObject: (() -> Void)!
+    private let actorId: ActorId
+    private let applyPatch: (ObjectDiff, [String: Any]?, inout [String: [String: Any]]) -> [String: Any]?
+    private(set) var updated: [String: [String: Any]]
+    private var cache: [String: [String: Any]]
 
     var idUpdated: Bool {
         return !ops.isEmpty

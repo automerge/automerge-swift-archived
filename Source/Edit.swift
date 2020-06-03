@@ -18,6 +18,13 @@ struct Edit: Equatable, Codable {
 }
 
 extension Array where Element == Edit {
+
+    /**
+     * `edits` is an array of edits to a list data structure, each of which is an object of the form
+     * either `{action: 'insert', index}` or `{action: 'remove', index}`. This merges adjacent edits
+     * and calls `insertCallback(index, count)` or `removeCallback(index, count)`, as appropriate,
+     * for each sequence of insertions or removals.
+     */
     func iterate(insertCallback: (Int, Int) -> Void, removeCallback: (Int, Int) -> Void) {
         var splicePosition = -1
         var deletions: Int!
@@ -55,55 +62,3 @@ extension Array where Element == Edit {
         }
     }
 }
-
-///**
-// * `edits` is an array of edits to a list data structure, each of which is an object of the form
-// * either `{action: 'insert', index}` or `{action: 'remove', index}`. This merges adjacent edits
-// * and calls `insertCallback(index, count)` or `removeCallback(index, count)`, as appropriate,
-// * for each sequence of insertions or removals.
-// */
-//function iterateEdits(edits, insertCallback, removeCallback) {
-//  if (!edits) return
-//  let splicePos = -1, deletions, insertions
-//
-//  for (let i = 0; i < edits.length; i++) {
-//    const edit = edits[i], action = edit.action, index = edit.index
-//
-//    if (action === 'insert') {
-//      if (splicePos < 0) {
-//        splicePos = index
-//        deletions = 0
-//        insertions = 0
-//      }
-//      insertions += 1
-//
-//      // If there are multiple consecutive insertions at successive indexes,
-//      // accumulate them and then process them in a single insertCallback
-//      if (i === edits.length - 1 ||
-//          edits[i + 1].action !== 'insert' ||
-//          edits[i + 1].index  !== index + 1) {
-//        insertCallback(splicePos, insertions)
-//        splicePos = -1
-//      }
-//
-//    } else if (action === 'remove') {
-//      if (splicePos < 0) {
-//        splicePos = index
-//        deletions = 0
-//        insertions = 0
-//      }
-//      deletions += 1
-//
-//      // If there are multiple consecutive removals of the same index,
-//      // accumulate them and then process them in a single removeCallback
-//      if (i === edits.length - 1 ||
-//          edits[i + 1].action !== 'remove' ||
-//          edits[i + 1].index  !== index) {
-//        removeCallback(splicePos, deletions)
-//        splicePos = -1
-//      }
-//    } else {
-//      throw new RangeError(`Unknown list edit action: ${action}`)
-//    }
-//  }
-//}

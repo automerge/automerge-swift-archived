@@ -7,6 +7,8 @@
 
 import Foundation
 
+// see https://gist.github.com/ddddxxx/7ba69196b8551efcf4025e7001cefa26
+
 extension KeyPath {
 
     var fieldName: String? {

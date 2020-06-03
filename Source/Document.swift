@@ -11,15 +11,21 @@ public struct Document<T: Codable> {
     public struct Options {
 
         public init(
+            actorId: ActorId = ActorId()
+        ) {
+            self.init(actorId: actorId, backend: RSBackend())
+        }
+
+        init(
             actorId: ActorId = ActorId(),
-            backend: Backend = RSBackend()
+            backend: RSBackend
         ) {
             self.actorId = actorId
             self.backend = backend
         }
         
         let actorId: ActorId
-        var backend: Backend
+        var backend: RSBackend
     }
 
     struct State {

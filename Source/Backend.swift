@@ -7,21 +7,8 @@
 
 import Foundation
 
-public protocol Backend {
 
-    func applyLocalChange(request: Request) -> (Backend, Patch)
-
-    func apply(changes: [[UInt8]]) -> (Backend, Patch)
-
-    func save() -> [UInt8]
-
-    func getPatch() -> Patch
-
-    func getChanges() -> [[UInt8]]
-    
-}
-
-public final class RSBackend: Backend {
+public final class RSBackend {
 
     private let automerge: OpaquePointer
     private let encoder: JSONEncoder
@@ -72,7 +59,7 @@ public final class RSBackend: Backend {
         return data
     }
 
-    public func applyLocalChange(request: Request) -> (Backend, Patch) {
+    public func applyLocalChange(request: Request) -> (RSBackend, Patch) {
         let copy = automerge_clone(automerge)
         let data = try! encoder.encode(request)
         let string = String(data: data, encoding: .utf8)
@@ -85,7 +72,7 @@ public final class RSBackend: Backend {
         return (RSBackend(automerge: copy!), patch)
     }
 
-    public func apply(changes: [[UInt8]]) -> (Backend, Patch) {
+    public func apply(changes: [[UInt8]]) -> (RSBackend, Patch) {
         let copy = automerge_clone(automerge)
         for change in changes {
             automerge_write_change(copy, UInt(change.count), change)

@@ -659,26 +659,6 @@ class AutomergeTest: XCTestCase {
         ])
     }
 
-//    it('should handle changes within a conflicting list element', () => {
-//      s1 = Automerge.change(s1, doc => doc.list = ['hello'])
-//      s2 = Automerge.merge(s2, s1)
-//      s1 = Automerge.change(s1, doc => doc.list[0] = {map1: true})
-//      s1 = Automerge.change(s1, doc => doc.list[0].key = 1)
-//      s2 = Automerge.change(s2, doc => doc.list[0] = {map2: true})
-//      s2 = Automerge.change(s2, doc => doc.list[0].key = 2)
-//      s3 = Automerge.merge(s1, s2)
-//      if (Automerge.getActorId(s1) > Automerge.getActorId(s2)) {
-//        assert.deepStrictEqual(s3.list, [{map1: true, key: 1}])
-//      } else {
-//        assert.deepStrictEqual(s3.list, [{map2: true, key: 2}])
-//      }
-//      assert.deepStrictEqual(Automerge.getConflicts(s3.list, 0), {
-//        [`3@${Automerge.getActorId(s1)}`]: {map1: true, key: 1},
-//        [`3@${Automerge.getActorId(s2)}`]: {map2: true, key: 2}
-//      })
-//    })
-
-
     // should not merge concurrently assigned nested maps
     func testConcurrentUse7() {
         struct Scheme: Codable, Equatable {
