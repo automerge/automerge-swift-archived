@@ -108,9 +108,8 @@ class ProxyCollectionTest: XCTestCase {
 
         // WHEN
         document.change({ doc in
-            var proxy: Proxy<[Int]> = doc.list
-            proxy.append(4)
-            proxy.append(contentsOf: [5, 6])
+            doc.list.append(4)
+            doc.list.append(contentsOf: [5, 6])
             XCTAssertEqual(doc.list.count, 6)
             XCTAssertEqual(doc.list.get(), [1, 2, 3, 4, 5, 6])
         })
@@ -165,8 +164,7 @@ class ProxyCollectionTest: XCTestCase {
         })
 
         document.change({ doc in
-            var proxy: Proxy = doc.deepObjList
-            proxy.append(.init(list: [1]))
+            doc.deepObjList.append(.init(list: [1]))
             XCTAssertEqual(doc.deepObjList[0], .init(list: [1]))
             XCTAssertEqual(doc.deepObjList.get(), [.init(list: [1])])
         })

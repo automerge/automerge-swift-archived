@@ -43,7 +43,7 @@ public final class Proxy<T: Codable> {
         return valueResolver()!
     }
 
-    public func conflicts<Y: Codable>(dynamicMember: WritableKeyPath<T, Y>) -> [String: Y]? {
+    public func conflicts<Y: Codable>(dynamicMember: KeyPath<T, Y>) -> [String: Y]? {
         guard let objectId = objectId else {
             return nil
         }
@@ -59,27 +59,34 @@ public final class Proxy<T: Codable> {
     }
 
 
-    public subscript<Y>(dynamicMember dynamicMember: WritableKeyPath<T, Y>) -> Proxy<Y> {
+    public subscript<Y>(dynamicMember dynamicMember: KeyPath<T, Y>) -> Proxy<Y> {
         let fieldName = dynamicMember.fieldName!
         let object = self.objectId.map { context.getObject(objectId: $0) }
         let objectId = (object?[fieldName] as? [String: Any])?[OBJECT_ID] as? String
         return Proxy<Y>(context: context, objectId: objectId, path: path + [.init(key: .string(fieldName), objectId: objectId ?? "")], value: self.valueResolver()?[keyPath: dynamicMember])
     }
 
-    public subscript<Y>(dynamicMember dynamicMember: WritableKeyPath<T, Y?>) -> Proxy<Y>? {
+    public subscript<Y>(dynamicMember dynamicMember: KeyPath<T, Y?>) -> Proxy<Y>? {
         let fieldName = dynamicMember.fieldName!
         let object = self.objectId.map { context.getObject(objectId: $0) }
         let objectId = (object?[fieldName] as? [String: Any])?[OBJECT_ID] as? String
         return Proxy<Y>(context: context, objectId: objectId, path: path + [.init(key: .string(fieldName), objectId: objectId ?? "")], value: self.valueResolver()?[keyPath: dynamicMember])
     }
 
-
-    static func rootProxy<T>(context: Context) -> Proxy<T> {
-        return Proxy<T>(context: context, objectId: ROOT_ID, path: [], value: {
-            let object = context.getObject(objectId: ROOT_ID)
-           return try? DictionaryDecoder().decode(T.self, from: object)
-        })
-    }
+//    public subscript<Y>(dynamicMember dynamicMember: WritableKeyPath<T, Y>) -> MutableProxy<Y> {
+//        let fieldName = dynamicMember.fieldName!
+//        let object = self.objectId.map { context.getObject(objectId: $0) }
+//        let objectId = (object?[fieldName] as? [String: Any])?[OBJECT_ID] as? String
+//        return MutableProxy<Y>(context: context, objectId: objectId, path: path + [.init(key: .string(fieldName), objectId: objectId ?? "")], value: self.valueResolver()?[keyPath: dynamicMember])
+//    }
+//
+//    public subscript<Y>(dynamicMember dynamicMember: WritableKeyPath<T, Y?>) -> MutableProxy<Y>? {
+//        let fieldName = dynamicMember.fieldName!
+//        let object = self.objectId.map { context.getObject(objectId: $0) }
+//        let objectId = (object?[fieldName] as? [String: Any])?[OBJECT_ID] as? String
+//        return MutableProxy<Y>(context: context, objectId: objectId, path: path + [.init(key: .string(fieldName), objectId: objectId ?? "")], value: self.valueResolver()?[keyPath: dynamicMember])
+//    }
+//
 
     private func set(rootObject: T) {
         let dictionary = try! DictionaryEncoder().encode(rootObject) as [String: Any]
@@ -103,5 +110,10 @@ public final class Proxy<T: Codable> {
             context.setListIndex(path: path, index: index, value: encoded)
         }
     }
-
 }
+
+//public final class MutableProxy<T: Codable>: Proxy<T> {
+
+//
+
+//}

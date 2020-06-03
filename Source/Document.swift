@@ -53,7 +53,7 @@ public struct Document<T: Codable> {
         self = newDocument
     }
 
-    public init(_ data: [UInt8], actorId: ActorId = ActorId()) {
+    public init(data: [UInt8], actorId: ActorId = ActorId()) {
         let backend = RSBackend(data: data)
         var doc = Document<T>(options: .init(actorId: actorId, backend: backend))
 
@@ -71,14 +71,6 @@ public struct Document<T: Codable> {
         self = doc
     }
 
-//    function load(data, options) {
-//      const state = backend.load(data)
-//      const patch = backend.getPatch(state)
-//      patch.state = state
-//      return Frontend.applyPatch(init(options), patch)
-//    }
-
-
     var cache: [String: [String: Any]] {
         get {
             root[CACHE] as! [String: [String: Any]]
@@ -88,37 +80,7 @@ public struct Document<T: Codable> {
         }
     }
 
-
-    //function init(options) {
-    //  if (typeof options === 'string') {
-    //    options = {actorId: options}
-    //  } else if (typeof options === 'undefined') {
-    //    options = {}
-    //  } else if (!isObject(options)) {
-    //    throw new TypeError(`Unsupported value for init() options: ${options}`)
-    //  }
-    //  if (options.actorId === undefined && !options.deferActorId) {
-    //    options.actorId = uuid()
-    //  }
-    //
-    //  const root = {}, cache = {[ROOT_ID]: root}
-    //  const state = {seq: 0, requests: [], version: 0, clock: {}, canUndo: false, canRedo: false}
-    //  if (options.backend) {
-    //    state.backendState = options.backend.init()
-    //  }
-    //  Object.defineProperty(root, OBJECT_ID, {value: ROOT_ID})
-    //  Object.defineProperty(root, OPTIONS,   {value: Object.freeze(options)})
-    //  Object.defineProperty(root, CONFLICTS, {value: Object.freeze({})})
-    //  Object.defineProperty(root, CACHE,     {value: Object.freeze(cache)})
-    //  Object.defineProperty(root, STATE,     {value: Object.freeze(state)})
-    //  return Object.freeze(root)
-    //}
-
-
-
-    /**
-     * Returns the Automerge actor ID of the given document.
-     */
+    /// Returns the Automerge actor ID of the given document.
     public var actor: ActorId {
         return options.actorId
     }
@@ -430,10 +392,14 @@ public struct Document<T: Codable> {
     public var canUndo: Bool {
         return state.canUndo
     }
-//    function canUndo(doc) {
-//      return !!doc[STATE].canUndo && !isUndoRedoInFlight(doc)
-//    }
 
+    /**
+     * Returns `true` if redo is currently possible on the document (because
+     * a prior action was an undo that has not already been redone); `false` if not.
+     */
+    public var canRedo: Bool {
+        return state.canRedo
+    }
 
     public func rootProxy() -> Proxy<T> {
         let context = Context(doc: self, actorId: self.options.actorId)
@@ -505,6 +471,39 @@ public struct Document<T: Codable> {
 //        throw new Error('Can only have one undo in flight at any one time')
 //      }
 //      return makeChange(doc, 'undo', null, options)
+//    }
+
+    /**
+     * Creates a request to perform a redo of a prior undo on the document ,
+     * returning a two-element array `[doc, request]` where `doc` is the updated
+     * document, and `request` needs to be sent to the backend. `options` is an
+     * object as described in the documentation for the `change` function; it may
+     * contain a `message` property with an optional change description to attach
+     * to the redo. Note that the redo does not take effect immediately: only
+     * after the request is sent to the backend, and the backend responds with a
+     * patch, does the user-visible document update actually happen.
+     */
+    @discardableResult
+    public mutating func redo(options: ChangeOptions = ChangeOptions()) -> Request? {
+        if !canRedo {
+            return nil
+        }
+        return makeChange(requestType: .redo, context: nil, options: options)
+    }
+//    function redo(doc, options) {
+//      if (typeof options === 'string') {
+//        options = {message: options}
+//      }
+//      if (options !== undefined && !isObject(options)) {
+//        throw new TypeError('Unsupported type of options')
+//      }
+//      if (!doc[STATE].canRedo) {
+//        throw new Error('Cannot redo: there is no prior undo')
+//      }
+//      if (isUndoRedoInFlight(doc)) {
+//        throw new Error('Can only have one redo in flight at any one time')
+//      }
+//      return makeChange(doc, 'redo', null, options)
 //    }
 
     public func history() -> [Commit<T>] {

@@ -60,8 +60,7 @@ final class RSBackendTest: XCTestCase {
             let trip = Trip(name: "Italien 2019", startDate: Date())
             for _ in 0...100  {
                 automerge.change {
-                    var proxy: Proxy<[Trip]> = $0.trips
-                    proxy.append(trip)
+                    $0.trips.append(trip)
                 }
             }
             XCTAssertEqual(automerge.content.trips.count, 101)
@@ -75,7 +74,7 @@ final class RSBackendTest: XCTestCase {
         let automerge = Document(Schema(birds: ["Test"]))
 
         let document = automerge.save()
-        let newDocument = Document<Schema>(document, actorId: ActorId())
+        let newDocument = Document<Schema>(data: document, actorId: ActorId())
         XCTAssertEqual(newDocument.content, automerge.content)
 
     }

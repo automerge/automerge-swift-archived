@@ -145,8 +145,7 @@ class DocumentTest: XCTestCase {
         let doc1 = Document(Schema(birds: ["chaffinch", "goldfinch"]))
         var doc2 = doc1
         let req = doc2.change {
-            var proxy: Proxy<[String]> = $0.birds
-            proxy.remove(at: 0)
+            $0.birds.remove(at: 0)
         }
         let birds = doc2.rootProxy().birds.objectId
         XCTAssertEqual(doc1.content, Schema(birds: ["chaffinch", "goldfinch"]))

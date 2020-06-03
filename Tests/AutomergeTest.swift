@@ -7,7 +7,7 @@
 
 import Foundation
 import XCTest
-@testable import Automerge
+import Automerge
 
 // /test/test.js
 class AutomergeTest: XCTestCase {
@@ -344,8 +344,7 @@ class AutomergeTest: XCTestCase {
             abc.insert(contentsOf: ["udon", "soba"], at: 0)
         })
         s1.change({
-            var abc = $0.noodles
-            abc.insert("ramen", at: 1)
+            $0.noodles.insert("ramen", at: 1)
         })
         //        s1.change { $0.noodles.insert(contentsOf: ["udon", "soba"], at: 0) }
         //        s1.change { $0.noodles.insert("ramen", at: 1) }
@@ -378,8 +377,7 @@ class AutomergeTest: XCTestCase {
         }
         var s1 = Document(Scheme(noodles:["udon", "ramen", "soba"]))
         s1.change {
-            var noodles = $0.noodles
-            noodles.remove(at: 1)
+            $0.noodles.remove(at: 1)
         }
         XCTAssertEqual(s1.content, Scheme(noodles: ["udon", "soba"]))
         XCTAssertEqual(s1.content.noodles, ["udon", "soba"])
@@ -433,12 +431,10 @@ class AutomergeTest: XCTestCase {
         }
         var s1 = Document(Scheme(noodles: [.init(type: .ramen, dishes: ["tonkotsu", "shoyu"])]))
         s1.change {
-            var noodles = $0.noodles
-            noodles.append(.init(type: .udon, dishes: ["tempura udon"]))
+            $0.noodles.append(.init(type: .udon, dishes: ["tempura udon"]))
         }
         s1.change {
-            var dishes: Proxy<[String]> = $0.noodles[0].dishes
-            dishes.append("miso")
+            $0.noodles[0].dishes.append("miso")
         }
         XCTAssertEqual(s1.content, Scheme(noodles: [.init(type: .ramen, dishes: ["tonkotsu", "shoyu", "miso"]), .init(type: .udon, dishes: ["tempura udon"])]))
         XCTAssertEqual(s1.content.noodles[0], .init(type: .ramen, dishes: ["tonkotsu", "shoyu", "miso"]))
@@ -484,16 +480,14 @@ class AutomergeTest: XCTestCase {
         }
         var s1 = Document(Scheme(noodles: []))
         s1.change {
-            var noodle = $0.noodles
-            noodle.append("udon")
-            noodle.remove(at: 0)
+            $0.noodles.append("udon")
+            $0.noodles.remove(at: 0)
         }
         XCTAssertEqual(s1.content, Scheme(noodles: []))
         // do the add-remove cycle twice, test for #151 (https://github.com/automerge/automerge/issues/151)
         s1.change {
-            var noodle = $0.noodles
-            noodle.append("soba")
-            noodle.remove(at: 0)
+            $0.noodles.append("soba")
+            $0.noodles.remove(at: 0)
         }
         XCTAssertEqual(s1.content, Scheme(noodles: []))
     }
@@ -505,8 +499,7 @@ class AutomergeTest: XCTestCase {
         }
         var s1 = Document(Scheme(maze: [[[[[[[["noodles"]]]]]]]]))
         s1.change {
-            var maze: Proxy<[String]> = $0.maze[0][0][0][0][0][0][0]
-            maze.append("found")
+            $0.maze[0][0][0][0][0][0][0].append("found")
         }
         XCTAssertEqual(s1.content, Scheme(maze: [[[[[[[["noodles", "found"]]]]]]]]))
         XCTAssertEqual(s1.content.maze[0][0][0][0][0][0][0][1], "found")
@@ -649,24 +642,42 @@ class AutomergeTest: XCTestCase {
         XCTAssertEqual(s1.content, Scheme(list: [.init(map1: false, map2: false, key: 0)]))
         var s2 = Document<Scheme>(changes: s1.allChanges())
         s1.change { $0.list[0].set(.init(map1: true, map2: nil, key: nil)) }
-        XCTAssertEqual(s1.content, Scheme(list: [.init(map1: true, map2: nil, key: nil)]))
         s1.change { $0.list[0].key.set(1) }
-        s2.change { $0.list[0].set(.init(map1: true, map2: nil, key: nil)) }
+        s2.change { $0.list[0].set(.init(map1: nil, map2: true, key: nil)) }
         s2.change { $0.list[0].key.set(2) }
-        s1.merge(s2)
+        var s3 = s1
+        s3.merge(s2)
         if s1.actor > s2.actor {
-            XCTAssertEqual(s1.content.list, [.init(map1: true, map2: nil, key: 1)])
+            XCTAssertEqual(s3.content.list, [.init(map1: true, map2: nil, key: 1)])
         } else {
-            XCTAssertEqual(s1.content.list, [.init(map1: nil, map2: true, key: 2)])
+            XCTAssertEqual(s3.content.list, [.init(map1: nil, map2: true, key: 2)])
         }
 
-        let proxy: Proxy<[Scheme.Obj]> = s1.rootProxy().list
-
-        XCTAssertEqual(proxy.conflicts(index: 0), [
+        XCTAssertEqual(s3.rootProxy().list.conflicts(index: 0), [
             "6@\(s1.actor)": .init(map1: true, map2: nil, key: 1),
             "6@\(s2.actor)": .init(map1: nil, map2: true, key: 2)
         ])
     }
+
+//    it('should handle changes within a conflicting list element', () => {
+//      s1 = Automerge.change(s1, doc => doc.list = ['hello'])
+//      s2 = Automerge.merge(s2, s1)
+//      s1 = Automerge.change(s1, doc => doc.list[0] = {map1: true})
+//      s1 = Automerge.change(s1, doc => doc.list[0].key = 1)
+//      s2 = Automerge.change(s2, doc => doc.list[0] = {map2: true})
+//      s2 = Automerge.change(s2, doc => doc.list[0].key = 2)
+//      s3 = Automerge.merge(s1, s2)
+//      if (Automerge.getActorId(s1) > Automerge.getActorId(s2)) {
+//        assert.deepStrictEqual(s3.list, [{map1: true, key: 1}])
+//      } else {
+//        assert.deepStrictEqual(s3.list, [{map2: true, key: 2}])
+//      }
+//      assert.deepStrictEqual(Automerge.getConflicts(s3.list, 0), {
+//        [`3@${Automerge.getActorId(s1)}`]: {map1: true, key: 1},
+//        [`3@${Automerge.getActorId(s2)}`]: {map2: true, key: 2}
+//      })
+//    })
+
 
     // should not merge concurrently assigned nested maps
     func testConcurrentUse7() {
@@ -714,12 +725,10 @@ class AutomergeTest: XCTestCase {
         var s1 = Document(Scheme(list: ["one", "three"]))
         var s2 = Document<Scheme>(changes: s1.allChanges())
         s1.change {
-            var proxy = $0.list
-            proxy.insert("two", at: 1)
+            $0.list.insert("two", at: 1)
         }
         s2.change({
-            var proxy = $0.list
-            proxy.append("four")
+            $0.list.append("four")
         })
         var s3 = s1
         s3.merge(s2)
@@ -736,12 +745,10 @@ class AutomergeTest: XCTestCase {
         var s1 = Document(Scheme(birds: ["parakeet"]))
         var s2 = Document<Scheme>(changes: s1.allChanges())
         s1.change {
-            var proxy = $0.birds
-            proxy.append("starling")
+            $0.birds.append("starling")
         }
         s2.change({
-            var proxy = $0.birds
-            proxy.append("chaffinch")
+            $0.birds.append("chaffinch")
         })
         var s3 = s1
         s3.merge(s2)
@@ -781,8 +788,7 @@ class AutomergeTest: XCTestCase {
         var s2 = Document<Scheme>(changes: s1.allChanges())
         s1.change { $0.birds[1].set("starling") }
         s2.change {
-            var proxy = $0.birds
-            proxy.remove(at: 1)
+            $0.birds.remove(at: 1)
         }
         var s3 = s1
         s3.merge(s2)
@@ -802,8 +808,7 @@ class AutomergeTest: XCTestCase {
             $0.birds.replaceSubrange(1...2, with: [])
         }
         s2.change {
-            var proxy = $0.birds
-            proxy.insert("starling", at: 2)
+            $0.birds.insert("starling", at: 2)
         }
         var s3 = s1
         s3.merge(s2)
@@ -849,12 +854,10 @@ class AutomergeTest: XCTestCase {
         var s1 = Document(Scheme(birds: ["albatross", "buzzard", "cormorant"]))
         var s2 = Document<Scheme>(changes: s1.allChanges())
         s1.change {
-            var proxy = $0.birds
-            proxy.remove(at: 0)
+            $0.birds.remove(at: 0)
         }
         s2.change {
-            var proxy = $0.birds
-            proxy.remove(at: 1)
+            $0.birds.remove(at: 1)
         }
         var s3 = s1
         s3.merge(s2)
@@ -894,12 +897,10 @@ class AutomergeTest: XCTestCase {
         var s1 = Document(Scheme(wisdom: []))
         var s2 = Document<Scheme>(changes: s1.allChanges())
         s1.change {
-            var proxy = $0.wisdom
-            proxy.append(contentsOf: ["to", "be", "is", "to", "do"])
+            $0.wisdom.append(contentsOf: ["to", "be", "is", "to", "do"])
         }
         s2.change {
-            var proxy = $0.wisdom
-            proxy.append(contentsOf: ["to", "do", "is", "to", "be"])
+            $0.wisdom.append(contentsOf: ["to", "do", "is", "to", "be"])
         }
         var s3 = s1
         s3.merge(s2)
@@ -920,8 +921,7 @@ class AutomergeTest: XCTestCase {
         s1.change { $0.list.set(["two"]) }
         s2.merge(s1)
         s2.change {
-            var proxy = $0.list
-            proxy.insert("one", at: 0)
+            $0.list.insert("one", at: 0)
         }
         XCTAssertEqual(s2.content.list, ["one", "two"])
     }
@@ -937,8 +937,7 @@ class AutomergeTest: XCTestCase {
         s1.change { $0.list.set(["two"]) }
         s2.merge(s1)
         s2.change {
-            var proxy = $0.list
-            proxy.insert("one", at: 0)
+            $0.list.insert("one", at: 0)
         }
         XCTAssertEqual(s2.content.list, ["one", "two"])
     }
@@ -953,8 +952,7 @@ class AutomergeTest: XCTestCase {
         s1.change { $0.list.set(["two"]) }
         var s2 = Document<Scheme>(changes: s1.allChanges())
         s2.change {
-            var proxy = $0.list
-            proxy.insert("one", at: 0)
+            $0.list.insert("one", at: 0)
         }
         XCTAssertEqual(s2.content.list, ["one", "two"])
     }
@@ -968,18 +966,15 @@ class AutomergeTest: XCTestCase {
         var s1 = Document(Scheme(list: ["four"]))
         var s2 = Document<Scheme>(changes: s1.allChanges())
         s2.change {
-            var proxy = $0.list
-            proxy.insert("three", at: 0)
+            $0.list.insert("three", at: 0)
         }
         s1.merge(s2)
         s1.change {
-            var proxy = $0.list
-            proxy.insert("two", at: 0)
+            $0.list.insert("two", at: 0)
         }
         s2.merge(s1)
         s2.change {
-            var proxy = $0.list
-            proxy.insert("one", at: 0)
+            $0.list.insert("one", at: 0)
         }
 
         XCTAssertEqual(s2.content.list, ["one", "two", "three", "four"])
@@ -1076,104 +1071,420 @@ class AutomergeTest: XCTestCase {
         #warning("history")
         s2.merge(s1)
         XCTAssertEqual(s2.content, Scheme(value: 1))
+        XCTAssertEqual(s1.content, Scheme(value: 1))
     }
-}
 
-//describe('.undo()', () => {
-//  function getTopOfUndoStack(doc) {
-//    const stack = Automerge.Backend.getUndoStack(Automerge.Frontend.getBackendState(doc))
-//    return stack[stack.length - 1]
-//  }
-//
-//  it('should apply undos by growing the history', () => {
-//    let s1 = Automerge.change(Automerge.init(), 'set 1', doc => doc.value = 1)
-//    s1 = Automerge.change(s1, 'set 2', doc => doc.value = 2)
-//    let s2 = Automerge.merge(Automerge.init(), s1)
-//    assert.deepStrictEqual(s2, {value: 2})
-//    s1 = Automerge.undo(s1, 'undo!')
-//    assert.deepStrictEqual(Automerge.getHistory(s1).map(state => [state.change.seq, state.change.message]),
-//                           [[1, 'set 1'], [2, 'set 2'], [3, 'undo!']])
-//    s2 = Automerge.merge(s2, s1)
-//    assert.deepStrictEqual(s1, {value: 1})
-//  })
-//
-//  it("should ignore other actors' updates to an undo-reverted field", () => {
-//    let s1 = Automerge.change(Automerge.init(), doc => doc.value = 1)
-//    s1 = Automerge.change(s1, doc => doc.value = 2)
-//    let s2 = Automerge.merge(Automerge.init(), s1)
-//    s2 = Automerge.change(s2, doc => doc.value = 3)
-//    s1 = Automerge.merge(s1, s2)
-//    assert.deepStrictEqual(s1, {value: 3})
-//    s1 = Automerge.undo(s1)
-//    assert.deepStrictEqual(s1, {value: 1})
-//  })
-//
-//  it('should undo object creation by removing the link', () => {
-//    let s1 = Automerge.init()
-//    s1 = Automerge.change(s1, doc => doc.settings = {background: 'white', text: 'black'})
-//    assert.deepStrictEqual(s1, {settings: {background: 'white', text: 'black'}})
-//    assert.deepStrictEqual(getTopOfUndoStack(s1), [
-//      {action: 'del', obj: ROOT_ID, key: 'settings', insert: false}
-//    ])
-//    s1 = Automerge.undo(s1)
-//    assert.deepStrictEqual(s1, {})
-//  })
-//
-//  it('should undo primitive field deletion by setting the old value', () => {
-//    let s1 = Automerge.change(Automerge.init(), doc => { doc.k1 = 'v1'; doc.k2 = 'v2' })
-//    s1 = Automerge.change(s1, doc => delete doc.k2)
-//    assert.deepStrictEqual(s1, {k1: 'v1'})
-//    assert.deepStrictEqual(getTopOfUndoStack(s1), [
-//      {action: 'set', obj: ROOT_ID, key: 'k2', insert: false, value: 'v2'}
-//    ])
-//    s1 = Automerge.undo(s1)
-//    assert.deepStrictEqual(s1, {k1: 'v1', k2: 'v2'})
-//  })
-//
-//  it('should undo link deletion by linking the old value', () => {
-//    let s1 = Automerge.change(Automerge.init(), doc => doc.fish = ['trout', 'sea bass'])
-//    s1 = Automerge.change(s1, doc => doc.birds = ['heron', 'magpie'])
-//    let s2 = Automerge.change(s1, doc => delete doc['fish'])
-//    assert.deepStrictEqual(s2, {birds: ['heron', 'magpie']})
-//    assert.deepStrictEqual(getTopOfUndoStack(s2), [
-//      {action: 'link', obj: ROOT_ID, key: 'fish', insert: false, child: Automerge.getObjectId(s1.fish)}
-//    ])
-//    s2 = Automerge.undo(s2)
-//    assert.deepStrictEqual(s2, {fish: ['trout', 'sea bass'], birds: ['heron', 'magpie']})
-//  })
-//
-//  it('should undo list insertion by removing the new element', () => {
-//    let s1 = Automerge.change(Automerge.init(), doc => doc.list = ['A', 'B', 'C'])
-//    s1 = Automerge.change(s1, doc => doc.list.push('D'))
-//    assert.deepStrictEqual(s1, {list: ['A', 'B', 'C', 'D']})
-//    const actor = Automerge.Frontend.getActorId(s1)
-//    assert.deepStrictEqual(getTopOfUndoStack(s1), [
-//      {action: 'del', obj: Automerge.getObjectId(s1.list), key: `5@${actor}`, insert: false}
-//    ])
-//    s1 = Automerge.undo(s1)
-//    assert.deepStrictEqual(s1, {list: ['A', 'B', 'C']})
-//  })
-//
-//  it('should undo list element deletion by re-assigning the old value', () => {
-//    let s1 = Automerge.change(Automerge.init(), doc => doc.list = ['A', 'B', 'C'])
-//    const actor = Automerge.Frontend.getActorId(s1)
-//    s1 = Automerge.change(s1, doc => doc.list.splice(1, 1))
-//    assert.deepStrictEqual(s1, {list: ['A', 'C']})
-//    assert.deepStrictEqual(getTopOfUndoStack(s1), [
-//      {action: 'set', obj: Automerge.getObjectId(s1.list), key: `3@${actor}`, insert: false, value: 'B'}
-//    ])
-//    s1 = Automerge.undo(s1)
-//    assert.deepStrictEqual(s1, {list: ['A', 'B', 'C']})
-//  })
-//
-//  it('should undo counter increments', () => {
-//    let s1 = Automerge.change(Automerge.init(), doc => doc.counter = new Automerge.Counter())
-//    s1 = Automerge.change(s1, doc => doc.counter.increment())
-//    assert.deepStrictEqual(s1, {counter: new Automerge.Counter(1)})
-//    assert.deepStrictEqual(getTopOfUndoStack(s1), [
-//      {action: 'inc', obj: ROOT_ID, key: 'counter', insert: false, value: -1}
-//    ])
-//    s1 = Automerge.undo(s1)
-//    assert.deepStrictEqual(s1, {counter: new Automerge.Counter(0)})
-//  })
-//})
+    // should ignore other actors' updates to an undo-reverted field
+    func testUndo7() {
+        struct Scheme: Codable, Equatable {
+            var value: Int
+        }
+
+        var s1 = Document(Scheme(value: 1))
+        s1.change { $0.value.set(2) }
+        var s2 = Document<Scheme>(changes: s1.allChanges())
+        s2.change { $0.value.set(3) }
+        s1.merge(s2)
+        XCTAssertEqual(s1.content, Scheme(value: 3))
+        s1.undo()
+        XCTAssertEqual(s1.content, Scheme(value: 1))
+    }
+
+    // should undo object creation by removing the link
+    func testUndo8() {
+        struct Scheme: Codable, Equatable {
+            struct Settings: Codable, Equatable {
+                let background: String
+                let text: String
+            }
+            var settings: Settings?
+        }
+
+        var s1 = Document(Scheme(settings: nil))
+        s1.change { $0.settings.set(.init(background: "white", text: "black")) }
+        XCTAssertEqual(s1.content, Scheme(settings: .init(background: "white", text: "black")))
+        s1.undo()
+        XCTAssertEqual(s1.content, Scheme(settings: nil))
+    }
+
+    // should undo primitive field deletion by setting the old value
+    func testUndo9() {
+        struct Scheme: Codable, Equatable {
+            var k1: String?
+            var k2: String?
+        }
+
+        var s1 = Document(Scheme(k1: "v1", k2: "v2"))
+        s1.change { $0.k2.set(nil) }
+        XCTAssertEqual(s1.content, Scheme(k1: "v1", k2: nil))
+        s1.undo()
+        XCTAssertEqual(s1.content, Scheme(k1: "v1", k2: "v2"))
+    }
+
+    // should undo link deletion by linking the old value
+    func testUndo10() {
+        struct Scheme: Codable, Equatable {
+            var fish: [String]?
+            var birds: [String]?
+        }
+
+        var s1 = Document(Scheme(fish: ["trout", "sea bass"], birds: nil))
+        s1.change { $0.birds.set(["heron", "magpie"]) }
+
+        var s2 = s1
+        s2.change { $0.fish.set(nil) }
+        XCTAssertEqual(s2.content, Scheme(fish: nil, birds: ["heron", "magpie"]))
+        s2.undo()
+        XCTAssertEqual(s2.content, Scheme(fish: ["trout", "sea bass"], birds: ["heron", "magpie"]))
+    }
+
+    // should undo list insertion by removing the new element
+    func testUndo11() {
+        struct Scheme: Codable, Equatable {
+            var list: [String]
+        }
+
+        var s1 = Document(Scheme(list: ["A", "B", "C"]))
+        s1.change { $0.list.append("D") }
+        XCTAssertEqual(s1.content, Scheme(list: ["A", "B", "C", "D"]))
+        s1.undo()
+        XCTAssertEqual(s1.content, Scheme(list: ["A", "B", "C"]))
+    }
+
+    // should undo list element deletion by re-assigning the old value
+    func testUndo12() {
+        struct Scheme: Codable, Equatable {
+            var list: [String]
+        }
+
+        var s1 = Document(Scheme(list: ["A", "B", "C"]))
+        s1.change { $0.list.remove(at: 1) }
+        XCTAssertEqual(s1.content, Scheme(list: ["A", "C"]))
+        s1.undo()
+        XCTAssertEqual(s1.content, Scheme(list: ["A", "B", "C"]))
+    }
+
+    // should undo counter increments
+    func testUndo13() {
+        struct Scheme: Codable, Equatable {
+            var counter: Counter
+        }
+
+        var s1 = Document(Scheme(counter: 0))
+        s1.change { $0.counter.increment() }
+        XCTAssertEqual(s1.content, Scheme(counter: 1))
+        s1.undo()
+        XCTAssertEqual(s1.content, Scheme(counter: 0))
+    }
+
+    // should allow redo if the last change was an undo
+    func testRedo1() {
+        struct Scheme: Codable, Equatable {
+            var birds: [String]
+        }
+        var s1 = Document(Scheme(birds: ["peregrine falcon"]))
+        s1.change { $0.birds.append("magpie") }
+        XCTAssertFalse(s1.canRedo)
+        s1.undo()
+        XCTAssertTrue(s1.canRedo)
+        s1.redo()
+        XCTAssertFalse(s1.canRedo)
+    }
+
+    // should allow several undos to be matched by several redos
+    func testRedo2() {
+        struct Scheme: Codable, Equatable {
+            var birds: [String]
+        }
+        var s1 = Document(Scheme(birds: []))
+        s1.change { $0.birds.append("peregrine falcon") }
+        s1.change { $0.birds.append("sparrowhawk") }
+        XCTAssertEqual(s1.content, Scheme(birds: ["peregrine falcon", "sparrowhawk"]))
+        s1.undo()
+        XCTAssertEqual(s1.content, Scheme(birds: ["peregrine falcon"]))
+        s1.undo()
+        XCTAssertEqual(s1.content, Scheme(birds: []))
+        s1.redo()
+        XCTAssertEqual(s1.content, Scheme(birds: ["peregrine falcon"]))
+        s1.redo()
+        XCTAssertEqual(s1.content, Scheme(birds: ["peregrine falcon", "sparrowhawk"]))
+    }
+
+    // should allow several undos to be matched by several redos
+    func testRedo3() {
+        struct Scheme: Codable, Equatable {
+            var sparrows: Int?
+            var skylarks: Int?
+        }
+        var s1 = Document<Scheme>(Scheme(sparrows: nil, skylarks: nil))
+        s1.change { $0.sparrows?.set(1) }
+        s1.change { $0.skylarks?.set(1) }
+        s1.change { $0.sparrows?.set(2) }
+        s1.change { $0.skylarks.set(nil) }
+        let states: [Scheme] = [.init(sparrows: nil, skylarks: nil), .init(sparrows: 1, skylarks: nil), .init(sparrows: 1, skylarks: 1), .init(sparrows: 2, skylarks: 1), .init(sparrows: 2, skylarks: nil)]
+        for _ in (0..<3) {
+            for undo in (0...(states.count - 2)).reversed() {
+                s1.undo()
+                XCTAssertEqual(s1.content, states[undo])
+            }
+            for redo in 1..<states.count {
+                s1.redo()
+                XCTAssertEqual(s1.content, states[redo])
+            }
+        }
+    }
+
+    // should undo/redo an initial field assignment
+    func testRedo4() {
+        struct Scheme: Codable, Equatable {
+            var hello: String?
+        }
+        var s1 = Document(Scheme(hello: nil))
+        s1.change { $0.hello?.set("world") }
+        s1.undo()
+        XCTAssertEqual(s1.content, Scheme(hello: nil))
+        s1.redo()
+        XCTAssertEqual(s1.content, Scheme(hello: "world"))
+    }
+
+    // should undo/redo a field update
+    func testRedo5() {
+        struct Scheme: Codable, Equatable {
+            var value: Int
+        }
+
+        var s1 = Document(Scheme(value: 3))
+        s1.change { $0.value.set(4) }
+        XCTAssertEqual(s1.content, Scheme(value: 4))
+        s1.undo()
+        XCTAssertEqual(s1.content, Scheme(value: 3))
+        s1.redo()
+        XCTAssertEqual(s1.content, Scheme(value: 4))
+    }
+
+    // should undo/redo a field deletion
+    func testRedo6() {
+        struct Scheme: Codable, Equatable {
+            var value: Int?
+        }
+
+        var s1 = Document(Scheme(value: 123))
+        s1.change { $0.value.set(nil) }
+        XCTAssertEqual(s1.content, Scheme(value: nil))
+        s1.undo()
+        XCTAssertEqual(s1.content, Scheme(value: 123))
+        s1.redo()
+        XCTAssertEqual(s1.content, Scheme(value: nil))
+    }
+
+    // should undo/redo object creation and linking
+    func testRedo7() {
+        struct Scheme: Codable, Equatable {
+            struct Settings: Codable, Equatable {
+                let background: String
+                let text: String
+            }
+            var settings: Settings?
+        }
+
+        var s1 = Document(Scheme(settings: nil))
+        s1.change { $0.settings.set(.init(background: "white", text: "black")) }
+        XCTAssertEqual(s1.content, Scheme(settings: .init(background: "white", text: "black")))
+        s1.undo()
+        XCTAssertEqual(s1.content, Scheme(settings: nil))
+        s1.redo()
+        XCTAssertEqual(s1.content, Scheme(settings: .init(background: "white", text: "black")))
+    }
+
+    // should undo/redo link deletion
+    func testRedo8() {
+        struct Scheme: Codable, Equatable {
+            var fish: [String]?
+            var birds: [String]?
+        }
+
+        var s1 = Document(Scheme(fish: ["trout", "sea bass"], birds: nil))
+        s1.change { $0.birds.set(["heron", "magpie"]) }
+        s1.change { $0.fish.set(nil) }
+        XCTAssertEqual(s1.content, Scheme(fish: nil, birds: ["heron", "magpie"]))
+        s1.undo()
+        XCTAssertEqual(s1.content, Scheme(fish: ["trout", "sea bass"], birds: ["heron", "magpie"]))
+        s1.redo()
+        XCTAssertEqual(s1.content, Scheme(fish: nil, birds: ["heron", "magpie"]))
+    }
+
+    // should undo/redo a list element insertion
+    func testRedo9() {
+        struct Scheme: Codable, Equatable {
+            var list: [String]
+        }
+
+        var s1 = Document(Scheme(list: ["A", "B", "C"]))
+        s1.change { $0.list.append("D") }
+        XCTAssertEqual(s1.content, Scheme(list: ["A", "B", "C", "D"]))
+        s1.undo()
+        XCTAssertEqual(s1.content, Scheme(list: ["A", "B", "C"]))
+        s1.redo()
+        XCTAssertEqual(s1.content, Scheme(list: ["A", "B", "C", "D"]))
+    }
+
+    // should undo/redo a list element deletion
+    func testRedo10() {
+        struct Scheme: Codable, Equatable {
+            var list: [String]
+        }
+
+        var s1 = Document(Scheme(list: ["A", "B", "C"]))
+        s1.change { $0.list.remove(at: 1) }
+        XCTAssertEqual(s1.content, Scheme(list: ["A", "C"]))
+        s1.undo()
+        XCTAssertEqual(s1.content, Scheme(list: ["A", "B", "C"]))
+        s1.redo()
+        XCTAssertEqual(s1.content, Scheme(list: ["A", "C"]))
+    }
+
+    // should undo/redo counter increments
+    func testRedo11() {
+        struct Scheme: Codable, Equatable {
+            var counter: Counter
+        }
+
+        var s1 = Document(Scheme(counter: 0))
+        s1.change { $0.counter.increment() }
+        XCTAssertEqual(s1.content, Scheme(counter: 1))
+        s1.undo()
+        XCTAssertEqual(s1.content, Scheme(counter: 0))
+        s1.redo()
+        XCTAssertEqual(s1.content, Scheme(counter: 1))
+    }
+
+    // should redo assignments by other actors that precede the undo
+    func testRedo12() {
+        struct Scheme: Codable, Equatable {
+            var value: Int
+        }
+
+        var s1 = Document(Scheme(value: 1))
+        s1.change({ $0.value.set(2) })
+        var s2 = Document<Scheme>(changes: s1.allChanges())
+        s2.change({ $0.value.set(3) })
+        s1.merge(s2)
+        s1.undo()
+        XCTAssertEqual(s1.content, Scheme(value: 1))
+        s1.redo()
+        XCTAssertEqual(s1.content, Scheme(value: 3))
+    }
+
+    // should overwrite assignments by other actors that follow the undo
+    func testRedo13() {
+        struct Scheme: Codable, Equatable {
+            var value: Int
+        }
+
+        var s1 = Document(Scheme(value: 1))
+        s1.change({ $0.value.set(2) })
+        s1.undo()
+        var s2 = Document<Scheme>(changes: s1.allChanges())
+        s2.change({ $0.value.set(3) })
+        s1.merge(s2)
+        XCTAssertEqual(s1.content, Scheme(value: 3))
+        s1.redo()
+        XCTAssertEqual(s1.content, Scheme(value: 2))
+    }
+
+    // should merge with concurrent changes to other fields
+    func testRedo14() {
+        struct Scheme: Codable, Equatable {
+            var trout: Int?
+            var salmon: Int?
+        }
+
+        var s1 = Document(Scheme(trout: 2, salmon: nil))
+        s1.change({ $0.trout.set(3) })
+        s1.undo()
+        var s2 = Document<Scheme>(changes: s1.allChanges())
+        s2.change({ $0.salmon.set(1) })
+        s1.merge(s2)
+        XCTAssertEqual(s1.content, Scheme(trout: 2, salmon: 1))
+        s1.redo()
+        XCTAssertEqual(s1.content, Scheme(trout: 3, salmon: 1))
+    }
+
+    // should apply redos by growing the history
+    func testRedo15() {
+        struct Scheme: Codable, Equatable {
+            var value: Int
+        }
+
+        var s1 = Document(Scheme(value: 1))
+        s1.change(options: .init(message: "set 2"), execute: { $0.value.set(2) })
+        s1.undo(options: .init(message: "undo"))
+        s1.redo(options: .init(message: "redo!"))
+        #warning("history")
+        XCTAssertEqual(s1.history().count, 4)
+    }
+
+    // should save and restore an empty document
+    func testSaveAndLoading1() {
+        struct Scheme: Codable, Equatable { }
+        let s = Document<Scheme>(data: Document(Scheme()).save())
+        XCTAssertEqual(s.content, Scheme())
+    }
+
+    // should generate a new random actor ID
+    func testSaveAndLoading2() {
+        struct Scheme: Codable, Equatable { }
+        let s1 = Document(Scheme())
+        let s2 = Document<Scheme>(data:s1.save())
+        XCTAssertNotEqual(s1.actor, s2.actor)
+    }
+
+    // should allow a custom actor ID to be set
+    func testSaveAndLoading3() {
+        struct Scheme: Codable, Equatable { }
+        let s = Document<Scheme>(data: Document(Scheme()).save(), actorId: ActorId(actorId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+        XCTAssertEqual(s.actor, ActorId(actorId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+    }
+
+    // should allow a custom actor ID to be set
+    func testSaveAndLoading4() {
+        struct Scheme: Codable, Equatable {
+            struct Todo: Codable, Equatable {
+                let title: String
+                let done: Bool
+            }
+            let todos: [Todo]
+        }
+        let s1 = Document(Scheme(todos: [.init(title: "water plants'", done: false)]))
+        let s2 = Document<Scheme>(data: s1.save())
+        XCTAssertEqual(s2.content, Scheme(todos: [.init(title: "water plants'", done: false)]))
+    }
+
+    // should reconstitute conflicts
+    func testSaveAndLoading5() {
+        struct Scheme: Codable, Equatable {
+            let x: Int
+        }
+        var s1 = Document(Scheme(x: 3), options: .init(actorId: ActorId(actorId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))
+        let s2 = Document(Scheme(x: 5), options: .init(actorId: ActorId(actorId: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")))
+        s1.merge(s2)
+        let s3 = Document<Scheme>(data: s1.save())
+        XCTAssertEqual(s1.content.x, 5)
+        XCTAssertEqual(s3.content.x, 5)
+        XCTAssertEqual(s1.rootProxy().conflicts(dynamicMember: \.x), ["1@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": 3, "1@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb": 5])
+        XCTAssertEqual(s3.rootProxy().conflicts(dynamicMember: \.x), ["1@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": 3, "1@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb": 5])
+    }
+
+    // should allow a reloaded list to be mutated
+    func testSaveAndLoading6() {
+        struct Scheme: Codable, Equatable {
+            var foo: [Int]
+        }
+        var doc = Document(Scheme(foo: []))
+        doc = Document(data: doc.save())
+        doc.change { $0.foo.append(1) }
+        doc = Document(data: doc.save())
+        XCTAssertEqual(doc.content.foo, [1])
+    }
+
+}

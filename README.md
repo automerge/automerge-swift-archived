@@ -33,9 +33,8 @@ let document = Automerge.Document(trip)
 ```swift
 var mutableDocument = document
 mutableDocument.change { doc in
-  let stops = doc.stops
-  stops.append(Stop(name: "Munich", night: 0))
-  stops.append(Stop(name: "Rome", night: 2))
+  doc.stops.append(Stop(name: "Munich", night: 0))
+  doc.stops.append(Stop(name: "Rome", night: 2))
 }
 mutableDocument.change { doc in
   doc.name.set("Summer 2021")
