@@ -9,19 +9,19 @@ import Foundation
 
 public struct Request: Equatable, Codable {
 
-    public enum RequestType: String, Codable {
+    enum RequestType: String, Codable {
         case change
         case redo
         case undo
     }
 
-    public var requestType: RequestType
-    public var message: String
-    public var time: Date
-    public var actor: String
-    public var seq: Int
-    public var version: Int
-    public var ops: [Op]
-    var undoable: Bool
+    let requestType: RequestType
+    let message: String
+    let time: Date
+    let actor: String
+    let seq: Int
+    let version: Int
+    let ops: [Op]
+    let undoable: Bool
 
 }

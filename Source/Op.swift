@@ -29,7 +29,7 @@ enum Primitive: Equatable, Codable {
         }
     }
 
-    public init(from decoder: Decoder) throws {
+    init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let string = try? container.decode(String.self) {
             self = .string(string)
@@ -44,7 +44,7 @@ enum Primitive: Equatable, Codable {
         }
     }
 
-    public func encode(to encoder: Encoder) throws {
+    func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
         case .string(let string):
@@ -66,7 +66,7 @@ enum DataType: String, Equatable, Codable {
     case timestamp
 }
 
-public struct Op: Equatable, Codable {
+struct Op: Equatable, Codable {
 
     init(action: OpAction, obj: String, key: Key, insert: Bool = false, child: String? = nil, value: Primitive? = nil, datatype: DataType? = nil) {
         self.action = action
@@ -78,13 +78,13 @@ public struct Op: Equatable, Codable {
         self.datatype = datatype
     }
 
-    var action: OpAction
-    var obj: String
-    var key: Key
-    var insert: Bool
-    var child: String?
-    var value: Primitive?
-    var datatype: DataType?
+    let action: OpAction
+    let obj: String
+    let key: Key
+    let insert: Bool
+    let child: String?
+    let value: Primitive?
+    let datatype: DataType?
 }
 
 enum OpAction: String, Codable {

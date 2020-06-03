@@ -13,7 +13,7 @@ public struct ActorId: Equatable {
         self.actorId = actorId
     }
 
-    let actorId: String
+    public let actorId: String
 }
 
 extension ActorId: Comparable {

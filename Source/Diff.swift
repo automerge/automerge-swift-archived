@@ -29,7 +29,7 @@ enum Diff: Equatable, Codable {
         return Diff.value(.init(value: value))
     }
 
-    public init(from decoder: Decoder) throws {
+    init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let value = try? container.decode(ValueDiff.self) {
             self = .value(value)
@@ -38,7 +38,7 @@ enum Diff: Equatable, Codable {
         }
     }
 
-    public func encode(to encoder: Encoder) throws {
+    func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
         case .value(let value):
@@ -51,7 +51,7 @@ enum Diff: Equatable, Codable {
 
 extension Diff: ExpressibleByIntegerLiteral {
     
-    public init(integerLiteral value: Int) {
+    init(integerLiteral value: Int) {
         self = .value(.int(value))
     }
 
@@ -59,7 +59,7 @@ extension Diff: ExpressibleByIntegerLiteral {
 
 extension Diff: ExpressibleByStringLiteral {
 
-    public init(stringLiteral value: String) {
+    init(stringLiteral value: String) {
         self = .value(.string(value))
     }
 
