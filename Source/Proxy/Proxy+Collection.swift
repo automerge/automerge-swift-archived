@@ -77,4 +77,34 @@ extension Proxy: RangeReplaceableCollection where T: RangeReplaceableCollection,
         context.splice(path: path, start: start, deletions: deleteCount, insertions: encoded)
     }
 
+    public func append(_ newElement: __owned Element) {
+        insert(newElement, at: endIndex)
+    }
+
+    public func insert(
+        _ newElement: __owned Element, at i: Index
+    ) {
+        replaceSubrange(i..<i, with: CollectionOfOne(newElement))
+    }
+
+    public func append<S: Sequence>(contentsOf newElements: __owned S)
+        where S.Element == Element {
+
+            let approximateCapacity = self.count + newElements.underestimatedCount
+            self.reserveCapacity(approximateCapacity)
+            for element in newElements {
+                append(element)
+            }
+    }
+
+    public func reserveCapacity(_ n: Int) {}
+
+    @discardableResult
+    public func remove(at position: Index) -> Element {
+        precondition(!isEmpty, "Can't remove from an empty collection")
+        let result: Element = self[position]
+        replaceSubrange(position..<index(after: position), with: EmptyCollection())
+        return result
+    }
+
 }

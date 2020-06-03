@@ -267,7 +267,9 @@ func applyProperties(props: Props?,
 func  lamportCompare(ts1: String, ts2: String) -> Bool {
     let time1 = ts1.contains("@") ? parseOpId(opId: ts1) : (counter: 0, actorId: ts1)
     let time2 = ts2.contains("@") ? parseOpId(opId: ts2) : (counter: 0, actorId: ts2)
-
+    if time1.counter == time2.counter {
+        return time1.actorId > time2.actorId
+    }
     return time1.counter > time2.counter
 }
 
