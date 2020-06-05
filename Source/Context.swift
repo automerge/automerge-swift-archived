@@ -118,8 +118,6 @@ final class Context {
             }
         case let array as [Any]:
             return .object(createNestedObjects(obj: objectId, key: key, value: array, insert: insert))
-        case let text as Text:
-            return .object(createNestedObjects(obj: objectId, key: key, value: text, insert: insert))
         case let table as Table:
             return .object(createNestedObjects(obj: objectId, key: key, value: table, insert: insert))
         case is Optional<Any>:
@@ -166,6 +164,15 @@ final class Context {
         switch value {
         case let object as [String: Any]:
             precondition(object[OBJECT_ID] == nil, "Cannot create a reference to an existing document object")
+            if object[ISTEXT] != nil, let elms = object[LIST_VALUES] as? [String]  {
+                let operation = Op(action: .makeText, obj: obj, key: key, insert: insert, child: child)
+                ops.append(operation)
+                let subpatch = ObjectDiff(objectId: child, type: .text, edits: [], props: [:])
+                insertListItems(subPatch: subpatch, index: 0, values: elms, newObject: true)
+
+                return subpatch
+            }
+
             let operation = Op(action: .makeMap, obj: obj, key: key, insert: insert, child: child)
             ops.append(operation)
 
@@ -181,13 +188,6 @@ final class Context {
             ops.append(operation)
             let subpatch = ObjectDiff(objectId: child, type: .list, edits: [], props: [:])
             insertListItems(subPatch: subpatch, index: 0, values: array, newObject: true)
-
-            return subpatch
-        case let text as Text:
-            let operation = Op(action: .makeText, obj: obj, key: key, insert: insert, child: child)
-            ops.append(operation)
-            let subpatch = ObjectDiff(objectId: child, type: .text, edits: [], props: [:])
-            insertListItems(subPatch: subpatch, index: 0, values: text.elms, newObject: true)
 
             return subpatch
         case is Table:
@@ -345,7 +345,6 @@ final class Context {
      * Updates the map object at path `path`, setting the property with name
      * `key` to `value`.
      */
-
     func setMapKey<T>(path: [KeyPathElement], key: String, value: T) {
         let objectId = path.isEmpty ? ROOT_ID : path[path.count - 1].objectId
         let object = getObject(objectId: objectId)
@@ -358,7 +357,6 @@ final class Context {
             let valuePatch = setValue(objectId: objectId, key: .string(key), value: value, insert: false)
             subpatch.props?[.string(key)] = [actorId.actorId: valuePatch]
         })
-
     }
 
     /**
@@ -469,7 +467,7 @@ final class Context {
         }
         let object = getObject(objectId: objectId)
         if object[LIST_VALUES] != nil {
-            return .list
+            return object[ISTEXT] == nil ? .list : .text
         } else if object[TABLE_VALUES] != nil{
             return .table
         } else {

@@ -52,11 +52,6 @@ class DictionaryDecoder {
         return try decoder.decode(type, from: data)
     }
 
-    func decodeList<T>(from array: [[String: Any]]) throws -> T where T : Decodable {
-        let clearArray = array.map { removeConflicts($0) }
-        let data = try JSONSerialization.data(withJSONObject: clearArray, options: [.fragmentsAllowed])
-        return try decoder.decode(T.self, from: data)
-    }
 }
 
 private func removeConflicts(_ dict: [String: Any]) -> Any {
