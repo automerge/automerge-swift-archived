@@ -356,7 +356,7 @@ class ContextTest: XCTestCase {
             ops: []
         )
         // WHEN
-        context.setMapKey(path: [], key: "text", value: Text("hi"))
+        context.setMapKey(path: [], key: "text", value: try! DictionaryEncoder().encode(Text("hi")))
 
         //THEN
         let objectId = applyPatch.value!.props!["text"]![actor.actorId]!.objectId!

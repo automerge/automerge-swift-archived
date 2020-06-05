@@ -13,6 +13,7 @@ let LIST_VALUES = "_list_values"
 let COUNTER_VALUE = "_counter_calue"
 let TABLE_VALUES = "entries"
 let CACHE = "_cache"
+let ISTEXT = "_is_Text_Element_"
 
 let ROOT_ID: String = "00000000-0000-0000-0000-000000000000"
 

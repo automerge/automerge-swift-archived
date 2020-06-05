@@ -25,7 +25,7 @@ func interpretPatch(patch: ObjectDiff, obj: [String: Any]?, updated: inout [Stri
     case .list:
         return updateListObject(patch: patch, obj: obj, updated: &updated)
     case .text:
-        fatalError()
+        return updateTextObject(patch: patch, obj: obj, updated: &updated)
     }
 }
 
@@ -46,6 +46,85 @@ func interpretPatch(patch: ObjectDiff, obj: [String: Any]?, updated: inout [Stri
 //  } else {
 //    throw new TypeError(`Unknown object type: ${patch.type}`)
 //  }
+//}
+
+/**
+ * Updates the text object `obj` according to the modifications described in
+ * `patch`, or creates a new object if `obj` is undefined. Mutates `updated`
+ * to map the objectId to the new object, and returns the new object.
+ */
+func updateTextObject(patch: ObjectDiff, obj: [String: Any]?, updated: inout [String: [String: Any]]) -> [String: Any]? {
+    let objectId = patch.objectId
+    var elems: [[String: Any]]
+    if let stored = updated[objectId], let storedElems = stored[LIST_VALUES] as? [[String: Any]] {
+        elems = storedElems
+    } else if let obj = obj, let storedElems = obj[LIST_VALUES] as? [[String: Any]] {
+        elems = storedElems
+    } else {
+        elems = []
+    }
+    patch.edits?.iterate(insertCallback: { (index, insertions) in
+        let blanks: [[String: Any]] = Array(repeating: [String: Any](), count: insertions)
+        elems.insert(contentsOf: blanks, at: index)
+    }, removeCallback: { (index, deletions) in
+        elems.removeSubrange(index..<index + deletions)
+    })
+    let keys = patch.props?.keys
+    keys?.forEach({ (key) in
+        guard case .index(let index) = key else {
+            fatalError()
+        }
+        let opId = patch.props![key]?.keys.sorted(by: lamportCompare)[0]
+        if let value = getValue(patch: patch.props![key]![opId!]!, object: nil, updated: &updated) as? [String: Any] {
+            elems[index] = value
+            elems[index]["opId"] = opId
+        } else if let value = getValue(patch: patch.props![key]![opId!]!, object: nil, updated: &updated) as? Primitive {
+            elems[index] = ["value": value, "opId": opId!]
+        } else {
+            fatalError()
+        }
+    })
+    updated[objectId] = [OBJECT_ID: objectId, LIST_VALUES: elems, "_is_Text_Element_": true]
+
+    return updated[objectId]
+}
+//    const oldValue = (elems[key].opId === opId) ? elems[key].value : undefined
+//    elems[key].value = getValue(patch.props[key][opId], oldValue, updated)
+//    elems[key].opId = opId
+//function updateTextObject(patch, obj, updated) {
+//  const objectId = patch.objectId
+//  let elems
+//  if (updated[objectId]) {
+//    elems = updated[objectId].elems
+//  } else if (obj) {
+//    elems = obj.elems.slice()
+//  } else {
+//    elems = []
+//  }
+//
+//  iterateEdits(patch.edits,
+//    (index, insertions) => { // insertion
+//      const blanks = []
+//      for (let i = 0; i < insertions; i++) blanks.push({})
+//      elems.splice(index, 0, ...blanks)
+//    },
+//    (index, deletions) => { // deletion
+//      elems.splice(index, deletions)
+//    }
+//  )
+//
+//  for (let key of Object.keys(patch.props || {})) {
+//    const opId = Object.keys(patch.props[key]).sort(lamportCompare).reverse()[0]
+//    if (!opId) throw new RangeError(`No default value at index ${key}`)
+//
+//    // TODO Text object does not support conflicts. Should it?
+//    const oldValue = (elems[key].opId === opId) ? elems[key].value : undefined
+//    elems[key].value = getValue(patch.props[key][opId], oldValue, updated)
+//    elems[key].opId = opId
+//  }
+//
+//  updated[objectId] = instantiateText(objectId, elems)
+//  return updated[objectId]
 //}
 
 /**
