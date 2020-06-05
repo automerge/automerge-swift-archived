@@ -7,66 +7,12 @@
 
 import Foundation
 
-enum Primitive: Equatable, Codable {
-    case string(String)
-    case double(Double)
-    case int(Int)
-    case bool(Bool)
-    case null
-
-    var value: Any? {
-        switch self {
-        case .string(let stringValue):
-            return stringValue
-        case .double(let doubleValue):
-            return doubleValue
-        case .int(let intValue):
-            return intValue
-        case .bool(let boolValue):
-            return boolValue
-        case .null:
-            return nil
-        }
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        if let string = try? container.decode(String.self) {
-            self = .string(string)
-        } else if let double = try? container.decode(Double.self) {
-            self = .double(double)
-        } else if let int = try? container.decode(Int.self) {
-            self = .int(int)
-        } else if let bool = try? container.decode(Bool.self) {
-            self = .bool(bool)
-        } else {
-            self = .null
-        }
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        switch self {
-        case .string(let string):
-            try container.encode(string)
-        case .double(let double):
-            try container.encode(double)
-        case .int(let int):
-            try container.encode(int)
-        case .bool(let bool):
-            try container.encode(bool)
-        case .null:
-            return
-        }
-    }
-}
-
-enum DataType: String, Equatable, Codable {
+public enum DataType: String, Equatable, Codable {
     case counter
     case timestamp
 }
 
-struct Op: Equatable, Codable {
+public struct Op: Equatable, Codable {
 
     init(action: OpAction, obj: String, key: Key, insert: Bool = false, child: String? = nil, value: Primitive? = nil, datatype: DataType? = nil) {
         self.action = action
@@ -78,16 +24,16 @@ struct Op: Equatable, Codable {
         self.datatype = datatype
     }
 
-    let action: OpAction
-    let obj: String
-    let key: Key
-    let insert: Bool
-    let child: String?
-    let value: Primitive?
-    let datatype: DataType?
+    public let action: OpAction
+    public let obj: String
+    public let key: Key
+    public let insert: Bool
+    public let child: String?
+    public let value: Primitive?
+    public let datatype: DataType?
 }
 
-enum OpAction: String, Codable {
+public enum OpAction: String, Codable {
     case del
     case inc
     case set

@@ -32,7 +32,10 @@
 		94B256912482B0E9008FC23D /* KeyPathIntrospection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94B256902482B0E9008FC23D /* KeyPathIntrospection.swift */; };
 		94E26780246805BD00C54C0E /* libautomerge.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 94E2677F246805BD00C54C0E /* libautomerge.a */; };
 		94E26786246809CC00C54C0E /* RSBackendTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94E267842468099800C54C0E /* RSBackendTest.swift */; };
-		OBJ_44 /* Backend.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_8 /* Backend.swift */; };
+		94F6D876248ABFC300FEAA43 /* Commit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94F6D875248ABFC300FEAA43 /* Commit.swift */; };
+		94F6D878248ABFE900FEAA43 /* Change.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94F6D877248ABFE900FEAA43 /* Change.swift */; };
+		94F6D87A248AC0D100FEAA43 /* Primitive.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94F6D879248AC0D100FEAA43 /* Primitive.swift */; };
+		OBJ_44 /* RSBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_8 /* RSBackend.swift */; };
 		OBJ_45 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_9 /* Constants.swift */; };
 		OBJ_46 /* Context.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* Context.swift */; };
 		OBJ_47 /* Clock.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* Clock.swift */; };
@@ -88,6 +91,9 @@
 		94E2677F246805BD00C54C0E /* libautomerge.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libautomerge.a; sourceTree = "<group>"; };
 		94E26781246805ED00C54C0E /* automerge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = automerge.h; sourceTree = "<group>"; };
 		94E267842468099800C54C0E /* RSBackendTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSBackendTest.swift; sourceTree = "<group>"; };
+		94F6D875248ABFC300FEAA43 /* Commit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Commit.swift; sourceTree = "<group>"; };
+		94F6D877248ABFE900FEAA43 /* Change.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Change.swift; sourceTree = "<group>"; };
+		94F6D879248AC0D100FEAA43 /* Primitive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Primitive.swift; sourceTree = "<group>"; };
 		"Automerge::Automerge::Product" /* Automerge.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Automerge.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		"Automerge::AutomergeTests::Product" /* AutomergeTests.xctest */ = {isa = PBXFileReference; lastKnownFileType = file; path = AutomergeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		OBJ_10 /* Context.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Context.swift; sourceTree = "<group>"; };
@@ -112,7 +118,7 @@
 		OBJ_34 /* ProxyTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProxyTest.swift; sourceTree = "<group>"; };
 		OBJ_38 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		OBJ_6 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
-		OBJ_8 /* Backend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Backend.swift; sourceTree = "<group>"; };
+		OBJ_8 /* RSBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSBackend.swift; sourceTree = "<group>"; };
 		OBJ_9 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -160,6 +166,9 @@
 				OBJ_14 /* Table.swift */,
 				OBJ_15 /* Text.swift */,
 				9477033D246E73C4000E952C /* ActorId.swift */,
+				94F6D875248ABFC300FEAA43 /* Commit.swift */,
+				94F6D877248ABFE900FEAA43 /* Change.swift */,
+				94F6D879248AC0D100FEAA43 /* Primitive.swift */,
 			);
 			path = DataTypes;
 			sourceTree = "<group>";
@@ -214,7 +223,6 @@
 			isa = PBXGroup;
 			children = (
 				94E267822468063A00C54C0E /* libs */,
-				94E267832468064B00C54C0E /* include */,
 				OBJ_6 /* Package.swift */,
 				OBJ_7 /* Sources */,
 				OBJ_30 /* Tests */,
@@ -226,7 +234,8 @@
 		OBJ_7 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
-				OBJ_8 /* Backend.swift */,
+				94E267832468064B00C54C0E /* include */,
+				OBJ_8 /* RSBackend.swift */,
 				OBJ_9 /* Constants.swift */,
 				OBJ_10 /* Context.swift */,
 				OBJ_11 /* DataTypes */,
@@ -329,11 +338,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 0;
 			files = (
-				OBJ_44 /* Backend.swift in Sources */,
+				OBJ_44 /* RSBackend.swift in Sources */,
 				OBJ_45 /* Constants.swift in Sources */,
 				OBJ_46 /* Context.swift in Sources */,
 				OBJ_47 /* Clock.swift in Sources */,
 				OBJ_48 /* Counter.swift in Sources */,
+				94F6D876248ABFC300FEAA43 /* Commit.swift in Sources */,
 				OBJ_49 /* Table.swift in Sources */,
 				9455D9E12487A8B40046A867 /* Proxy+Root.swift in Sources */,
 				9477033E246E73C4000E952C /* ActorId.swift in Sources */,
@@ -345,10 +355,12 @@
 				OBJ_55 /* EncoderDecoder.swift in Sources */,
 				OBJ_56 /* Key.swift in Sources */,
 				OBJ_57 /* Op.swift in Sources */,
+				94F6D878248ABFE900FEAA43 /* Change.swift in Sources */,
 				OBJ_58 /* Patch.swift in Sources */,
 				OBJ_59 /* Proxy+Collection.swift in Sources */,
 				OBJ_60 /* Proxy.swift in Sources */,
 				OBJ_61 /* Request.swift in Sources */,
+				94F6D87A248AC0D100FEAA43 /* Primitive.swift in Sources */,
 				OBJ_62 /* applyPatch.swift in Sources */,
 				948BCB702488D0EE004A72B6 /* Proxy+Text.swift in Sources */,
 				94B256912482B0E9008FC23D /* KeyPathIntrospection.swift in Sources */,
@@ -475,7 +487,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
-				SWIFT_OBJC_BRIDGING_HEADER = "/Users/lukasschmidt/Developer/automerge-swift/include/automerge.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "/Users/lukasschmidt/Developer/automerge-swift/Source/include/automerge.h";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = Automerge;
 				TVOS_DEPLOYMENT_TARGET = 9.0;
@@ -512,7 +524,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
-				SWIFT_OBJC_BRIDGING_HEADER = "/Users/lukasschmidt/Developer/automerge-swift/include/automerge.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "/Users/lukasschmidt/Developer/automerge-swift/Source/include/automerge.h";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = Automerge;
 				TVOS_DEPLOYMENT_TARGET = 9.0;
