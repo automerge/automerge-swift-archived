@@ -1048,7 +1048,10 @@ class AutomergeTest: XCTestCase {
         s1.change(options: .init(message: "set 2"), execute: { $0.value.set(2) })
         var s2 = Document<Scheme>(changes: s1.allChanges())
         s1.undo(options: .init(message: "undo!"))
-        #warning("history")
+        let seqs = s1.history().map { $0.change.seq }
+        XCTAssertEqual(seqs, [1, 2, 3])
+        let messages = s1.history().map { $0.change.message }
+        XCTAssertEqual(messages, ["Initialization", "set 2", "undo!"])
         s2.merge(s1)
         XCTAssertEqual(s2.content, Scheme(value: 1))
         XCTAssertEqual(s1.content, Scheme(value: 1))
@@ -1400,7 +1403,10 @@ class AutomergeTest: XCTestCase {
         s1.change(options: .init(message: "set 2"), execute: { $0.value.set(2) })
         s1.undo(options: .init(message: "undo"))
         s1.redo(options: .init(message: "redo!"))
-        #warning("history")
+        let seqs = s1.history().map { $0.change.seq }
+        XCTAssertEqual(seqs, [1, 2, 3, 4])
+        let messages = s1.history().map { $0.change.message }
+        XCTAssertEqual(messages, ["Initialization", "set 2", "undo", "redo!"])
         XCTAssertEqual(s1.history().count, 4)
     }
 
@@ -1467,4 +1473,55 @@ class AutomergeTest: XCTestCase {
         XCTAssertEqual(doc.content.foo, [1])
     }
 
+    // should make past document states accessible
+    func testHistory1() {
+        struct Scheme: Codable, Equatable {
+            struct Config: Codable, Equatable { let background: String }
+            let config: Config
+            var birds: [String]
+        }
+        var s = Document(Scheme(config: .init(background: "blue"), birds: []))
+        s.change({ $0.birds.set(["mallard"]) })
+        s.change { $0.birds.insert("oystercatcher", at: 0) }
+        let history = s.history().map { $0.snapshot }
+        XCTAssertEqual(history, [
+            Scheme(config: .init(background: "blue"), birds: []),
+            Scheme(config: .init(background: "blue"), birds: ["mallard"]),
+            Scheme(config: .init(background: "blue"), birds: ["oystercatcher", "mallard"])
+        ])
+    }
+
+    // should make change messages accessible
+    func testHistory2() {
+        struct Scheme: Codable, Equatable {
+            var books: [String]
+        }
+        var s = Document(Scheme(books: []))
+        s.change(options: .init(message: "Add Orwell"), execute: {
+            $0.books.append("Nineteen Eighty-Four")
+        })
+        s.change(options: .init(message: "Add Huxley"), execute: {
+            $0.books.append("Brave New World")
+        })
+        let messages = s.history().map { $0.change.message }
+        XCTAssertEqual(messages, [
+            "Initialization",
+            "Add Orwell",
+            "Add Huxley"
+        ])
+    }
+
 }
+
+
+//  it('should make change messages accessible', () => {
+//    let s = Automerge.init()
+//    s = Automerge.change(s, 'Empty Bookshelf', doc => doc.books = [])
+//    s = Automerge.change(s, 'Add Orwell', doc => doc.books.push('Nineteen Eighty-Four'))
+//    s = Automerge.change(s, 'Add Huxley', doc => doc.books.push('Brave New World'))
+//    assert.deepStrictEqual(s.books, ['Nineteen Eighty-Four', 'Brave New World'])
+//    assert.deepStrictEqual(Automerge.getHistory(s).map(state => state.change.message),
+//                     ['Empty Bookshelf', 'Add Orwell', 'Add Huxley'])
+//  })
+//})
+

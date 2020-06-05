@@ -89,7 +89,6 @@ public final class RSBackend {
     public func getPatch() -> Patch {
         let length = automerge_get_patch(automerge)
         var buffer = Array<Int8>(repeating: 0, count: length)
-        buffer.append(0)
         automerge_read_json(automerge, &buffer)
         let newString = String(cString: buffer)
         let patch = try! decoder.decode(Patch.self, from: newString.data(using: .utf8)!)
@@ -107,5 +106,16 @@ public final class RSBackend {
         }
 
         return resut
+    }
+
+
+    public func decode(change: [UInt8]) -> Change {
+        let length = automerge_decode_change(automerge, UInt(change.count), change)
+        var buffer = Array<Int8>(repeating: 0, count: length)
+        automerge_read_json(automerge, &buffer)
+        let newString = String(cString: buffer)
+        let change = try! decoder.decode(Change.self, from: newString.data(using: .utf8)!)
+
+        return change
     }
 }

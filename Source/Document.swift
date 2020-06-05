@@ -53,7 +53,7 @@ public struct Document<T: Codable> {
 
     public init(_ initialState: T, options: Options = Options()) {
         var newDocument = Document<T>(options: options)
-        newDocument.change(options: .init(message: "Initialization", undoable: true), execute: { doc in
+        newDocument.change(options: .init(message: "Initialization", undoable: false), execute: { doc in
             doc.set(initialState)
         })
         self = newDocument
@@ -516,7 +516,8 @@ public struct Document<T: Codable> {
         let actor = self.actor
         let history = allChanges()
         return history.enumerated().map({ index, change in
-            return Commit(snapshot: Document(changes: Array(history[0...index]), actorId: actor).content)
+            let change = options.backend.decode(change: change)
+            return Commit(snapshot: Document(changes: Array(history[0...index]), actorId: actor).content, change: change)
         })
     }
 }
@@ -538,9 +539,5 @@ public struct Document<T: Codable> {
 //    }
 //  })
 //}
-
-public struct Commit<T> {
-    public let snapshot: T
-}
 
 

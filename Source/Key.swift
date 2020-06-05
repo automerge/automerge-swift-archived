@@ -7,12 +7,12 @@
 
 import Foundation
 
-enum Key: Equatable, Hashable, Codable {
+public enum Key: Equatable, Hashable, Codable {
 
     case string(String)
     case index(Int)
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let string = try? container.decode(String.self) {
             if let index = Int(string) {
@@ -25,7 +25,7 @@ enum Key: Equatable, Hashable, Codable {
         }
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
         case .string(let string):
@@ -38,14 +38,15 @@ enum Key: Equatable, Hashable, Codable {
 
 extension Key: ExpressibleByStringLiteral {
 
-    init(stringLiteral value: String) {
+    public init(stringLiteral value: String) {
         self = .string(value)
     }
 
 }
 
 extension Key: ExpressibleByIntegerLiteral {
-    init(integerLiteral value: Int) {
+    
+    public init(integerLiteral value: Int) {
         self = .index(value)
     }
 }
