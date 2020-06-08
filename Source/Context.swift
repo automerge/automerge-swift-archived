@@ -76,11 +76,6 @@ final class Context {
                 fatalError("Unsuported")
             }
         case let bool as Bool:
-            if let int = Int("\(value)") { // This is Hacky...
-                let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .int(int))
-                ops.append(operation)
-                return .value(.int(int))
-            }
             let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .bool(bool))
             ops.append(operation)
             return .value(.bool(bool))
@@ -96,6 +91,10 @@ final class Context {
             let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .string(string))
             ops.append(operation)
             return .value(.string(string))
+        case let uuid as UUID:
+            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .string(uuid.uuidString))
+            ops.append(operation)
+            return .value(.string(uuid.uuidString))
         case let character as Character:
             let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .string(String(character)))
             ops.append(operation)
@@ -667,7 +666,8 @@ final class Context {
         let object = getObject(objectId: objectId)
         let list = object[LIST_VALUES] as! [Any]
         if index == list.count {
-            fatalError()
+            splice(path: path, start: index, deletions: 0, insertions: [value])
+            return
         }
         precondition(!(list[index] is Counter), "Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.")
         applyAt(path: path) { subpatch in

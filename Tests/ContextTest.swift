@@ -481,6 +481,39 @@ class ContextTest: XCTestCase {
         )
     }
 
+    // should allow assignment of UUID values
+    func testContextSetMapKey13() {
+        //Given
+        let uuid = UUID()
+        let actor = ActorId()
+        let context = Context(
+            actorId: actor,
+            applyPatch: applyPatch.observerDiff,
+            updated: [:],
+            cache: [ROOT_ID: [:]],
+            ops: []
+        )
+        // WHEN
+        context.setMapKey(path: [], key: "uuid", value: uuid)
+
+        //Then
+        XCTAssertEqual(context.ops, [
+            Op(action: .set, obj: ROOT_ID, key: "uuid", value: .string(uuid.uuidString))
+        ])
+        XCTAssertEqual(applyPatch.callCount, 1)
+        XCTAssertEqual(applyPatch.value, ObjectDiff(
+            objectId: ROOT_ID,
+            type: .map,
+            props: [
+                "uuid": [
+                    actor.actorId: .value(.init(value: .string(uuid.uuidString)))
+                ]
+            ]
+            )
+        )
+    }
+
+
     // should overwrite an existing list element
     func testListManupulation1() {
         // Given

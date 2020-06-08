@@ -385,18 +385,14 @@ func parseOpId(opId: String) -> (counter: Int, actorId: String) {
 
 func getValue(patch: Diff, object: [String: Any]?, updated: inout [String: [String: Any]]) -> Any? {
     switch patch {
+    case .object(let objectDiff) where (object?[OBJECT_ID] as? String) != patch.objectId:
+        return interpretPatch(patch: objectDiff, obj: nil, updated: &updated)
     case .object(let objectDiff):
-        if let object = object, (object[OBJECT_ID] as? String) != patch.objectId {
-            return interpretPatch(patch: objectDiff, obj: nil, updated: &updated)
-        } else {
-            return interpretPatch(patch: objectDiff, obj: object, updated: &updated)
-        }
+        return interpretPatch(patch: objectDiff, obj: object, updated: &updated)
+    case .value(let valueDiff) where valueDiff.datatype == .counter:
+        return [COUNTER_VALUE: valueDiff.value]
     case .value(let valueDiff):
-        if valueDiff.datatype == .counter {
-            return [COUNTER_VALUE: valueDiff.value]
-        } else {
-            return valueDiff.value
-        }
+        return valueDiff.value
     }
 }
 
