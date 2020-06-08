@@ -18,25 +18,24 @@ extension KeyPath {
         let typePtr = unsafeBitCast(Root.self, to: UnsafeMutableRawPointer.self)
         let metadata = typePtr.assumingMemoryBound(to: StructMetadata.self)
         let kind = metadata.pointee._kind
-        // for struct only
-        guard kind == 1 || kind == 0x200 else {
-            assertionFailure()
-            return nil
+        if kind == 1 || kind == 0x200 {
+            let typeDescriptor = metadata.pointee.typeDescriptor
+            let numberOfFields = Int(typeDescriptor.pointee.numberOfFields)
+            let offsets = typeDescriptor.pointee
+                .offsetToTheFieldOffsetVector
+                .buffer(metadata: typePtr, count: numberOfFields)
+            guard let fieldIndex = offsets.firstIndex(of: Int32(offset)) else {
+                // composite keypath
+                // TODO: resolve nested type
+                return nil
+            }
+            return typeDescriptor.pointee
+                .fieldDescriptor.advanced().pointee
+                .fields.pointer().advanced(by: fieldIndex).pointee
+                .fieldName()
         }
-        let typeDescriptor = metadata.pointee.typeDescriptor
-        let numberOfFields = Int(typeDescriptor.pointee.numberOfFields)
-        let offsets = typeDescriptor.pointee
-            .offsetToTheFieldOffsetVector
-            .buffer(metadata: typePtr, count: numberOfFields)
-        guard let fieldIndex = offsets.firstIndex(of: Int32(offset)) else {
-            // composite keypath
-            // TODO: resolve nested type
-            return nil
-        }
-        return typeDescriptor.pointee
-            .fieldDescriptor.advanced().pointee
-            .fields.pointer().advanced(by: fieldIndex).pointee
-            .fieldName()
+        
+        return nil
     }
 }
 

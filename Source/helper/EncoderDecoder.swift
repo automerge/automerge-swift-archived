@@ -10,7 +10,12 @@ import Foundation
 @dynamicMemberLookup
 class DictionaryEncoder {
 
-    private let encoder = JSONEncoder()
+    private let encoder: JSONEncoder = {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .secondsSince1970
+
+        return encoder
+    }()
 
     subscript<T>(dynamicMember keyPath: WritableKeyPath<JSONEncoder, T>) -> T {
         return encoder[keyPath: keyPath]
