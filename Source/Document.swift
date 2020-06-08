@@ -188,21 +188,21 @@ public struct Document<T: Codable> {
      * string describing the change.
      */
     mutating func makeChange(requestType: Request.RequestType,
-                    context: Context?,
-                    options: ChangeOptions?) -> Request?
+                             context: Context?,
+                             options: ChangeOptions?) -> Request?
     {
-            var state = self.state
-            state.seq += 1
+        var state = self.state
+        state.seq += 1
 
-            let request = Request(requestType: requestType,
-                                  message: options?.message ?? "",
-                                  time: Date(),
-                                  actor: self.options.actorId.actorId,
-                                  seq: state.seq,
-                                  version: state.version,
-                                  ops: context?.ops ?? [],
-                                  undoable: options?.undoable ?? true
-            )
+        let request = Request(requestType: requestType,
+                              message: options?.message ?? "",
+                              time: Date(),
+                              actor: self.options.actorId.actorId,
+                              seq: state.seq,
+                              version: state.version,
+                              ops: context?.ops ?? [],
+                              undoable: options?.undoable ?? true
+        )
 
         let backend = self.options.backend
         let(newBackend, patch) = backend.applyLocalChange(request: request)
@@ -306,48 +306,48 @@ public struct Document<T: Codable> {
     mutating func applyPatch(patch: Patch) {
         applyPatchToDoc(patch: patch, fromBackend: true, context: nil)
     }
-//    function applyPatch(doc, patch) {
-//      const state = copyObject(doc[STATE])
-//
-//      if (doc[OPTIONS].backend) {
-//        if (!patch.state) {
-//          throw new RangeError('When an immediate backend is used, a patch must contain the new backend state')
-//        }
-//        state.backendState = patch.state
-//        return applyPatchToDoc(doc, patch, state, true)
-//      }
-//
-//      let baseDoc
-//
-//      if (state.requests.length > 0) {
-//        baseDoc = state.requests[0].before
-//        if (patch.actocr === getActorId(doc) && patch.seq !== undefined) {
-//          if (state.requests[0].seq !== patch.seq) {
-//            throw new RangeError(`Mismatched sequence number: patch ${patch.seq} does not match next request ${state.requests[0].seq}`)
-//          }
-//          state.requests = state.requests.slice(1).map(copyObject)
-//        } else {
-//          state.requests = state.requests.slice().map(copyObject)
-//        }
-//      } else {
-//        baseDoc = doc
-//        state.requests = []
-//      }
-//
-//      let newDoc = applyPatchToDoc(baseDoc, patch, state, true)
-//      if (state.requests.length === 0) {
-//        return newDoc
-//      } else {
-//        state.requests[0].before = newDoc
-//        return updateRootObject(doc, {}, state)
-//      }
-//    }
+    //    function applyPatch(doc, patch) {
+    //      const state = copyObject(doc[STATE])
+    //
+    //      if (doc[OPTIONS].backend) {
+    //        if (!patch.state) {
+    //          throw new RangeError('When an immediate backend is used, a patch must contain the new backend state')
+    //        }
+    //        state.backendState = patch.state
+    //        return applyPatchToDoc(doc, patch, state, true)
+    //      }
+    //
+    //      let baseDoc
+    //
+    //      if (state.requests.length > 0) {
+    //        baseDoc = state.requests[0].before
+    //        if (patch.actocr === getActorId(doc) && patch.seq !== undefined) {
+    //          if (state.requests[0].seq !== patch.seq) {
+    //            throw new RangeError(`Mismatched sequence number: patch ${patch.seq} does not match next request ${state.requests[0].seq}`)
+    //          }
+    //          state.requests = state.requests.slice(1).map(copyObject)
+    //        } else {
+    //          state.requests = state.requests.slice().map(copyObject)
+    //        }
+    //      } else {
+    //        baseDoc = doc
+    //        state.requests = []
+    //      }
+    //
+    //      let newDoc = applyPatchToDoc(baseDoc, patch, state, true)
+    //      if (state.requests.length === 0) {
+    //        return newDoc
+    //      } else {
+    //        state.requests[0].before = newDoc
+    //        return updateRootObject(doc, {}, state)
+    //      }
+    //    }
 
     /**
-    * Takes a set of objects that have been updated (in `updated`) and an updated state object
-    * `state`, and returns a new immutable document root object based on `doc` that reflects
-    * those updates.
-    */
+     * Takes a set of objects that have been updated (in `updated`) and an updated state object
+     * `state`, and returns a new immutable document root object based on `doc` that reflects
+     * those updates.
+     */
     mutating func updateRootObject(update: inout [String: [String: Any]], state: State) {
         var newDoc = update[ROOT_ID]
         if newDoc == nil {
@@ -355,7 +355,7 @@ public struct Document<T: Codable> {
             update[ROOT_ID] = newDoc
         }
         for objectId in cache.keys where update[objectId] == nil {
-             update[objectId] = cache[objectId]
+            update[objectId] = cache[objectId]
         }
         newDoc?[CACHE] = update
 
@@ -364,28 +364,28 @@ public struct Document<T: Codable> {
     }
 
 
-//    function updateRootObject(doc, updated, state) {
-//      let newDoc = updated[ROOT_ID]
-//      if (!newDoc) {
-//        newDoc = cloneRootObject(doc[CACHE][ROOT_ID])
-//        updated[ROOT_ID] = newDoc
-//      }
-//      Object.defineProperty(newDoc, OPTIONS,  {value: doc[OPTIONS]})
-//      Object.defineProperty(newDoc, CACHE,    {value: updated})
-//      Object.defineProperty(newDoc, STATE,    {value: state})
-//
-//
-//      for (let objectId of Object.keys(doc[CACHE])) {
-//        if (!updated[objectId]) {
-//          updated[objectId] = doc[CACHE][objectId]
-//        }
-//      }
-//
-//      if (doc[OPTIONS].freeze) {
-//        Object.freeze(updated)
-//      }
-//      return newDoc
-//    }
+    //    function updateRootObject(doc, updated, state) {
+    //      let newDoc = updated[ROOT_ID]
+    //      if (!newDoc) {
+    //        newDoc = cloneRootObject(doc[CACHE][ROOT_ID])
+    //        updated[ROOT_ID] = newDoc
+    //      }
+    //      Object.defineProperty(newDoc, OPTIONS,  {value: doc[OPTIONS]})
+    //      Object.defineProperty(newDoc, CACHE,    {value: updated})
+    //      Object.defineProperty(newDoc, STATE,    {value: state})
+    //
+    //
+    //      for (let objectId of Object.keys(doc[CACHE])) {
+    //        if (!updated[objectId]) {
+    //          updated[objectId] = doc[CACHE][objectId]
+    //        }
+    //      }
+    //
+    //      if (doc[OPTIONS].freeze) {
+    //        Object.freeze(updated)
+    //      }
+    //      return newDoc
+    //    }
 
     public func save() -> [UInt8] {
         return options.backend.save()
@@ -424,25 +424,25 @@ public struct Document<T: Codable> {
         applyPatch(patch: patch)
     }
 
-//    function applyChanges(doc, changes) {
-//      const oldState = Frontend.getBackendState(doc)
-//      const [newState, patch] = backend.applyChanges(oldState, changes)
-//      patch.state = newState
-//      return Frontend.applyPatch(doc, patch)
-//    }
+    //    function applyChanges(doc, changes) {
+    //      const oldState = Frontend.getBackendState(doc)
+    //      const [newState, patch] = backend.applyChanges(oldState, changes)
+    //      patch.state = newState
+    //      return Frontend.applyPatch(doc, patch)
+    //    }
 
     public mutating func merge(_ remoteDocument: Document<T>) {
         precondition(actor != remoteDocument.actor, "Cannot merge an actor with itself")
         apply(changes: remoteDocument.allChanges())
     }
 
-//    function merge(localDoc, remoteDoc) {
-//      if (Frontend.getActorId(localDoc) === Frontend.getActorId(remoteDoc)) {
-//        throw new RangeError('Cannot merge an actor with itself')
-//      }
-//      // Just copy all changes from the remote doc; any duplicates will be ignored
-//      return applyChanges(localDoc, getAllChanges(remoteDoc))
-//    }
+    //    function merge(localDoc, remoteDoc) {
+    //      if (Frontend.getActorId(localDoc) === Frontend.getActorId(remoteDoc)) {
+    //        throw new RangeError('Cannot merge an actor with itself')
+    //      }
+    //      // Just copy all changes from the remote doc; any duplicates will be ignored
+    //      return applyChanges(localDoc, getAllChanges(remoteDoc))
+    //    }
 
     /**
      Creates a request to perform an undo on the document `doc`, returning a
@@ -453,7 +453,7 @@ public struct Document<T: Codable> {
      Note that the undo does not take effect immediately: only after the request
      is sent to the backend, and the backend responds with a patch, does the
      user-visible document update actually happen.
-    */
+     */
     @discardableResult
     public mutating func undo(options: ChangeOptions = ChangeOptions()) -> Request? {
         if !canUndo {
@@ -463,21 +463,21 @@ public struct Document<T: Codable> {
     }
 
 
-//    function undo(doc, options) {
-//      if (typeof options === 'string') {
-//        options = {message: options}
-//      }
-//      if (options !== undefined && !isObject(options)) {
-//        throw new TypeError('Unsupported type of options')
-//      }
-//      if (!doc[STATE].canUndo) {
-//        throw new Error('Cannot undo: there is nothing to be undone')
-//      }
-//      if (isUndoRedoInFlight(doc)) {
-//        throw new Error('Can only have one undo in flight at any one time')
-//      }
-//      return makeChange(doc, 'undo', null, options)
-//    }
+    //    function undo(doc, options) {
+    //      if (typeof options === 'string') {
+    //        options = {message: options}
+    //      }
+    //      if (options !== undefined && !isObject(options)) {
+    //        throw new TypeError('Unsupported type of options')
+    //      }
+    //      if (!doc[STATE].canUndo) {
+    //        throw new Error('Cannot undo: there is nothing to be undone')
+    //      }
+    //      if (isUndoRedoInFlight(doc)) {
+    //        throw new Error('Can only have one undo in flight at any one time')
+    //      }
+    //      return makeChange(doc, 'undo', null, options)
+    //    }
 
     /**
      * Creates a request to perform a redo of a prior undo on the document ,
@@ -496,48 +496,28 @@ public struct Document<T: Codable> {
         }
         return makeChange(requestType: .redo, context: nil, options: options)
     }
-//    function redo(doc, options) {
-//      if (typeof options === 'string') {
-//        options = {message: options}
-//      }
-//      if (options !== undefined && !isObject(options)) {
-//        throw new TypeError('Unsupported type of options')
-//      }
-//      if (!doc[STATE].canRedo) {
-//        throw new Error('Cannot redo: there is no prior undo')
-//      }
-//      if (isUndoRedoInFlight(doc)) {
-//        throw new Error('Can only have one redo in flight at any one time')
-//      }
-//      return makeChange(doc, 'redo', null, options)
-//    }
+    //    function redo(doc, options) {
+    //      if (typeof options === 'string') {
+    //        options = {message: options}
+    //      }
+    //      if (options !== undefined && !isObject(options)) {
+    //        throw new TypeError('Unsupported type of options')
+    //      }
+    //      if (!doc[STATE].canRedo) {
+    //        throw new Error('Cannot redo: there is no prior undo')
+    //      }
+    //      if (isUndoRedoInFlight(doc)) {
+    //        throw new Error('Can only have one redo in flight at any one time')
+    //      }
+    //      return makeChange(doc, 'redo', null, options)
+    //    }
 
-    public func history() -> [Commit<T>] {
+    public func history() -> History<T> {
         let actor = self.actor
-        let history = allChanges()
-        return history.enumerated().map({ index, change in
-            let change = options.backend.decode(change: change)
-            return Commit(snapshot: Document(changes: Array(history[0...index]), actorId: actor).content, change: change)
-        })
+
+        return History(actor: actor, backend: options.backend, binaryChanges: allChanges())
+        
     }
 }
-
-//function getHistory(doc) {
-//  const actor = Frontend.getActorId(doc)
-//  const history = getAllChanges(doc)
-//  return history.map((change, index) => {
-//    return {
-//      get change () {
-//        return decodeChange(change)
-//      },
-//      get snapshot () {
-//        const state = backend.loadChanges(backend.init(), history.slice(0, index + 1))
-//        const patch = backend.getPatch(state)
-//        patch.state = state
-//        return Frontend.applyPatch(init(actor), patch)
-//      }
-//    }
-//  })
-//}
 
 

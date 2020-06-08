@@ -1511,6 +1511,22 @@ class AutomergeTest: XCTestCase {
         ])
     }
 
+    // should make access
+    func testHistory3() {
+        struct Scheme: Codable, Equatable {
+            var books: [String]
+        }
+        var s = Document(Scheme(books: []))
+        s.change(options: .init(message: "Add Orwell"), execute: {
+            $0.books.append("Nineteen Eighty-Four")
+        })
+        s.change(options: .init(message: "Add Huxley"), execute: {
+            $0.books.append("Brave New World")
+        })
+        let message = s.history().last?.change.message
+        XCTAssertEqual(message, "Add Huxley")
+    }
+
 }
 
 
