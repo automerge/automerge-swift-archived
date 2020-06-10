@@ -2,11 +2,6 @@
 # automerge-swift
 A automerge frontend in Swift using the rs-backend
 
-Table of content
-
-* Overview
-
-
 ## Usage
 
 The following code sample gives a quick overview of ho to use Automerge
