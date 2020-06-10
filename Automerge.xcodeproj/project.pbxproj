@@ -497,7 +497,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
-				SWIFT_OBJC_BRIDGING_HEADER = "/Users/lukasschmidt/Developer/automerge-swift/Source/include/automerge.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "$(SRCROOT)/Source/include/automerge.h";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = Automerge;
 				TVOS_DEPLOYMENT_TARGET = 9.0;
@@ -534,7 +534,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
-				SWIFT_OBJC_BRIDGING_HEADER = "/Users/lukasschmidt/Developer/automerge-swift/Source/include/automerge.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "$(SRCROOT)/Source/include/automerge.h";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = Automerge;
 				TVOS_DEPLOYMENT_TARGET = 9.0;
