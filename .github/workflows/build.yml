@@ -1,7 +1,4 @@
-on:
-  push:
-    branches:    
-      - master
+on: push
 name: Build
 jobs:
   test:
@@ -9,7 +6,7 @@ jobs:
     runs-on: macOS-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@master
+        uses: actions/checkout
       - name: Build and test
         run: |
-          swift test
+          xcodebuild -scheme Automerge -destination "platform=iOS Simulator,name=iPhone 8" test
