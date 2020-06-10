@@ -36,7 +36,7 @@ class AutomergeTest: XCTestCase {
     func testInit4() {
         struct Scheme: Codable, Equatable {}
         let actor = ActorId()
-        let document = Document(Scheme(), options: .init(actorId: actor))
+        let document = Document(Scheme(), actor: actor)
         XCTAssertEqual(document.actor, actor)
     }
 
@@ -171,10 +171,10 @@ class AutomergeTest: XCTestCase {
     func testSerialUseRootObject3() {
         struct Scheme: Codable, Equatable { var foo: String?; var zip: String? }
         var s1 = Document(Scheme(foo: nil, zip: nil))
-        s1.change(options: .init(message: "multi-assign"), execute: {
+        s1.change(message: "multi-assign") {
             $0.foo.set("bar")
             $0.zip.set("zap")
-        })
+        }
 
         XCTAssertEqual(s1.content.foo, "bar")
         XCTAssertEqual(s1.content.zip, "zap")
@@ -185,11 +185,11 @@ class AutomergeTest: XCTestCase {
     func testSerialUseRootObject4() {
         struct Scheme: Codable, Equatable { var foo: String?; var zip: String? }
         var s1 = Document(Scheme(foo: nil, zip: nil))
-        s1.change(options: .init(message: "set foo"), execute: {
+        s1.change(message: "set foo", {
             $0.foo.set("bar")
             $0.zip.set(nil)
         })
-        s1.change(options: .init(message: "del foo"), execute: {
+         s1.change(message: "del foo", {
             $0.foo.set(nil)
         })
 
@@ -896,8 +896,8 @@ class AutomergeTest: XCTestCase {
             var list: [String]
         }
 
-        var s1 = Document(Scheme(list: []), options: .init(actorId: ActorId(actorId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))
-        var s2 = Document(Scheme(list: []), options: .init(actorId: ActorId(actorId: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")))
+        var s1 = Document(Scheme(list: []), actor: ActorId(actorId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+        var s2 = Document(Scheme(list: []), actor: ActorId(actorId: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
         s1.change { $0.list.set(["two"]) }
         s2.merge(s1)
         s2.change {
@@ -912,8 +912,8 @@ class AutomergeTest: XCTestCase {
             var list: [String]
         }
 
-        var s1 = Document(Scheme(list: []), options: .init(actorId: ActorId(actorId: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")))
-        var s2 = Document(Scheme(list: []), options: .init(actorId: ActorId(actorId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))
+        var s1 = Document(Scheme(list: []), actor: ActorId(actorId: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
+        var s2 = Document(Scheme(list: []), actor: ActorId(actorId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
         s1.change { $0.list.set(["two"]) }
         s2.merge(s1)
         s2.change {
@@ -1045,12 +1045,12 @@ class AutomergeTest: XCTestCase {
         }
 
         var s1 = Document(Scheme(value: 1))
-        s1.change(options: .init(message: "set 2"), execute: { $0.value.set(2) })
+        s1.change(message: "set 2") { $0.value.set(2) }
         var s2 = Document<Scheme>(changes: s1.allChanges())
-        s1.undo(options: .init(message: "undo!"))
-        let seqs = s1.history().map { $0.change.seq }
+        s1.undo(message: "undo!")
+        let seqs = History(document: s1).map { $0.change.seq }
         XCTAssertEqual(seqs, [1, 2, 3])
-        let messages = s1.history().map { $0.change.message }
+        let messages = History(document: s1).map { $0.change.message }
         XCTAssertEqual(messages, ["Initialization", "set 2", "undo!"])
         s2.merge(s1)
         XCTAssertEqual(s2.content, Scheme(value: 1))
@@ -1400,14 +1400,15 @@ class AutomergeTest: XCTestCase {
         }
 
         var s1 = Document(Scheme(value: 1))
-        s1.change(options: .init(message: "set 2"), execute: { $0.value.set(2) })
-        s1.undo(options: .init(message: "undo"))
-        s1.redo(options: .init(message: "redo!"))
-        let seqs = s1.history().map { $0.change.seq }
+        s1.change(message: "set 2") { $0.value.set(2) }
+        s1.undo(message: "undo")
+        s1.redo(message: "redo!")
+        let history = History(document: s1)
+        let seqs = history.map { $0.change.seq }
         XCTAssertEqual(seqs, [1, 2, 3, 4])
-        let messages = s1.history().map { $0.change.message }
+        let messages = history.map { $0.change.message }
         XCTAssertEqual(messages, ["Initialization", "set 2", "undo", "redo!"])
-        XCTAssertEqual(s1.history().count, 4)
+        XCTAssertEqual(history.count, 4)
     }
 
     // should save and restore an empty document
@@ -1428,7 +1429,7 @@ class AutomergeTest: XCTestCase {
     // should allow a custom actor ID to be set
     func testSaveAndLoading3() {
         struct Scheme: Codable, Equatable { }
-        let s = Document<Scheme>(data: Document(Scheme()).save(), actorId: ActorId(actorId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+        let s = Document<Scheme>(data: Document(Scheme()).save(), actor: ActorId(actorId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
         XCTAssertEqual(s.actor, ActorId(actorId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
     }
 
@@ -1451,8 +1452,8 @@ class AutomergeTest: XCTestCase {
         struct Scheme: Codable, Equatable {
             let x: Int
         }
-        var s1 = Document(Scheme(x: 3), options: .init(actorId: ActorId(actorId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))
-        let s2 = Document(Scheme(x: 5), options: .init(actorId: ActorId(actorId: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")))
+        var s1 = Document(Scheme(x: 3), actor: ActorId(actorId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+        let s2 = Document(Scheme(x: 5), actor: ActorId(actorId: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
         s1.merge(s2)
         let s3 = Document<Scheme>(data: s1.save())
         XCTAssertEqual(s1.content.x, 5)
@@ -1483,7 +1484,7 @@ class AutomergeTest: XCTestCase {
         var s = Document(Scheme(config: .init(background: "blue"), birds: []))
         s.change({ $0.birds.set(["mallard"]) })
         s.change { $0.birds.insert("oystercatcher", at: 0) }
-        let history = s.history().map { $0.snapshot }
+        let history = History(document: s).map { $0.snapshot }
         XCTAssertEqual(history, [
             Scheme(config: .init(background: "blue"), birds: []),
             Scheme(config: .init(background: "blue"), birds: ["mallard"]),
@@ -1497,13 +1498,13 @@ class AutomergeTest: XCTestCase {
             var books: [String]
         }
         var s = Document(Scheme(books: []))
-        s.change(options: .init(message: "Add Orwell"), execute: {
+        s.change(message: "Add Orwell") {
             $0.books.append("Nineteen Eighty-Four")
-        })
-        s.change(options: .init(message: "Add Huxley"), execute: {
+        }
+        s.change(message: "Add Huxley") {
             $0.books.append("Brave New World")
-        })
-        let messages = s.history().map { $0.change.message }
+        }
+        let messages = History(document: s).map { $0.change.message }
         XCTAssertEqual(messages, [
             "Initialization",
             "Add Orwell",
@@ -1511,33 +1512,22 @@ class AutomergeTest: XCTestCase {
         ])
     }
 
-    // should make access
+    // should make access fast
     func testHistory3() {
         struct Scheme: Codable, Equatable {
             var books: [String]
         }
         var s = Document(Scheme(books: []))
-        s.change(options: .init(message: "Add Orwell"), execute: {
+        s.change(message: "Add Orwell") {
             $0.books.append("Nineteen Eighty-Four")
-        })
-        s.change(options: .init(message: "Add Huxley"), execute: {
+        }
+        s.change(message: "Add Huxley") {
             $0.books.append("Brave New World")
-        })
-        let message = s.history().last?.change.message
+        }
+        let message = History(document: s).last?.change.message
         XCTAssertEqual(message, "Add Huxley")
     }
 
 }
 
-
-//  it('should make change messages accessible', () => {
-//    let s = Automerge.init()
-//    s = Automerge.change(s, 'Empty Bookshelf', doc => doc.books = [])
-//    s = Automerge.change(s, 'Add Orwell', doc => doc.books.push('Nineteen Eighty-Four'))
-//    s = Automerge.change(s, 'Add Huxley', doc => doc.books.push('Brave New World'))
-//    assert.deepStrictEqual(s.books, ['Nineteen Eighty-Four', 'Brave New World'])
-//    assert.deepStrictEqual(Automerge.getHistory(s).map(state => state.change.message),
-//                     ['Empty Bookshelf', 'Add Orwell', 'Add Huxley'])
-//  })
-//})
 
