@@ -10,5 +10,5 @@ jobs:
         with:
           ref: ${{ github.ref }}
       - name: Build and test
-        run: |
+        run:
           xcodebuild -scheme Automerge -destination "platform=iOS Simulator,name=iPhone 8" test
