@@ -9,6 +9,10 @@ import Foundation
 
 public struct History<T: Codable> {
 
+    public init(document: Document<T>) {
+        self.init(actor: document.actor, backend: RSBackend(), binaryChanges: document.allChanges())
+    }
+
     init(actor: ActorId, backend: RSBackend, binaryChanges: [[UInt8]]) {
         self.actor = actor
         self.backend = backend
@@ -30,7 +34,7 @@ extension History: Collection, Sequence, BidirectionalCollection {
             let binaryChange = binaryChanges[position]
             let change = backend.decode(change: binaryChange)
 
-            return Commit(snapshot: Document(changes: Array(binaryChanges[0...position]), actorId: actor).content, change: change)
+            return Commit(snapshot: Document(changes: Array(binaryChanges[0...position]), actor: actor).content, change: change)
         }
     }
 

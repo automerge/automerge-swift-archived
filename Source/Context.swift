@@ -14,8 +14,8 @@ final class Context {
         let objectId: String
     }
 
-    init<T>(doc: Document<T>, actorId: ActorId) {
-        self.cache = doc.cache
+    init(cache: [String: [String: Any]], actorId: ActorId) {
+        self.cache = cache
         self.updated = [String: [String: Any]]()
         self.actorId = actorId
         self.ops = []
