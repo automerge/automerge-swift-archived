@@ -100,19 +100,18 @@ Automerge.getHistory(finalDoc).map(state => [state.change.message, state.snapsho
 `Document.init<T>(_ content: T) ` creates a new Automerge document and populates it with the contents of the object. The value passed must always be an object.
 
 ```swift
-var doc1 = Automerge.Document(Cards(cards: []))
+var doc = Automerge.Document(Cards(cards: []))
 ```
  
- An Automerge document must be treated as immutable. It is never changed directly, only with the `Document.change` function, described below.
+ An Automerge document must be treated as immutable. It is never changed directly, only with the `doc.change` function, described below.
 
 ### Updating a document
 
-`Document.change` enables you to modify an Automerge document doc.
+`doc.change` enables you to modify an Automerge document doc.
 
- The changeFn function you pass to`Document.change` is called with a mutable version of doc, as shown below.
+ The changeFn function you pass to`doc.change` is called with a mutable version of doc, as shown below.
 
  The optional message argument allows you to attach an arbitrary string to the change, which is not interpreted by Automerge, but saved as part of the change history
-
 
 ```swift
 
@@ -143,3 +142,47 @@ currentDoc.change() { doc in
 
 }
 ```
+
+### Persisting a document
+
+`doc.save()` serializes the state of Automerge document doc to binary, which you can write to disk. The binary contains an encoding of the full change history of the document (a bit like a git repository).
+
+`Document(data: binary)` unserializes an Automerge document from binary that was produced by `doc.save()``.
+
+Note: Specifying actor
+
+The Document init take an optional actorId parameter:
+
+const actor = Actor(actorId: "1234abcd-56789qrstuv")
+const doc2 = Document(Cards(cards: []), actor: actor)
+const doc3 = Document(data: binary, actor: actor)
+The actorId is a string that uniquely identifies the current node; if you omit actorId, a random UUID is generated. If you pass in your own actorId, you must ensure that there can never be two different processes with the same actor ID. Even if you have two different processes running on the same machine, they must have distinct actor IDs.
+
+Unless you know what you are doing, you should stick with the default, and let actorId be auto-generated.
+
+
+### Undo and redo
+
+Automerge makes it easy to support an undo/redo feature in your application. Note that undo is a somewhat tricky concept in a collaborative application! Here, "undo" is taken as meaning "what the user expects to happen when they hit ctrl+Z/⌘ Z". In particular, the undo feature undoes the most recent change by the local user; it cannot currently be used to revert changes made by other users.
+
+Moreover, undo is not the same as jumping back to a previous version of a document; see the next section on how to examine document history. Undo works by applying the inverse operation of the local user's most recent change, and redo works by applying the inverse of the inverse. Both undo and redo create new changes, so from other users' point of view, an undo or redo looks the same as any other kind of change.
+
+To check whether undo is currently available, use the function `canUndo()`. It returns true if the local user has made any changes since the document was created or loaded. You can then call doc.undo() to perform an undo. The functions canRedo() and redo() do the inverse:
+
+```swift
+var doc = Automerge.Document(Birds(birds: []))
+doc.change() {
+    $0.birds.append("blackbird")
+}
+doc.change() {
+    $0.birds.append("robin")
+}
+// now doc is {birds: ['blackbird', 'robin']}
+
+doc.canUndo // returns true
+doc.undo() // now doc is {birds: ['blackbird']}
+doc.undo() // now doc is {birds: []}
+doc.redo() // now doc is {birds: ['blackbird']}
+doc.redo() // now doc is {birds: ['blackbird', 'robin']}
+```
+You can pass an optional message as second argument to `.undo(message: String)` and `.redo(doc, message)`. This string is used as "commit message" that describes the undo/redo change, and it appears in the change history.
