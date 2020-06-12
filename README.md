@@ -1,10 +1,10 @@
 ![Build](https://github.com/lightsprint09/automerge-swift/workflows/Build/badge.svg?branch=master)
 # automerge-swift
-A automerge frontend in Swift using the rs-backend
+An automerge frontend in Swift using the rs-backend
 
 ## Usage
 
-The following code sample gives a quick overview of ho to use Automerge
+The following code sample gives a quick overview of how to use Automerge
 ```swift
 import Automerge
 /// Define your model object, which will be stored in automerge.
