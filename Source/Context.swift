@@ -107,24 +107,26 @@ final class Context {
             let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .int(couter.value), datatype: .counter)
             ops.append(operation)
             return .value(.init(value: .int(couter.value), datatype: .counter))
-        case let value as [String: Any]:
-            if let counterValue = value[COUNTER_VALUE] as? Int {
-                let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .int(counterValue), datatype: .counter)
-                ops.append(operation)
-                return .value(.init(value: .int(counterValue), datatype: .counter))
-            } else {
-                return .object(createNestedObjects(obj: objectId, key: key, value: value, insert: insert))
-            }
+        case let object as [String: Any]:
+            return setValue(objectId: objectId, key: key, object: object, insert: insert)
         case let array as [Any]:
             return .object(createNestedObjects(obj: objectId, key: key, value: array, insert: insert))
-        case let table as Table:
-            return .object(createNestedObjects(obj: objectId, key: key, value: table, insert: insert))
         case is Optional<Any>:
             let operation = Op(action: .del, obj: objectId, key: key!, insert: insert)
             ops.append(operation)
             return .value(.null)
         default:
             fatalError()
+        }
+    }
+
+    func setValue(objectId: String, key: Key?, object: [String: Any], insert: Bool) -> Diff {
+        if let counterValue = object[COUNTER_VALUE] as? Int {
+            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .int(counterValue), datatype: .counter)
+            ops.append(operation)
+            return .value(.init(value: .int(counterValue), datatype: .counter))
+        } else {
+            return .object(createNestedObjects(obj: objectId, key: key, value: object, insert: insert))
         }
     }
 
@@ -172,6 +174,14 @@ final class Context {
                 return subpatch
             }
 
+            if object["isTableElement"] != nil {
+                let operation = Op(action: .makeTable, obj: obj, key: key, insert: insert, child: child)
+                ops.append(operation)
+                let subpatch = ObjectDiff(objectId: child, type: .table, props: [:])
+
+                return subpatch
+            }
+
             let operation = Op(action: .makeMap, obj: obj, key: key, insert: insert, child: child)
             ops.append(operation)
 
@@ -189,15 +199,7 @@ final class Context {
             insertListItems(subPatch: subpatch, index: 0, values: array, newObject: true)
 
             return subpatch
-        case is Table:
-            //    if (value.count > 0) {
-            //      throw new RangeError('Assigning a non-empty Table object is not supported')
-            //    }
-            let operation = Op(action: .makeTable, obj: obj, key: key, insert: insert, child: child)
-            ops.append(operation)
-            let subpatch = ObjectDiff(objectId: child, type: .table, props: [:])
 
-            return subpatch
         default:
             fatalError()
         }
@@ -617,8 +619,6 @@ final class Context {
      */
     func getValuesDescriptions(path: [KeyPathElement], object: Any, key: Key) -> [String: Diff] {
         switch object {
-        case is Table:
-            fatalError()
         case let map as [String: Any]:
             guard let conflicts = (map[CONFLICTS] as?[Key: Any])?[key] else {
                 fatalError("No children at key \(key) of path \(path)")

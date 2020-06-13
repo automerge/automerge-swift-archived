@@ -6,8 +6,6 @@
 //
 
 import Foundation
-struct Table: Equatable {
-    init(columns: [String]) {
-        
-    }
+struct Table<Row>: Codable, Equatable {
+    let isTableElement: Bool = true
 }
