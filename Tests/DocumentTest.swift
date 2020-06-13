@@ -46,7 +46,7 @@ class DocumentTest: XCTestCase {
         struct Schema: Codable, Equatable {
             var bird: String?
         }
-        let actor = ActorId()
+        let actor = Actor()
         var doc = Document(Schema(bird: nil), actor: actor)
         let req = doc.change { $0.bird.set("magpie") }
 
@@ -95,7 +95,7 @@ class DocumentTest: XCTestCase {
         struct Schema: Codable, Equatable {
             var magpies: Int?; let sparrows: Int?
         }
-        let actor = ActorId()
+        let actor = Actor()
         let doc1 = Document(Schema(magpies: 2, sparrows: 15), actor: actor)
         var doc2 = doc1
         let req = doc2.change { $0.magpies.set(nil) }

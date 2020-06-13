@@ -17,7 +17,7 @@ public struct Document<T: Codable> {
     }
 
     /// Returns the Automerge actor ID of the given document.
-    public let actor: ActorId
+    public let actor: Actor
     public var content: T {
         let context = Context(cache: cache, actorId: actor)
 
@@ -28,7 +28,7 @@ public struct Document<T: Codable> {
     private var state: State
     private var root: [String: Any]
 
-    private init(actor: ActorId, backend: RSBackend) {
+    private init(actor: Actor, backend: RSBackend) {
         self.actor = actor
         self.backend = backend
         self.root = [
@@ -39,7 +39,7 @@ public struct Document<T: Codable> {
         self.state = State(seq: 0, version: 0, clock: [:], canUndo: false, canRedo: false)
     }
 
-    public init(_ initialState: T, actor: ActorId = ActorId()) {
+    public init(_ initialState: T, actor: Actor = Actor()) {
         var newDocument = Document<T>(actor: actor, backend: RSBackend())
         newDocument.change(message: "Initialization", undoable: false, { doc in
             doc.set(initialState)
@@ -47,7 +47,7 @@ public struct Document<T: Codable> {
         self = newDocument
     }
 
-    public init(data: [UInt8], actor: ActorId = ActorId()) {
+    public init(data: [UInt8], actor: Actor = Actor()) {
         let backend = RSBackend(data: data)
         var doc = Document<T>(actor: actor, backend: backend)
 
@@ -56,7 +56,7 @@ public struct Document<T: Codable> {
         self = doc
     }
 
-    public init(changes: [[UInt8]], actor: ActorId = ActorId()) {
+    public init(changes: [[UInt8]], actor: Actor = Actor()) {
         let backend = RSBackend(changes: changes)
         var doc = Document<T>(actor: actor, backend: backend)
 

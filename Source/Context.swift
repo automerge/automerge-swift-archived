@@ -14,7 +14,7 @@ final class Context {
         let objectId: String
     }
 
-    init(cache: [String: [String: Any]], actorId: ActorId) {
+    init(cache: [String: [String: Any]], actorId: Actor) {
         self.cache = cache
         self.updated = [String: [String: Any]]()
         self.actorId = actorId
@@ -22,7 +22,7 @@ final class Context {
         self.applyPatch = interpretPatch
     }
 
-    init(actorId: ActorId,
+    init(actorId: Actor,
          applyPatch: @escaping (ObjectDiff, [String: Any]?, inout [String: [String: Any]]) -> [String: Any]?,
          updated: [String: [String: Any]],
          cache: [String: [String: Any]],
@@ -35,7 +35,7 @@ final class Context {
         self.ops = ops
     }
 
-    private let actorId: ActorId
+    private let actorId: Actor
     private let applyPatch: (ObjectDiff, [String: Any]?, inout [String: [String: Any]]) -> [String: Any]?
     private(set) var updated: [String: [String: Any]]
     private var cache: [String: [String: Any]]

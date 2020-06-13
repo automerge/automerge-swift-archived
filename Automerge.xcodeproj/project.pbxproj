@@ -23,7 +23,7 @@
 /* Begin PBXBuildFile section */
 		94339B50247BA70A00A461F1 /* AutomergeTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94339B4E247BA65800A461F1 /* AutomergeTest.swift */; };
 		9455D9E12487A8B40046A867 /* Proxy+Root.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9455D9E02487A8B40046A867 /* Proxy+Root.swift */; };
-		9477033E246E73C4000E952C /* ActorId.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9477033D246E73C4000E952C /* ActorId.swift */; };
+		9477033E246E73C4000E952C /* Actor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9477033D246E73C4000E952C /* Actor.swift */; };
 		9486913A248E625A008D75A2 /* Proxy+UnsafeAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94869139248E625A008D75A2 /* Proxy+UnsafeAccess.swift */; };
 		9486913D248E8B60008D75A2 /* History.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9486913C248E8B60008D75A2 /* History.swift */; };
 		94874A3C2486317000ECC4E7 /* XCTAssertEqualOneOf.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94874A3B2486317000ECC4E7 /* XCTAssertEqualOneOf.swift */; };
@@ -84,7 +84,7 @@
 /* Begin PBXFileReference section */
 		94339B4E247BA65800A461F1 /* AutomergeTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomergeTest.swift; sourceTree = "<group>"; };
 		9455D9E02487A8B40046A867 /* Proxy+Root.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Proxy+Root.swift"; sourceTree = "<group>"; };
-		9477033D246E73C4000E952C /* ActorId.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActorId.swift; sourceTree = "<group>"; };
+		9477033D246E73C4000E952C /* Actor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Actor.swift; sourceTree = "<group>"; };
 		94869139248E625A008D75A2 /* Proxy+UnsafeAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Proxy+UnsafeAccess.swift"; sourceTree = "<group>"; };
 		9486913C248E8B60008D75A2 /* History.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = History.swift; sourceTree = "<group>"; };
 		94874A3B2486317000ECC4E7 /* XCTAssertEqualOneOf.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XCTAssertEqualOneOf.swift; sourceTree = "<group>"; };
@@ -171,7 +171,7 @@
 				OBJ_13 /* Counter.swift */,
 				OBJ_14 /* Table.swift */,
 				OBJ_15 /* Text.swift */,
-				9477033D246E73C4000E952C /* ActorId.swift */,
+				9477033D246E73C4000E952C /* Actor.swift */,
 				94F6D875248ABFC300FEAA43 /* Commit.swift */,
 				94F6D877248ABFE900FEAA43 /* Change.swift */,
 				94F6D879248AC0D100FEAA43 /* Primitive.swift */,
@@ -356,7 +356,7 @@
 				94F6D876248ABFC300FEAA43 /* Commit.swift in Sources */,
 				OBJ_49 /* Table.swift in Sources */,
 				9455D9E12487A8B40046A867 /* Proxy+Root.swift in Sources */,
-				9477033E246E73C4000E952C /* ActorId.swift in Sources */,
+				9477033E246E73C4000E952C /* Actor.swift in Sources */,
 				OBJ_50 /* Text.swift in Sources */,
 				OBJ_51 /* Diff.swift in Sources */,
 				OBJ_52 /* Document.swift in Sources */,

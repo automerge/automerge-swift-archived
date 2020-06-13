@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct ActorId: Equatable {
+public struct Actor: Equatable {
 
     public init(actorId: String = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()) {
         self.actorId = actorId
@@ -16,15 +16,15 @@ public struct ActorId: Equatable {
     public let actorId: String
 }
 
-extension ActorId: Comparable {
+extension Actor: Comparable {
 
-    public static func < (lhs: ActorId, rhs: ActorId) -> Bool {
+    public static func < (lhs: Actor, rhs: Actor) -> Bool {
         lhs.actorId < rhs.actorId
     }
 
 }
 
-extension ActorId: CustomStringConvertible {
+extension Actor: CustomStringConvertible {
 
     public var description: String {
         return actorId

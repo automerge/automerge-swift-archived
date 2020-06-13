@@ -44,7 +44,7 @@ class ContextTest: XCTestCase {
     // should assign a primitive value to a map key
     func testContextSetMapKey1() {
         // GIVEN
-        let actor = ActorId()
+        let actor = Actor()
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
@@ -71,7 +71,7 @@ class ContextTest: XCTestCase {
     // should do nothing if the value was not changed
     func testContextSetMapKey2() {
         //Given
-        let actor = ActorId()
+        let actor = Actor()
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
@@ -97,7 +97,7 @@ class ContextTest: XCTestCase {
     // should allow a conflict to be resolved
     func testContextSetMapKey3() {
         //Given
-        let actor = ActorId()
+        let actor = Actor()
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
@@ -125,7 +125,7 @@ class ContextTest: XCTestCase {
     //should create nested maps
     func testContextSetMapKey4() {
         // GIVEN
-        let actor = ActorId()
+        let actor = Actor()
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
@@ -161,7 +161,7 @@ class ContextTest: XCTestCase {
 
     // should perform assignment inside nested maps
     func testContextSetMapKey5() {
-        let actor = ActorId()
+        let actor = Actor()
         let objectId = UUID().uuidString
         let child = [OBJECT_ID: objectId]
         let context = Context(
@@ -205,7 +205,7 @@ class ContextTest: XCTestCase {
     // should perform assignment inside conflicted maps
     func testContextSetMapKey6() {
         //Given
-        let actor = ActorId()
+        let actor = Actor()
         let objectId1 = UUID().uuidString
         let child1 = [OBJECT_ID: objectId1]
         let objectId2 = UUID().uuidString
@@ -258,7 +258,7 @@ class ContextTest: XCTestCase {
     // should handle conflict values of various types
     func testContextSetMapKey7() {
         // Given
-        let actor = ActorId()
+        let actor = Actor()
         let objectId = UUID().uuidString
         let child = [OBJECT_ID: objectId]
         let dateValue = Date()
@@ -307,7 +307,7 @@ class ContextTest: XCTestCase {
 
     // should create nested lists
     func testContextSetMapKey8() {
-        let actor = ActorId()
+        let actor = Actor()
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
@@ -347,7 +347,7 @@ class ContextTest: XCTestCase {
     // should create nested Text objects
     func testContextSetMapKey9() {
         //Given
-        let actor = ActorId()
+        let actor = Actor()
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
@@ -387,7 +387,7 @@ class ContextTest: XCTestCase {
     // should create nested Table objects
     func testContextSetMapKey10() {
         //Given
-        let actor = ActorId()
+        let actor = Actor()
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
@@ -420,7 +420,7 @@ class ContextTest: XCTestCase {
     func testContextSetMapKey11() {
         //Given
         let now = Date()
-        let actor = ActorId()
+        let actor = Actor()
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
@@ -453,7 +453,7 @@ class ContextTest: XCTestCase {
         //Given
         let counter = Counter(3)
         let encoder = DictionaryEncoder()
-        let actor = ActorId()
+        let actor = Actor()
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
@@ -485,7 +485,7 @@ class ContextTest: XCTestCase {
     func testContextSetMapKey13() {
         //Given
         let uuid = UUID()
-        let actor = ActorId()
+        let actor = Actor()
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
@@ -524,7 +524,7 @@ class ContextTest: XCTestCase {
             CONFLICTS:  ["actor1": "swallow", "actor2": "swallow"]
         ]
 
-        let actor = ActorId()
+        let actor = Actor()
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
@@ -576,7 +576,7 @@ class ContextTest: XCTestCase {
             CONFLICTS:  ["actor1": "swallow", "actor2": "swallow"]
         ]
 
-        let actor = ActorId()
+        let actor = Actor()
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
@@ -634,7 +634,7 @@ class ContextTest: XCTestCase {
             CONFLICTS:  [Key.string("actor1"): "swallow", "actor2": "swallow"]
         ]
 
-        let actor = ActorId()
+        let actor = Actor()
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
@@ -694,7 +694,7 @@ class ContextTest: XCTestCase {
             CONFLICTS:  ["actor1": "swallow", "actor2": "swallow"]
         ]
 
-        let actor = ActorId()
+        let actor = Actor()
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
@@ -752,7 +752,7 @@ class ContextTest: XCTestCase {
             CONFLICTS:  ["actor1": "swallow", "actor2": "swallow"]
         ]
 
-        let actor = ActorId()
+        let actor = Actor()
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
@@ -810,7 +810,7 @@ class ContextTest: XCTestCase {
             CONFLICTS:  ["actor1": "swallow", "actor2": "swallow"]
         ]
 
-        let actor = ActorId()
+        let actor = Actor()
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
@@ -869,7 +869,7 @@ class ContextTest: XCTestCase {
             CONFLICTS: [String: Any](),
             "entries": [String: Any]()
         ]
-        let actor = ActorId()
+        let actor = Actor()
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
@@ -935,7 +935,7 @@ class ContextTest: XCTestCase {
             CONFLICTS: [String: Any](),
             "entries": [rowId.uuidString: row]
         ]
-        let actor = ActorId()
+        let actor = Actor()
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
@@ -980,7 +980,7 @@ class ContextTest: XCTestCase {
     //should increment a counter
     func testCounter1() {
         let counter = [COUNTER_VALUE: Primitive.int(0)]
-        let actor = ActorId()
+        let actor = Actor()
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
