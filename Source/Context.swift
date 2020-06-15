@@ -522,11 +522,6 @@ final class Context {
         cache[ROOT_ID] = applyPatch(patch.diffs, cache[ROOT_ID], &updated)
         updated[ROOT_ID] = cache[ROOT_ID]
     }
-    //    applyAtPath(path, callback) {
-    //      let patch = {diffs: {objectId: ROOT_ID, type: 'map'}}
-    //      callback(this.getSubpatch(patch, path))
-    //      this.applyPatch(patch.diffs, this.cache[ROOT_ID], this.updated)
-    //    }
 
     /**
      * Recurses along `path` into the patch object `patch`, creating nodes along the way as needed
@@ -534,7 +529,7 @@ final class Context {
      */
     func getSubpatch(patch: Patch, path: [KeyPathElement]) -> ObjectDiff {
         var subPatch = patch.diffs
-        var object: Any = getObject(objectId: ROOT_ID)
+        var object: [String: Any] = getObject(objectId: ROOT_ID)
         for pathElem in path {
             if subPatch.props == nil {
                 subPatch.props = [:]
@@ -596,12 +591,14 @@ final class Context {
      * Returns the value at property `key` of object `object`. In the case of a conflict, returns
      * the value whose assignment operation has the ID `opId`.
      */
-    func getPropertyValue(object: Any, key: Key, opId: String) -> Any {
-        switch object {
-        case let object as [String: Any]:
-            return ((object[CONFLICTS] as! [Key: Any])[key] as! [String: Any])[opId]!
-        default:
+    func getPropertyValue(object: [String: Any], key: Key, opId: String) -> [String: Any] {
+        if object["isTableElement"] != nil {
+            if case .string(let stringKey) = key, let entries = object[TABLE_VALUES] as? [String: [String: Any]], let value = entries[stringKey] {
+                return value
+            }
             fatalError()
+        } else {
+            return ((object[CONFLICTS] as! [Key: Any])[key] as! [String: Any])[opId] as! [String: Any]
         }
     }
     //    getPropertyValue(object, key, opId) {
@@ -617,10 +614,16 @@ final class Context {
      * property `key` of `object` (there might be multiple values in the case of a conflict), and
      * returns an object that maps operation IDs to descriptions of values.
      */
-    func getValuesDescriptions(path: [KeyPathElement], object: Any, key: Key) -> [String: Diff] {
-        switch object {
-        case let map as [String: Any]:
-            guard let conflicts = (map[CONFLICTS] as?[Key: Any])?[key] else {
+    func getValuesDescriptions(path: [KeyPathElement], object: [String: Any], key: Key) -> [String: Diff] {
+        if object["isTableElement"] != nil {
+            // Table objects don't have conflicts, since rows are identified by their unique objectId
+            if case .string(let stringKey) = key, let entries = object[TABLE_VALUES] as? [String: [String: Any]], let value = entries[stringKey] {
+                return [stringKey: getValueDescription(value: value)]
+            } else {
+                return [:]
+            }
+        } else {
+            guard let conflicts = (object[CONFLICTS] as?[Key: Any])?[key] else {
                 fatalError("No children at key \(key) of path \(path)")
             }
             let typedConflicts = conflicts as! [String: Any]
@@ -630,10 +633,7 @@ final class Context {
             }
 
             return values
-        default:
-            fatalError()
         }
-
     }
     //    getValuesDescriptions(path, object, key) {
     //      if (object instanceof Table) {
@@ -738,16 +738,16 @@ final class Context {
     /**
      * Updates the table object at path `path`, deleting the row with ID `rowId`.
      */
-    func deleteTableRow(path: [KeyPathElement], rowId: UUID) {
+    func deleteTableRow(path: [KeyPathElement], rowId: String) {
         let objectId =  path[path.count - 1].objectId
         let table = getObject(objectId: objectId)
         guard let entries = table[TABLE_VALUES] as? [String: Any] else {
             fatalError()
         }
-        if entries[rowId.uuidString] != nil {
-            ops.append(Op(action: .del, obj: objectId, key: .string(rowId.uuidString)))
+        if entries[rowId] != nil {
+            ops.append(Op(action: .del, obj: objectId, key: .string(rowId)))
             applyAt(path: path, callback: { subpatch in
-                subpatch.props?[.string(rowId.uuidString)] = [:]
+                subpatch.props?[.string(rowId)] = [:]
             })
         }
     }

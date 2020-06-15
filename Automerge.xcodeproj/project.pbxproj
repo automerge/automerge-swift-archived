@@ -33,6 +33,7 @@
 		94AC589D247D3368006701E7 /* Proxy+Counter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94AC589C247D3368006701E7 /* Proxy+Counter.swift */; };
 		94B256912482B0E9008FC23D /* KeyPathIntrospection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94B256902482B0E9008FC23D /* KeyPathIntrospection.swift */; };
 		94D9C1162493A7A300DE389F /* TableTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94D9C1142493A79D00DE389F /* TableTests.swift */; };
+		94D9C118249524B200DE389F /* Proxy+Table.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94D9C117249524B200DE389F /* Proxy+Table.swift */; };
 		94E26780246805BD00C54C0E /* libautomerge.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 94E2677F246805BD00C54C0E /* libautomerge.a */; };
 		94E26786246809CC00C54C0E /* RSBackendTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94E267842468099800C54C0E /* RSBackendTest.swift */; };
 		94F6D876248ABFC300FEAA43 /* Commit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94F6D875248ABFC300FEAA43 /* Commit.swift */; };
@@ -94,6 +95,7 @@
 		94AC589C247D3368006701E7 /* Proxy+Counter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Proxy+Counter.swift"; sourceTree = "<group>"; };
 		94B256902482B0E9008FC23D /* KeyPathIntrospection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyPathIntrospection.swift; sourceTree = "<group>"; };
 		94D9C1142493A79D00DE389F /* TableTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableTests.swift; sourceTree = "<group>"; };
+		94D9C117249524B200DE389F /* Proxy+Table.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Proxy+Table.swift"; sourceTree = "<group>"; };
 		94E2677F246805BD00C54C0E /* libautomerge.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libautomerge.a; sourceTree = "<group>"; };
 		94E26781246805ED00C54C0E /* automerge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = automerge.h; sourceTree = "<group>"; };
 		94E267842468099800C54C0E /* RSBackendTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSBackendTest.swift; sourceTree = "<group>"; };
@@ -199,6 +201,7 @@
 				9455D9E02487A8B40046A867 /* Proxy+Root.swift */,
 				948BCB6F2488D0EE004A72B6 /* Proxy+Text.swift */,
 				94869139248E625A008D75A2 /* Proxy+UnsafeAccess.swift */,
+				94D9C117249524B200DE389F /* Proxy+Table.swift */,
 			);
 			path = Proxy;
 			sourceTree = "<group>";
@@ -354,6 +357,7 @@
 				OBJ_47 /* Clock.swift in Sources */,
 				OBJ_48 /* Counter.swift in Sources */,
 				94F6D876248ABFC300FEAA43 /* Commit.swift in Sources */,
+				94D9C118249524B200DE389F /* Proxy+Table.swift in Sources */,
 				OBJ_49 /* Table.swift in Sources */,
 				9455D9E12487A8B40046A867 /* Proxy+Root.swift in Sources */,
 				9477033E246E73C4000E952C /* Actor.swift in Sources */,
