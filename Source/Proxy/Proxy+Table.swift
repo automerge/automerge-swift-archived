@@ -26,10 +26,9 @@ public extension Proxy {
     }
 
     /**
-    * Removes the row with ID `id` from the table. Throws an exception if the row
-    * does not exist in the table.
+     Removes the row with ID `id` from the table. Throws an exception if the row
+     does not exist in the table.
     */
-
     func removeRow(by rowId: String) {
         context.deleteTableRow(path: path, rowId: rowId)
     }
