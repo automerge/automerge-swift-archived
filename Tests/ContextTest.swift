@@ -867,7 +867,7 @@ class ContextTest: XCTestCase {
         let table: [String: Any] = [
             OBJECT_ID: tableId,
             CONFLICTS: [String: Any](),
-            "entries": [String: Any]()
+            TABLE_VALUES: [String: Any]()
         ]
         let actor = Actor()
         let context = Context(
@@ -933,7 +933,7 @@ class ContextTest: XCTestCase {
         let table: [String: Any] = [
             OBJECT_ID: tableId,
             CONFLICTS: [String: Any](),
-            "entries": [rowId.uuidString: row]
+            TABLE_VALUES: [rowId.uuidString: row]
         ]
         let actor = Actor()
         let context = Context(
@@ -953,7 +953,7 @@ class ContextTest: XCTestCase {
         )
 
         //When
-        context.deleteTableRow(path: [.init(key: "books", objectId: tableId)], rowId: rowId)
+        context.deleteTableRow(path: [.init(key: "books", objectId: tableId)], rowId: rowId.uuidString)
 
         // Then
         XCTAssertEqual(context.ops, [

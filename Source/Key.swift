@@ -50,3 +50,16 @@ extension Key: ExpressibleByIntegerLiteral {
         self = .index(value)
     }
 }
+
+extension Key: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .index(let index):
+            return "\(index)"
+        case .string(let string):
+            return string
+        }
+    }
+
+
+}
