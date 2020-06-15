@@ -35,7 +35,7 @@ class AutomergeTest: XCTestCase {
     // should allow passing an actorId when instantiating from an existing object
     func testInit4() {
         struct Scheme: Codable, Equatable {}
-        let actor = ActorId()
+        let actor = Actor()
         let document = Document(Scheme(), actor: actor)
         XCTAssertEqual(document.actor, actor)
     }
@@ -896,8 +896,8 @@ class AutomergeTest: XCTestCase {
             var list: [String]
         }
 
-        var s1 = Document(Scheme(list: []), actor: ActorId(actorId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
-        var s2 = Document(Scheme(list: []), actor: ActorId(actorId: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
+        var s1 = Document(Scheme(list: []), actor: Actor(actorId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+        var s2 = Document(Scheme(list: []), actor: Actor(actorId: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
         s1.change { $0.list.set(["two"]) }
         s2.merge(s1)
         s2.change {
@@ -912,8 +912,8 @@ class AutomergeTest: XCTestCase {
             var list: [String]
         }
 
-        var s1 = Document(Scheme(list: []), actor: ActorId(actorId: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
-        var s2 = Document(Scheme(list: []), actor: ActorId(actorId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+        var s1 = Document(Scheme(list: []), actor: Actor(actorId: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
+        var s2 = Document(Scheme(list: []), actor: Actor(actorId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
         s1.change { $0.list.set(["two"]) }
         s2.merge(s1)
         s2.change {
@@ -1429,8 +1429,8 @@ class AutomergeTest: XCTestCase {
     // should allow a custom actor ID to be set
     func testSaveAndLoading3() {
         struct Scheme: Codable, Equatable { }
-        let s = Document<Scheme>(data: Document(Scheme()).save(), actor: ActorId(actorId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
-        XCTAssertEqual(s.actor, ActorId(actorId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+        let s = Document<Scheme>(data: Document(Scheme()).save(), actor: Actor(actorId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+        XCTAssertEqual(s.actor, Actor(actorId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
     }
 
     // should allow a custom actor ID to be set
@@ -1452,8 +1452,8 @@ class AutomergeTest: XCTestCase {
         struct Scheme: Codable, Equatable {
             let x: Int
         }
-        var s1 = Document(Scheme(x: 3), actor: ActorId(actorId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
-        let s2 = Document(Scheme(x: 5), actor: ActorId(actorId: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
+        var s1 = Document(Scheme(x: 3), actor: Actor(actorId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+        let s2 = Document(Scheme(x: 5), actor: Actor(actorId: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
         s1.merge(s2)
         let s3 = Document<Scheme>(data: s1.save())
         XCTAssertEqual(s1.content.x, 5)

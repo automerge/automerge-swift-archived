@@ -23,7 +23,7 @@
 /* Begin PBXBuildFile section */
 		94339B50247BA70A00A461F1 /* AutomergeTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94339B4E247BA65800A461F1 /* AutomergeTest.swift */; };
 		9455D9E12487A8B40046A867 /* Proxy+Root.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9455D9E02487A8B40046A867 /* Proxy+Root.swift */; };
-		9477033E246E73C4000E952C /* ActorId.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9477033D246E73C4000E952C /* ActorId.swift */; };
+		9477033E246E73C4000E952C /* Actor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9477033D246E73C4000E952C /* Actor.swift */; };
 		9486913A248E625A008D75A2 /* Proxy+UnsafeAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94869139248E625A008D75A2 /* Proxy+UnsafeAccess.swift */; };
 		9486913D248E8B60008D75A2 /* History.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9486913C248E8B60008D75A2 /* History.swift */; };
 		94874A3C2486317000ECC4E7 /* XCTAssertEqualOneOf.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94874A3B2486317000ECC4E7 /* XCTAssertEqualOneOf.swift */; };
@@ -32,6 +32,8 @@
 		948BCB702488D0EE004A72B6 /* Proxy+Text.swift in Sources */ = {isa = PBXBuildFile; fileRef = 948BCB6F2488D0EE004A72B6 /* Proxy+Text.swift */; };
 		94AC589D247D3368006701E7 /* Proxy+Counter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94AC589C247D3368006701E7 /* Proxy+Counter.swift */; };
 		94B256912482B0E9008FC23D /* KeyPathIntrospection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94B256902482B0E9008FC23D /* KeyPathIntrospection.swift */; };
+		94D9C1162493A7A300DE389F /* TableTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94D9C1142493A79D00DE389F /* TableTests.swift */; };
+		94D9C118249524B200DE389F /* Proxy+Table.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94D9C117249524B200DE389F /* Proxy+Table.swift */; };
 		94E26780246805BD00C54C0E /* libautomerge.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 94E2677F246805BD00C54C0E /* libautomerge.a */; };
 		94E26786246809CC00C54C0E /* RSBackendTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94E267842468099800C54C0E /* RSBackendTest.swift */; };
 		94F6D876248ABFC300FEAA43 /* Commit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94F6D875248ABFC300FEAA43 /* Commit.swift */; };
@@ -83,7 +85,7 @@
 /* Begin PBXFileReference section */
 		94339B4E247BA65800A461F1 /* AutomergeTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomergeTest.swift; sourceTree = "<group>"; };
 		9455D9E02487A8B40046A867 /* Proxy+Root.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Proxy+Root.swift"; sourceTree = "<group>"; };
-		9477033D246E73C4000E952C /* ActorId.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActorId.swift; sourceTree = "<group>"; };
+		9477033D246E73C4000E952C /* Actor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Actor.swift; sourceTree = "<group>"; };
 		94869139248E625A008D75A2 /* Proxy+UnsafeAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Proxy+UnsafeAccess.swift"; sourceTree = "<group>"; };
 		9486913C248E8B60008D75A2 /* History.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = History.swift; sourceTree = "<group>"; };
 		94874A3B2486317000ECC4E7 /* XCTAssertEqualOneOf.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XCTAssertEqualOneOf.swift; sourceTree = "<group>"; };
@@ -92,6 +94,8 @@
 		948BCB6F2488D0EE004A72B6 /* Proxy+Text.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Proxy+Text.swift"; sourceTree = "<group>"; };
 		94AC589C247D3368006701E7 /* Proxy+Counter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Proxy+Counter.swift"; sourceTree = "<group>"; };
 		94B256902482B0E9008FC23D /* KeyPathIntrospection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyPathIntrospection.swift; sourceTree = "<group>"; };
+		94D9C1142493A79D00DE389F /* TableTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableTests.swift; sourceTree = "<group>"; };
+		94D9C117249524B200DE389F /* Proxy+Table.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Proxy+Table.swift"; sourceTree = "<group>"; };
 		94E2677F246805BD00C54C0E /* libautomerge.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libautomerge.a; sourceTree = "<group>"; };
 		94E26781246805ED00C54C0E /* automerge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = automerge.h; sourceTree = "<group>"; };
 		94E267842468099800C54C0E /* RSBackendTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSBackendTest.swift; sourceTree = "<group>"; };
@@ -169,7 +173,7 @@
 				OBJ_13 /* Counter.swift */,
 				OBJ_14 /* Table.swift */,
 				OBJ_15 /* Text.swift */,
-				9477033D246E73C4000E952C /* ActorId.swift */,
+				9477033D246E73C4000E952C /* Actor.swift */,
 				94F6D875248ABFC300FEAA43 /* Commit.swift */,
 				94F6D877248ABFE900FEAA43 /* Change.swift */,
 				94F6D879248AC0D100FEAA43 /* Primitive.swift */,
@@ -197,6 +201,7 @@
 				9455D9E02487A8B40046A867 /* Proxy+Root.swift */,
 				948BCB6F2488D0EE004A72B6 /* Proxy+Text.swift */,
 				94869139248E625A008D75A2 /* Proxy+UnsafeAccess.swift */,
+				94D9C117249524B200DE389F /* Proxy+Table.swift */,
 			);
 			path = Proxy;
 			sourceTree = "<group>";
@@ -212,6 +217,7 @@
 				94339B4E247BA65800A461F1 /* AutomergeTest.swift */,
 				94874A3B2486317000ECC4E7 /* XCTAssertEqualOneOf.swift */,
 				948BCB642487C7E4004A72B6 /* TextTest.swift */,
+				94D9C1142493A79D00DE389F /* TableTests.swift */,
 			);
 			path = Tests;
 			sourceTree = SOURCE_ROOT;
@@ -351,9 +357,10 @@
 				OBJ_47 /* Clock.swift in Sources */,
 				OBJ_48 /* Counter.swift in Sources */,
 				94F6D876248ABFC300FEAA43 /* Commit.swift in Sources */,
+				94D9C118249524B200DE389F /* Proxy+Table.swift in Sources */,
 				OBJ_49 /* Table.swift in Sources */,
 				9455D9E12487A8B40046A867 /* Proxy+Root.swift in Sources */,
-				9477033E246E73C4000E952C /* ActorId.swift in Sources */,
+				9477033E246E73C4000E952C /* Actor.swift in Sources */,
 				OBJ_50 /* Text.swift in Sources */,
 				OBJ_51 /* Diff.swift in Sources */,
 				OBJ_52 /* Document.swift in Sources */,
@@ -393,6 +400,7 @@
 				OBJ_81 /* ContextTest.swift in Sources */,
 				94874A3C2486317000ECC4E7 /* XCTAssertEqualOneOf.swift in Sources */,
 				OBJ_82 /* Proxy+CollectionTest.swift in Sources */,
+				94D9C1162493A7A300DE389F /* TableTests.swift in Sources */,
 				94879A6D2470017300F0189E /* DocumentTest.swift in Sources */,
 				948BCB662487CA34004A72B6 /* TextTest.swift in Sources */,
 				OBJ_83 /* ProxyTest.swift in Sources */,

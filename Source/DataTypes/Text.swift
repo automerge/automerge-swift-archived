@@ -21,8 +21,8 @@ public struct Text: Codable, Equatable {
     let isTextElement: Bool = true
 
     enum CodingKeys: String, CodingKey {
-        case elms = "_list_values"
-        case isTextElement = "_is_Text_Element_"
+        case elms = "_am_list_values_"
+        case isTextElement = "_am_is_Text_Element_"
     }
 
     public init(from decoder: Decoder) throws {

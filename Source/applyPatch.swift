@@ -21,7 +21,7 @@ func interpretPatch(patch: ObjectDiff, obj: [String: Any]?, updated: inout [Stri
     case .map:
         return updateMapObject(patch: patch, obj: obj, updated: &updated)
     case .table:
-        fatalError()
+        return updateTableObject(patch: patch, obj: obj, updated: &updated)
     case .list:
         return updateListObject(patch: patch, obj: obj, updated: &updated)
     case .text:
@@ -29,24 +29,69 @@ func interpretPatch(patch: ObjectDiff, obj: [String: Any]?, updated: inout [Stri
     }
 }
 
-//function interpretPatch(patch, obj, updated) {
-//  // Return original object if it already exists and isn't being modified
-//  if (isObject(obj) && !patch.props && !patch.edits && !updated[patch.objectId]) {
-//    return obj
+/**
+ * Updates the table object `obj` according to the modifications described in
+ * `patch`, or creates a new object if `obj` is undefined. Mutates `updated`
+ * to map the objectId to the new object, and returns the new object.
+ */
+func updateTableObject(patch: ObjectDiff, obj: [String: Any]?, updated: inout [String: [String: Any]]) -> [String: Any]? {
+    let objectId = patch.objectId
+    if updated[objectId] == nil {
+        updated[objectId] = obj ?? instantiateTable(objectId: objectId, entries: nil)
+    }
+    var object = updated[objectId]
+
+    let keys = patch.props?.keys
+    keys?.forEach({ (key) in
+        guard case .string(let stringKey) = key else {
+            return
+        }
+        let opIds = Array(patch.props![key]!.keys)
+        if opIds.isEmpty {
+             var entries = object![TABLE_VALUES] as! [String: Any]
+            entries[stringKey] = nil
+            object![TABLE_VALUES] = entries
+        } else if opIds.count == 1 {
+            let subpatch = patch.props![key]![opIds[0]]
+            var entries = object![TABLE_VALUES] as! [String: Any]
+            entries[stringKey] = getValue(patch: subpatch!, object: entries[stringKey] as? [String: Any], updated: &updated)
+            object![TABLE_VALUES] = entries
+        }
+    })
+    updated[objectId] = object
+    
+    return object
+}
+//function updateTableObject(patch, obj, updated) {
+//  const objectId = patch.objectId
+//  if (!updated[objectId]) {
+//    updated[objectId] = obj ? obj._clone() : instantiateTable(objectId)
 //  }
 //
-//  if (patch.type === 'map') {
-//    return updateMapObject(patch, obj, updated)
-//  } else if (patch.type === 'table') {
-//    return updateTableObject(patch, obj, updated)
-//  } else if (patch.type === 'list') {
-//    return updateListObject(patch, obj, updated)
-//  } else if (patch.type === 'text') {
-//    return updateTextObject(patch, obj, updated)
-//  } else {
-//    throw new TypeError(`Unknown object type: ${patch.type}`)
+//  const object = updated[objectId]
+//
+//  for (let key of Object.keys(patch.props || {})) {
+//    const values = {}, opIds = Object.keys(patch.props[key])
+//
+//    if (opIds.length === 0) {
+//      object.remove(key)
+//    } else if (opIds.length === 1) {
+//      const subpatch = patch.props[key][opIds[0]]
+//      object._set(key, getValue(subpatch, object.byId(key), updated), opIds[0])
+//    } else {
+//      throw new RangeError('Conflicts are not supported on properties of a table')
+//    }
 //  }
+//  return object
 //}
+
+private func instantiateTable(objectId: String, entries: [String: Any]?) -> [String: Any] {
+    return [
+        OBJECT_ID: objectId,
+        CONFLICTS: [String: Any](),
+        TABLE_VALUES: entries ?? [String: Any]()
+    ]
+}
 
 /**
  * Updates the text object `obj` according to the modifications described in
@@ -84,48 +129,10 @@ func updateTextObject(patch: ObjectDiff, obj: [String: Any]?, updated: inout [St
             fatalError()
         }
     })
-    updated[objectId] = [OBJECT_ID: objectId, LIST_VALUES: elems, "_is_Text_Element_": true]
+    updated[objectId] = [OBJECT_ID: objectId, LIST_VALUES: elems, ISTEXT: true]
 
     return updated[objectId]
 }
-//    const oldValue = (elems[key].opId === opId) ? elems[key].value : undefined
-//    elems[key].value = getValue(patch.props[key][opId], oldValue, updated)
-//    elems[key].opId = opId
-//function updateTextObject(patch, obj, updated) {
-//  const objectId = patch.objectId
-//  let elems
-//  if (updated[objectId]) {
-//    elems = updated[objectId].elems
-//  } else if (obj) {
-//    elems = obj.elems.slice()
-//  } else {
-//    elems = []
-//  }
-//
-//  iterateEdits(patch.edits,
-//    (index, insertions) => { // insertion
-//      const blanks = []
-//      for (let i = 0; i < insertions; i++) blanks.push({})
-//      elems.splice(index, 0, ...blanks)
-//    },
-//    (index, deletions) => { // deletion
-//      elems.splice(index, deletions)
-//    }
-//  )
-//
-//  for (let key of Object.keys(patch.props || {})) {
-//    const opId = Object.keys(patch.props[key]).sort(lamportCompare).reverse()[0]
-//    if (!opId) throw new RangeError(`No default value at index ${key}`)
-//
-//    // TODO Text object does not support conflicts. Should it?
-//    const oldValue = (elems[key].opId === opId) ? elems[key].value : undefined
-//    elems[key].value = getValue(patch.props[key][opId], oldValue, updated)
-//    elems[key].opId = opId
-//  }
-//
-//  updated[objectId] = instantiateText(objectId, elems)
-//  return updated[objectId]
-//}
 
 /**
  * Updates the list object `obj` according to the modifications described in
@@ -158,30 +165,6 @@ func updateListObject(patch: ObjectDiff, obj: [String: Any]?, updated: inout [St
 
     return object
 }
-
-//function updateListObject(patch, obj, updated) {
-//  const objectId = patch.objectId
-//  if (!updated[objectId]) {
-//    updated[objectId] = cloneListObject(obj, objectId)
-//  }
-//
-//  const list = updated[objectId], conflicts = list[CONFLICTS]
-//
-//  iterateEdits(patch.edits,
-//    (index, insertions) => { // insertion
-//      const blanks = new Array(insertions)
-//      list     .splice(index, 0, ...blanks)
-//      conflicts.splice(index, 0, ...blanks)
-//    },
-//    (index, count) => { // deletion
-//      list     .splice(index, count)
-//      conflicts.splice(index, count)
-//    }
-//  )
-//
-//  applyProperties(patch.props, list, conflicts, updated)
-//  return list
-//}
 
 /**
  * Creates a writable copy of an immutable list object. If `originalList` is
