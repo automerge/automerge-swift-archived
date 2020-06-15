@@ -13,13 +13,13 @@ public struct History<T: Codable> {
         self.init(actor: document.actor, backend: RSBackend(), binaryChanges: document.allChanges())
     }
 
-    init(actor: ActorId, backend: RSBackend, binaryChanges: [[UInt8]]) {
+    init(actor: Actor, backend: RSBackend, binaryChanges: [[UInt8]]) {
         self.actor = actor
         self.backend = backend
         self.binaryChanges = binaryChanges
     }
 
-    private let actor: ActorId
+    private let actor: Actor
     private let backend: RSBackend
     private let binaryChanges: [[UInt8]]
 }

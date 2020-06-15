@@ -74,7 +74,7 @@ final class RSBackendTest: XCTestCase {
         let automerge = Document(Schema(birds: ["Test"]))
 
         let document = automerge.save()
-        let newDocument = Document<Schema>(data: document, actor: ActorId())
+        let newDocument = Document<Schema>(data: document, actor: Actor())
         XCTAssertEqual(newDocument.content, automerge.content)
 
     }
