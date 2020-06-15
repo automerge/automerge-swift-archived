@@ -174,7 +174,7 @@ final class Context {
                 return subpatch
             }
 
-            if object["isTableElement"] != nil {
+            if object[TABLE_VALUES] != nil {
                 let operation = Op(action: .makeTable, obj: obj, key: key, insert: insert, child: child)
                 ops.append(operation)
                 let subpatch = ObjectDiff(objectId: child, type: .table, props: [:])
@@ -592,7 +592,7 @@ final class Context {
      * the value whose assignment operation has the ID `opId`.
      */
     func getPropertyValue(object: [String: Any], key: Key, opId: String) -> [String: Any] {
-        if object["isTableElement"] != nil {
+        if object[TABLE_VALUES] != nil {
             if case .string(let stringKey) = key, let entries = object[TABLE_VALUES] as? [String: [String: Any]], let value = entries[stringKey] {
                 return value
             }
@@ -615,7 +615,7 @@ final class Context {
      * returns an object that maps operation IDs to descriptions of values.
      */
     func getValuesDescriptions(path: [KeyPathElement], object: [String: Any], key: Key) -> [String: Diff] {
-        if object["isTableElement"] != nil {
+        if object[TABLE_VALUES] != nil {
             // Table objects don't have conflicts, since rows are identified by their unique objectId
             if case .string(let stringKey) = key, let entries = object[TABLE_VALUES] as? [String: [String: Any]], let value = entries[stringKey] {
                 return [stringKey: getValueDescription(value: value)]

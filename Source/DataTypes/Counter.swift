@@ -15,7 +15,7 @@ public struct Counter: Codable, Equatable {
     }
 
     enum CodingKeys: String, CodingKey  {
-        case value = "_counter_calue"
+        case value = "_am_counter_value_"
     }
 }
 
