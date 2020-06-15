@@ -23,7 +23,7 @@ public struct Table<RowValue: Codable>: Codable {
         public let value: T
 
         enum CodingKeys: String, CodingKey {
-            case objectId = "_objectId"
+            case objectId = "_am_objectId_"
         }
 
         public init(from decoder: Decoder) throws {
@@ -43,7 +43,10 @@ public struct Table<RowValue: Codable>: Codable {
         self.entries = [:]
     }
 
-    let isTableElement: Bool = true
+    enum CodingKeys: String, CodingKey {
+        case entries = "_am_tabel_values_"
+    }
+
     let entries: [String: Row<RowValue>]
 
     public func row(by id: String) -> Row<RowValue>? {

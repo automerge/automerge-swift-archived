@@ -89,8 +89,7 @@ private func instantiateTable(objectId: String, entries: [String: Any]?) -> [Str
     return [
         OBJECT_ID: objectId,
         CONFLICTS: [String: Any](),
-        TABLE_VALUES: entries ?? [String: Any](),
-        "isTableElement": true
+        TABLE_VALUES: entries ?? [String: Any]()
     ]
 }
 
@@ -130,7 +129,7 @@ func updateTextObject(patch: ObjectDiff, obj: [String: Any]?, updated: inout [St
             fatalError()
         }
     })
-    updated[objectId] = [OBJECT_ID: objectId, LIST_VALUES: elems, "_is_Text_Element_": true]
+    updated[objectId] = [OBJECT_ID: objectId, LIST_VALUES: elems, ISTEXT: true]
 
     return updated[objectId]
 }

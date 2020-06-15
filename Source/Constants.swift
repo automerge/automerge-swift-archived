@@ -7,13 +7,13 @@
 
 import Foundation
 
-let CONFLICTS = "_conflicts"
-let OBJECT_ID = "_objectId"
-let LIST_VALUES = "_list_values"
-let COUNTER_VALUE = "_counter_calue"
-let TABLE_VALUES = "entries"
-let CACHE = "_cache"
-let ISTEXT = "_is_Text_Element_"
+let CONFLICTS = "_am_conflicts_"
+let OBJECT_ID = "_am_objectId_"
+let LIST_VALUES = "_am_list_values_"
+let COUNTER_VALUE = "_am_counter_value_"
+let TABLE_VALUES = "_am_tabel_values_"
+let CACHE = "_am_cache_"
+let ISTEXT = "_am_is_Text_Element_"
 
 let ROOT_ID: String = "00000000-0000-0000-0000-000000000000"
 
