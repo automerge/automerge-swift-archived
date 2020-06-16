@@ -7,7 +7,7 @@
 
 import Foundation
 
-public extension Proxy where T == Counter {
+public extension Proxy where Wrapped == Counter {
 
     func increment(_ value: Int = 1) {
         var path = self.path

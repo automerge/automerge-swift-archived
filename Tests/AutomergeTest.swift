@@ -71,7 +71,7 @@ class AutomergeTest: XCTestCase {
 
     // should group several changes
     func testSerialUseChanges1() {
-        struct Scheme: Codable, Equatable { var first: String?; var second: String?}
+        struct Scheme: Codable, Equatable { let first: String?; let second: String? }
         let s1 = Document(Scheme(first: nil, second: nil))
         var s2 = s1
         s2.change { doc in
@@ -339,15 +339,8 @@ class AutomergeTest: XCTestCase {
             var noodles: [String]
         }
         var s1 = Document(Scheme(noodles: []))
-        s1.change({
-            var abc = $0.noodles
-            abc.insert(contentsOf: ["udon", "soba"], at: 0)
-        })
-        s1.change({
-            $0.noodles.insert("ramen", at: 1)
-        })
-        //        s1.change { $0.noodles.insert(contentsOf: ["udon", "soba"], at: 0) }
-        //        s1.change { $0.noodles.insert("ramen", at: 1) }
+        s1.change { $0.noodles.insert(contentsOf: ["udon", "soba"], at: 0) }
+        s1.change { $0.noodles.insert("ramen", at: 1) }
         XCTAssertEqual(s1.content.noodles, ["udon", "ramen", "soba"])
         XCTAssertEqual(s1.content.noodles[0], "udon")
         XCTAssertEqual(s1.content.noodles[1], "ramen")
@@ -408,8 +401,8 @@ class AutomergeTest: XCTestCase {
         }
         var s1 = Document(Scheme(japaneseFood: ["udon", "ramen", "soba"]))
         s1.change {
-            $0.japaneseFood[0] = "うどん"
-            $0.japaneseFood[2] = "そば"
+            $0.japaneseFood[0].set("うどん")
+            $0.japaneseFood[2].set("そば")
         }
         XCTAssertEqual(s1.content, Scheme(japaneseFood: ["うどん", "ramen", "そば"]))
         XCTAssertEqual(s1.content.japaneseFood, ["うどん", "ramen", "そば"])
@@ -424,10 +417,10 @@ class AutomergeTest: XCTestCase {
         struct Noodle: Codable, Equatable {
             enum TypeNoodle: String, Codable { case ramen, udon }
             let type: TypeNoodle
-            var dishes: [String]
+            let dishes: [String]
         }
         struct Scheme: Codable, Equatable {
-            var noodles: [Noodle]
+            let noodles: [Noodle]
         }
         var s1 = Document(Scheme(noodles: [.init(type: .ramen, dishes: ["tonkotsu", "shoyu"])]))
         s1.change {
@@ -785,7 +778,7 @@ class AutomergeTest: XCTestCase {
         var s1 = Document(Scheme(birds: ["blackbird", "thrush", "goldfinch"]))
         var s2 = Document<Scheme>(changes: s1.allChanges())
         s1.change {
-            $0.birds.replaceSubrange(1...2, with: [])
+            $0.birds.replaceSubrange(1...2, with: [String]())
         }
         s2.change {
             $0.birds.insert("starling", at: 2)
@@ -797,34 +790,23 @@ class AutomergeTest: XCTestCase {
         XCTAssertEqual(s2.content, Scheme(birds: ["blackbird", "starling"]))
     }
 
-    //    // should handle concurrent deletion of the same element
-    //    func testConcurrentUse14() {
-    //        struct Scheme: Codable, Equatable {
-    //            var birds: [String]
-    //        }
-    //        var s1 = Document(Scheme(birds: ["albatross", "buzzard", "cormorant"]))
-    //        var s2 = Document<Scheme>(changes: s1.allChanges())
-    //        s1.change {
-    //            var proxy = $0.birds
-    //            proxy.remove(at: 1)
-    //        }
-    //        s2.change {
-    //            var proxy = $0.birds
-    //            proxy.remove(at: 1)
-    //        }
-    //        var s3 = s1
-    //        s3.merge(s2)
-    //        XCTAssertEqual(s3.content, Scheme(birds: ["albatross", "cormorant"]))
-    //    }
-
-    //  it('should handle concurrent deletion of the same element', () => {
-    //    s1 = Automerge.change(s1, doc => doc.birds = ['albatross','buzzard', 'cormorant'])
-    //    s2 = Automerge.merge(s2, s1)
-    //    s1 = Automerge.change(s1, doc => doc.birds.deleteAt(1)) // buzzard
-    //    s2 = Automerge.change(s2, doc => doc.birds.deleteAt(1)) // buzzard
-    //    s3 = Automerge.merge(s1, s2)
-    //    assert.deepStrictEqual(s3.birds, ['albatross','cormorant'])
-    //  })
+    // should handle concurrent deletion of the same element
+    func testConcurrentUse14() {
+        struct Scheme: Codable, Equatable {
+            var birds: [String]
+        }
+        var s1 = Document(Scheme(birds: ["albatross", "buzzard", "cormorant"])) // 1
+        var s2 = Document<Scheme>(changes: s1.allChanges()) // 0
+        s1.change {
+            $0.birds.remove(at: 1)
+        } // 2
+        s2.change {
+            $0.birds.remove(at: 1)
+        } // 1
+        var s3 = s1
+        s3.merge(s2) // s3
+        XCTAssertEqual(s3.content, Scheme(birds: ["albatross", "cormorant"]))
+    }
 
     // should handle concurrent deletion of different elements
     func testConcurrentUse15() {

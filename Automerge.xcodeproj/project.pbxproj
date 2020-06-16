@@ -22,6 +22,7 @@
 
 /* Begin PBXBuildFile section */
 		94339B50247BA70A00A461F1 /* AutomergeTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94339B4E247BA65800A461F1 /* AutomergeTest.swift */; };
+		944DCC712498D3D3007706B7 /* Proxy+Conflicts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 944DCC702498D3D3007706B7 /* Proxy+Conflicts.swift */; };
 		9455D9E12487A8B40046A867 /* Proxy+Root.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9455D9E02487A8B40046A867 /* Proxy+Root.swift */; };
 		9477033E246E73C4000E952C /* Actor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9477033D246E73C4000E952C /* Actor.swift */; };
 		9478D28924978A02002EEEF8 /* DictionaryEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9478D28824978A02002EEEF8 /* DictionaryEncoder.swift */; };
@@ -85,6 +86,7 @@
 
 /* Begin PBXFileReference section */
 		94339B4E247BA65800A461F1 /* AutomergeTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomergeTest.swift; sourceTree = "<group>"; };
+		944DCC702498D3D3007706B7 /* Proxy+Conflicts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Proxy+Conflicts.swift"; sourceTree = "<group>"; };
 		9455D9E02487A8B40046A867 /* Proxy+Root.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Proxy+Root.swift"; sourceTree = "<group>"; };
 		9477033D246E73C4000E952C /* Actor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Actor.swift; sourceTree = "<group>"; };
 		9478D28824978A02002EEEF8 /* DictionaryEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryEncoder.swift; sourceTree = "<group>"; };
@@ -205,6 +207,7 @@
 				948BCB6F2488D0EE004A72B6 /* Proxy+Text.swift */,
 				94869139248E625A008D75A2 /* Proxy+UnsafeAccess.swift */,
 				94D9C117249524B200DE389F /* Proxy+Table.swift */,
+				944DCC702498D3D3007706B7 /* Proxy+Conflicts.swift */,
 			);
 			path = Proxy;
 			sourceTree = "<group>";
@@ -355,6 +358,7 @@
 			files = (
 				9486913A248E625A008D75A2 /* Proxy+UnsafeAccess.swift in Sources */,
 				OBJ_44 /* RSBackend.swift in Sources */,
+				944DCC712498D3D3007706B7 /* Proxy+Conflicts.swift in Sources */,
 				OBJ_45 /* Constants.swift in Sources */,
 				OBJ_46 /* Context.swift in Sources */,
 				OBJ_47 /* Clock.swift in Sources */,
