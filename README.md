@@ -151,14 +151,17 @@ currentDoc.change() { doc in
 
 Note: Specifying actor
 
-The Document init take an optional actorId parameter:
+The Document initializer takes an optional `actor` parameter:
 
-const actor = Actor(actorId: "1234abcd-56789qrstuv")
-const doc2 = Document(Cards(cards: []), actor: actor)
-const doc3 = Document(data: binary, actor: actor)
-The actorId is a string that uniquely identifies the current node; if you omit actorId, a random UUID is generated. If you pass in your own actorId, you must ensure that there can never be two different processes with the same actor ID. Even if you have two different processes running on the same machine, they must have distinct actor IDs.
+```swift
+let actor = Actor(actorId: "1234abcd-56789qrstuv")
+let doc2 = Document(Cards(cards: []), actor: actor)
+let doc3 = Document(data: binary, actor: actor)
+```
 
-Unless you know what you are doing, you should stick with the default, and let actorId be auto-generated.
+The actor id is a string that uniquely identifies the current node; if you omit actor ID, a random UUID is generated. If you pass in your own actor ID, you must ensure that there can never be two different processes with the same actor ID. Even if you have two different processes running on the same machine, they must have distinct actor IDs.
+
+Unless you know what you are doing, you should stick with the default, and let actor ID be auto-generated.
 
 
 ### Undo and redo
