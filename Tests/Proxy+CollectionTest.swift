@@ -73,26 +73,23 @@ class ProxyCollectionTest: XCTestCase {
             doc.list.set([1, 2, 3])
 
             doc.list.replaceSubrange(1...1, with: [Int]())
-            let proxy: Proxy<[Int]> = doc.list
-            XCTAssertEqual(proxy[0].get(), 1)
-            XCTAssertEqual(proxy[1].get(), 3)
-            XCTAssertEqual(proxy.count, 2)
+            XCTAssertEqual(doc.list[0].get(), 1)
+            XCTAssertEqual(doc.list[1].get(), 3)
+            XCTAssertEqual(doc.list.count, 2)
 
-            let proxy2: Proxy<[Int]> = doc.list
             XCTAssertEqual(doc.list.get(), [1, 3])
-            XCTAssertEqual(proxy2[0].get(), 1)
-            XCTAssertEqual(proxy2[1].get(), 3)
-            XCTAssertEqual(proxy2.count, 2)
+            XCTAssertEqual(doc.list[0].get(), 1)
+            XCTAssertEqual(doc.list[1].get(), 3)
+            XCTAssertEqual(doc.list.count, 2)
 
         })
 
         // WHEN
         document.change({ doc in
-            let proxy: Proxy<[Int]> = doc.list
             XCTAssertEqual(doc.list.get(), [1, 3])
-            XCTAssertEqual(proxy[0].get(), 1)
-            XCTAssertEqual(proxy[1].get(), 3)
-            XCTAssertEqual(proxy.count, 2)
+            XCTAssertEqual(doc.list[0].get(), 1)
+            XCTAssertEqual(doc.list[1].get(), 3)
+            XCTAssertEqual(doc.list.count, 2)
         })
     }
 
@@ -126,13 +123,8 @@ class ProxyCollectionTest: XCTestCase {
         })
 
         document.change({ doc in
-            let proxy: Proxy<[Int]> = doc.list
-            proxy[1].set(1)
-<<<<<<< Updated upstream
-            XCTAssertEqual(proxy[1], 1)
-=======
-            XCTAssertEqual(proxy[1].get(), 1)
->>>>>>> Stashed changes
+            doc.list[1].set(1)
+            XCTAssertEqual(doc.list[1].get(), 1)
             XCTAssertEqual(doc.list.get(), [1, 1, 3])
         })
     }
