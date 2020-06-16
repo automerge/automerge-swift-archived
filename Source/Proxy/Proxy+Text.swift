@@ -7,7 +7,7 @@
 
 import Foundation
 
-public extension Proxy where T == Text {
+public extension Proxy where Wrapped == Text {
 
     func insert(_ character: String, at index: Int) {
         precondition(character.count == 1)

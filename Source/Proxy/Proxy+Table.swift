@@ -10,14 +10,14 @@ import Foundation
 public extension Proxy {
 
     @discardableResult
-    func add<Row: Codable>(_ row: Row) -> String where T == Table<Row>  {
+    func add<Row: Codable>(_ row: Row) -> String where Wrapped == Table<Row>  {
         guard let encoded = (try? DictionaryEncoder().encode(row)) else {
             fatalError()
         }
         return context.addTableRow(path: path, row: encoded)
     }
 
-    func row<Row: Codable>(by rowId: String) -> Proxy<Row>? where T == Table<Row> {
+    func row<Row: Codable>(by rowId: String) -> Proxy<Row>? where Wrapped == Table<Row> {
         guard let container = get().row(by: rowId) else {
             return nil
         }

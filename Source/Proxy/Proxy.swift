@@ -8,13 +8,13 @@
 import Foundation
 
 @dynamicMemberLookup
-public final class Proxy<T: Codable> {
+public final class Proxy<Wrapped: Codable> {
 
     init(
         context: Context,
         objectId: String?,
         path: [Context.KeyPathElement],
-        value: @escaping () -> T?
+        value: @escaping () -> Wrapped?
     ) {
         self.context = context
         self.objectId = objectId
@@ -26,7 +26,7 @@ public final class Proxy<T: Codable> {
         context: Context,
         objectId: String?,
         path: [Context.KeyPathElement],
-        value: @autoclosure @escaping () -> T?
+        value: @autoclosure @escaping () -> Wrapped?
     ) {
         self.context = context
         self.objectId = objectId
@@ -37,50 +37,35 @@ public final class Proxy<T: Codable> {
     public let objectId: String?
     let context: Context
     let path: [Context.KeyPathElement]
-    private let valueResolver: () -> T?
+    private let valueResolver: () -> Wrapped?
 
-    public func get() -> T {
+    public func get() -> Wrapped {
         return valueResolver()!
     }
 
-    public func conflicts<Y: Codable>(dynamicMember: KeyPath<T, Y>) -> [String: Y]? {
-        guard let objectId = objectId else {
-            return nil
-        }
-        let object = context.getObject(objectId: objectId)
-        guard let conflicts = object[CONFLICTS] as? [Key: Any] else {
-            return nil
-        }
-        guard let fieldName = dynamicMember.fieldName, let realConflicts = conflicts[.string(fieldName)] as? [String: Any], realConflicts.count > 1 else {
-            return nil
-        }
-        let decoder = DictionaryDecoder()
-        return try? decoder.decode([String: Y].self, from: realConflicts)
-    }
 
-
-    public subscript<Y>(dynamicMember dynamicMember: KeyPath<T, Y>) -> Proxy<Y> {
+    public subscript<Y>(dynamicMember dynamicMember: KeyPath<Wrapped, Y>) -> Proxy<Y> {
         let fieldName = dynamicMember.fieldName!
         let object = self.objectId.map { context.getObject(objectId: $0) }
         let objectId = (object?[fieldName] as? [String: Any])?[OBJECT_ID] as? String
         return Proxy<Y>(context: context, objectId: objectId, path: path + [.init(key: .string(fieldName), objectId: objectId ?? "")], value: self.valueResolver()?[keyPath: dynamicMember])
     }
 
-    public subscript<Y>(dynamicMember dynamicMember: KeyPath<T, Y?>) -> Proxy<Y>? {
+    public subscript<Y>(dynamicMember dynamicMember: KeyPath<Wrapped, Y?>) -> Proxy<Y>? {
         let fieldName = dynamicMember.fieldName!
         let object = self.objectId.map { context.getObject(objectId: $0) }
         let objectId = (object?[fieldName] as? [String: Any])?[OBJECT_ID] as? String
         return Proxy<Y>(context: context, objectId: objectId, path: path + [.init(key: .string(fieldName), objectId: objectId ?? "")], value: self.valueResolver()?[keyPath: dynamicMember])
     }
 
-    private func set(rootObject: T) {
+    private func set(rootObject: Wrapped) {
         let dictionary = try! DictionaryEncoder().encode(rootObject) as [String: Any]
         for key in dictionary.keys {
             context.setMapKey(path: path, key: key, value: dictionary[key])
         }
     }
 
-    public func set(_ newValue: T) {
+    public func set(_ newValue: Wrapped) {
         guard let lastPathKey = path.last?.key else {
             self.set(rootObject: newValue)
             return

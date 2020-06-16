@@ -37,9 +37,9 @@ class ProxyCollectionTest: XCTestCase {
 
         // WHEN
         document.change({ doc in
-            XCTAssertEqual(doc.list[0], 1)
-            XCTAssertEqual(doc.list[1], 2)
-            XCTAssertEqual(doc.list[2], 3)
+            XCTAssertEqual(doc.list[0].get(), 1)
+            XCTAssertEqual(doc.list[1].get(), 2)
+            XCTAssertEqual(doc.list[2].get(), 3)
         })
     }
 
@@ -57,7 +57,7 @@ class ProxyCollectionTest: XCTestCase {
             var copy = [Int]()
 
             for value in doc.list {
-                copy.append(value)
+                copy.append(value.get())
             }
             XCTAssertEqual(copy, [1, 2, 3])
         })
@@ -72,16 +72,16 @@ class ProxyCollectionTest: XCTestCase {
         document.change({ doc in
             doc.list.set([1, 2, 3])
 
-            doc.list.replaceSubrange(1...1, with: [])
+            doc.list.replaceSubrange(1...1, with: [Int]())
             let proxy: Proxy<[Int]> = doc.list
-            XCTAssertEqual(proxy[0], 1)
-            XCTAssertEqual(proxy[1], 3)
+            XCTAssertEqual(proxy[0].get(), 1)
+            XCTAssertEqual(proxy[1].get(), 3)
             XCTAssertEqual(proxy.count, 2)
 
             let proxy2: Proxy<[Int]> = doc.list
             XCTAssertEqual(doc.list.get(), [1, 3])
-            XCTAssertEqual(proxy2[0], 1)
-            XCTAssertEqual(proxy2[1], 3)
+            XCTAssertEqual(proxy2[0].get(), 1)
+            XCTAssertEqual(proxy2[1].get(), 3)
             XCTAssertEqual(proxy2.count, 2)
 
         })
@@ -90,8 +90,8 @@ class ProxyCollectionTest: XCTestCase {
         document.change({ doc in
             let proxy: Proxy<[Int]> = doc.list
             XCTAssertEqual(doc.list.get(), [1, 3])
-            XCTAssertEqual(proxy[0], 1)
-            XCTAssertEqual(proxy[1], 3)
+            XCTAssertEqual(proxy[0].get(), 1)
+            XCTAssertEqual(proxy[1].get(), 3)
             XCTAssertEqual(proxy.count, 2)
         })
     }
@@ -128,7 +128,11 @@ class ProxyCollectionTest: XCTestCase {
         document.change({ doc in
             let proxy: Proxy<[Int]> = doc.list
             proxy[1].set(1)
+<<<<<<< Updated upstream
             XCTAssertEqual(proxy[1], 1)
+=======
+            XCTAssertEqual(proxy[1].get(), 1)
+>>>>>>> Stashed changes
             XCTAssertEqual(doc.list.get(), [1, 1, 3])
         })
     }
@@ -165,7 +169,7 @@ class ProxyCollectionTest: XCTestCase {
 
         document.change({ doc in
             doc.deepObjList.append(.init(list: [1]))
-            XCTAssertEqual(doc.deepObjList[0], .init(list: [1]))
+            XCTAssertEqual(doc.deepObjList[0].get(), .init(list: [1]))
             XCTAssertEqual(doc.deepObjList.get(), [.init(list: [1])])
         })
     }
@@ -181,8 +185,8 @@ class ProxyCollectionTest: XCTestCase {
         document.change({ doc in
             let proxy: Proxy = doc.nested[0]
             proxy[0].set(1)
-            XCTAssertEqual(proxy[0], 1)
-            XCTAssertEqual(doc.nested[0], [1])
+            XCTAssertEqual(proxy[0].get(), 1)
+            XCTAssertEqual(doc.nested[0].get(), [1])
         })
     }
 
