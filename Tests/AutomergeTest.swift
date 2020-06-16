@@ -339,15 +339,8 @@ class AutomergeTest: XCTestCase {
             var noodles: [String]
         }
         var s1 = Document(Scheme(noodles: []))
-        s1.change({
-            var abc = $0.noodles
-            abc.insert(contentsOf: ["udon", "soba"], at: 0)
-        })
-        s1.change({
-            $0.noodles.insert("ramen", at: 1)
-        })
-        //        s1.change { $0.noodles.insert(contentsOf: ["udon", "soba"], at: 0) }
-        //        s1.change { $0.noodles.insert("ramen", at: 1) }
+        s1.change { $0.noodles.insert(contentsOf: ["udon", "soba"], at: 0) }
+        s1.change { $0.noodles.insert("ramen", at: 1) }
         XCTAssertEqual(s1.content.noodles, ["udon", "ramen", "soba"])
         XCTAssertEqual(s1.content.noodles[0], "udon")
         XCTAssertEqual(s1.content.noodles[1], "ramen")
@@ -785,7 +778,7 @@ class AutomergeTest: XCTestCase {
         var s1 = Document(Scheme(birds: ["blackbird", "thrush", "goldfinch"]))
         var s2 = Document<Scheme>(changes: s1.allChanges())
         s1.change {
-            $0.birds.replaceSubrange(1...2, with: [])
+            $0.birds.replaceSubrange(1...2, with: [String]())
         }
         s2.change {
             $0.birds.insert("starling", at: 2)
