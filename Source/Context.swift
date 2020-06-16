@@ -14,12 +14,8 @@ final class Context {
         let objectId: String
     }
 
-    init(cache: [String: [String: Any]], actorId: Actor) {
-        self.cache = cache
-        self.updated = [String: [String: Any]]()
-        self.actorId = actorId
-        self.ops = []
-        self.applyPatch = interpretPatch
+    convenience init(cache: [String: [String: Any]], actorId: Actor) {
+        self.init(actorId: actorId, applyPatch: interpretPatch, updated: [String: [String: Any]](), cache: cache, ops: [])
     }
 
     init(actorId: Actor,
@@ -33,12 +29,14 @@ final class Context {
         self.updated = updated
         self.cache = cache
         self.ops = ops
+        self.dateFormatter = EncoderDateFormatter()
     }
 
     private let actorId: Actor
     private let applyPatch: (ObjectDiff, [String: Any]?, inout [String: [String: Any]]) -> [String: Any]?
     private(set) var updated: [String: [String: Any]]
     private var cache: [String: [String: Any]]
+    private let dateFormatter: EncoderDateFormatter
 
     var idUpdated: Bool {
         return !ops.isEmpty
@@ -88,9 +86,15 @@ final class Context {
             ops.append(operation)
             return .value(.double(value))
         case let string as String:
-            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .string(string))
-            ops.append(operation)
-            return .value(.string(string))
+            if string.starts(with: "_am_date:"), let date = EncoderDateFormatter().date(from: string) {
+                let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .double(date.timeIntervalSince1970), datatype: .timestamp)
+                ops.append(operation)
+                return .value(.init(value: .double(date.timeIntervalSince1970), datatype: .timestamp))
+            } else {
+                let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .string(string))
+                ops.append(operation)
+                return .value(.string(string))
+            }
         case let uuid as UUID:
             let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .string(uuid.uuidString))
             ops.append(operation)
@@ -204,57 +208,6 @@ final class Context {
             fatalError()
         }
     }
-    //createNestedObjects(obj, key, value, insert) {
-    //  if (value[OBJECT_ID]) {
-    //    throw new RangeError('Cannot create a reference to an existing document object')
-    //  }
-    //  const child = uuid()
-    //  if (key === null) key = child
-    //
-    //  if (value instanceof Text) {
-    //    // Create a new Text object
-    //    const operation = {action: 'makeText', obj, key, child}
-    //    if (insert) operation.insert = true
-    //    this.addOp(operation)
-    //
-    //    const subpatch = {objectId: child, type: 'text', edits: [], props: {}}
-    //    this.insertListItems(subpatch, 0, [...value], true)
-    //    return subpatch
-    //
-    //  } else if (value instanceof Table) {
-    //    // Create a new Table object
-    //    if (value.count > 0) {
-    //      throw new RangeError('Assigning a non-empty Table object is not supported')
-    //    }
-    //    const operation = {action: 'makeTable', obj, key, child}
-    //    if (insert) operation.insert = true
-    //    this.addOp(operation)
-    //    return {objectId: child, type: 'table', props: {}}
-    //
-    //  } else if (Array.isArray(value)) {
-    //    // Create a new list object
-    //    const operation = {action: 'makeList', obj, key, child}
-    //    if (insert) operation.insert = true
-    //    this.addOp(operation)
-    //
-    //    const subpatch = {objectId: child, type: 'list', edits: [], props: {}}
-    //    this.insertListItems(subpatch, 0, value, true)
-    //    return subpatch
-    //
-    //  } else {
-    //    // Create a new map object
-    //    const operation = {action: 'makeMap', obj, key, child}
-    //    if (insert) operation.insert = true
-    //    this.addOp(operation)
-    //
-    //    let props = {}
-    //    for (let nested of Object.keys(value)) {
-    //      const valuePatch = this.setValue(child, nested, value[nested], false)
-    //      props[nested] = {[this.actorId]: valuePatch}
-    //    }
-    //    return {objectId: child, type: 'map', props}
-    //  }
-    //}
 
     /**
      * Inserts a sequence of new list elements `values` into a list, starting at position `index`.
