@@ -14,7 +14,7 @@ import Foundation
  */
 
 func interpretPatch(patch: ObjectDiff, obj: [String: Any]?, updated: inout [String: [String: Any]]) -> [String: Any]? {
-    if patch.props != nil && patch.edits != nil && updated[patch.objectId] != nil && obj?[LIST_VALUES] == nil {
+    if patch.props != nil && patch.edits != nil && patch == .empty && updated[patch.objectId] != nil && obj?[LIST_VALUES] == nil {
         return obj
     }
     switch patch.type {

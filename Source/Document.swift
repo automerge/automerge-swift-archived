@@ -182,7 +182,6 @@ public struct Document<T: Codable> {
         newDoc?[CACHE] = update
 
         self.root = newDoc!
-        self.state = state
     }
 
     public func save() -> [UInt8] {
