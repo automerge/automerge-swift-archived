@@ -124,6 +124,8 @@ final class ObjectDiff: Equatable, Codable {
 
         self.props = props
     }
+
+    static let empty = ObjectDiff(objectId: "EMPTY", type: .map)
 }
 
 enum CollectionType: String, Equatable, Codable {

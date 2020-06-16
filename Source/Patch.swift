@@ -27,4 +27,16 @@ public final class Patch: Codable {
     let canRedo: Bool
     let diffs: ObjectDiff
 
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.actor = try container.decodeIfPresent(String.self, forKey: .actor)
+        self.seq = try container.decodeIfPresent(Int.self, forKey: .seq)
+        self.clock = try container.decode(Clock.self, forKey: .clock)
+        self.version = try container.decode(Int.self, forKey: .version)
+        self.canUndo = try container.decode(Bool.self, forKey: .canUndo)
+        self.canRedo = try container.decode(Bool.self, forKey: .canRedo)
+
+        self.diffs = (try? container.decode(ObjectDiff.self, forKey: .diffs)) ?? .empty
+    }
+
 }

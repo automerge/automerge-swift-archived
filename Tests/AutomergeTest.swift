@@ -797,34 +797,23 @@ class AutomergeTest: XCTestCase {
         XCTAssertEqual(s2.content, Scheme(birds: ["blackbird", "starling"]))
     }
 
-    //    // should handle concurrent deletion of the same element
-    //    func testConcurrentUse14() {
-    //        struct Scheme: Codable, Equatable {
-    //            var birds: [String]
-    //        }
-    //        var s1 = Document(Scheme(birds: ["albatross", "buzzard", "cormorant"]))
-    //        var s2 = Document<Scheme>(changes: s1.allChanges())
-    //        s1.change {
-    //            var proxy = $0.birds
-    //            proxy.remove(at: 1)
-    //        }
-    //        s2.change {
-    //            var proxy = $0.birds
-    //            proxy.remove(at: 1)
-    //        }
-    //        var s3 = s1
-    //        s3.merge(s2)
-    //        XCTAssertEqual(s3.content, Scheme(birds: ["albatross", "cormorant"]))
-    //    }
-
-    //  it('should handle concurrent deletion of the same element', () => {
-    //    s1 = Automerge.change(s1, doc => doc.birds = ['albatross','buzzard', 'cormorant'])
-    //    s2 = Automerge.merge(s2, s1)
-    //    s1 = Automerge.change(s1, doc => doc.birds.deleteAt(1)) // buzzard
-    //    s2 = Automerge.change(s2, doc => doc.birds.deleteAt(1)) // buzzard
-    //    s3 = Automerge.merge(s1, s2)
-    //    assert.deepStrictEqual(s3.birds, ['albatross','cormorant'])
-    //  })
+    // should handle concurrent deletion of the same element
+    func testConcurrentUse14() {
+        struct Scheme: Codable, Equatable {
+            var birds: [String]
+        }
+        var s1 = Document(Scheme(birds: ["albatross", "buzzard", "cormorant"])) // 1
+        var s2 = Document<Scheme>(changes: s1.allChanges()) // 0
+        s1.change {
+            $0.birds.remove(at: 1)
+        } // 2
+        s2.change {
+            $0.birds.remove(at: 1)
+        } // 1
+        var s3 = s1
+        s3.merge(s2) // s3
+        XCTAssertEqual(s3.content, Scheme(birds: ["albatross", "cormorant"]))
+    }
 
     // should handle concurrent deletion of different elements
     func testConcurrentUse15() {
