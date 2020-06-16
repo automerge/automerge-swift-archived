@@ -24,6 +24,7 @@
 		94339B50247BA70A00A461F1 /* AutomergeTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94339B4E247BA65800A461F1 /* AutomergeTest.swift */; };
 		9455D9E12487A8B40046A867 /* Proxy+Root.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9455D9E02487A8B40046A867 /* Proxy+Root.swift */; };
 		9477033E246E73C4000E952C /* Actor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9477033D246E73C4000E952C /* Actor.swift */; };
+		9478D28924978A02002EEEF8 /* DictionaryEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9478D28824978A02002EEEF8 /* DictionaryEncoder.swift */; };
 		9486913A248E625A008D75A2 /* Proxy+UnsafeAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94869139248E625A008D75A2 /* Proxy+UnsafeAccess.swift */; };
 		9486913D248E8B60008D75A2 /* History.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9486913C248E8B60008D75A2 /* History.swift */; };
 		94874A3C2486317000ECC4E7 /* XCTAssertEqualOneOf.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94874A3B2486317000ECC4E7 /* XCTAssertEqualOneOf.swift */; };
@@ -50,7 +51,7 @@
 		OBJ_52 /* Document.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* Document.swift */; };
 		OBJ_53 /* Edit.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_18 /* Edit.swift */; };
 		OBJ_54 /* ConflictsConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_20 /* ConflictsConverter.swift */; };
-		OBJ_55 /* EncoderDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_21 /* EncoderDecoder.swift */; };
+		OBJ_55 /* DictionaryDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_21 /* DictionaryDecoder.swift */; };
 		OBJ_56 /* Key.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_22 /* Key.swift */; };
 		OBJ_57 /* Op.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_23 /* Op.swift */; };
 		OBJ_58 /* Patch.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_24 /* Patch.swift */; };
@@ -86,6 +87,7 @@
 		94339B4E247BA65800A461F1 /* AutomergeTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomergeTest.swift; sourceTree = "<group>"; };
 		9455D9E02487A8B40046A867 /* Proxy+Root.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Proxy+Root.swift"; sourceTree = "<group>"; };
 		9477033D246E73C4000E952C /* Actor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Actor.swift; sourceTree = "<group>"; };
+		9478D28824978A02002EEEF8 /* DictionaryEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryEncoder.swift; sourceTree = "<group>"; };
 		94869139248E625A008D75A2 /* Proxy+UnsafeAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Proxy+UnsafeAccess.swift"; sourceTree = "<group>"; };
 		9486913C248E8B60008D75A2 /* History.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = History.swift; sourceTree = "<group>"; };
 		94874A3B2486317000ECC4E7 /* XCTAssertEqualOneOf.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XCTAssertEqualOneOf.swift; sourceTree = "<group>"; };
@@ -103,7 +105,7 @@
 		94F6D877248ABFE900FEAA43 /* Change.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Change.swift; sourceTree = "<group>"; };
 		94F6D879248AC0D100FEAA43 /* Primitive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Primitive.swift; sourceTree = "<group>"; };
 		"Automerge::Automerge::Product" /* Automerge.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Automerge.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"Automerge::AutomergeTests::Product" /* AutomergeTests.xctest */ = {isa = PBXFileReference; lastKnownFileType = file; path = AutomergeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		"Automerge::AutomergeTests::Product" /* AutomergeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = AutomergeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		OBJ_10 /* Context.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Context.swift; sourceTree = "<group>"; };
 		OBJ_12 /* Clock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clock.swift; sourceTree = "<group>"; };
 		OBJ_13 /* Counter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Counter.swift; sourceTree = "<group>"; };
@@ -113,7 +115,7 @@
 		OBJ_17 /* Document.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Document.swift; sourceTree = "<group>"; };
 		OBJ_18 /* Edit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Edit.swift; sourceTree = "<group>"; };
 		OBJ_20 /* ConflictsConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConflictsConverter.swift; sourceTree = "<group>"; };
-		OBJ_21 /* EncoderDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EncoderDecoder.swift; sourceTree = "<group>"; };
+		OBJ_21 /* DictionaryDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryDecoder.swift; sourceTree = "<group>"; };
 		OBJ_22 /* Key.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Key.swift; sourceTree = "<group>"; };
 		OBJ_23 /* Op.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Op.swift; sourceTree = "<group>"; };
 		OBJ_24 /* Patch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Patch.swift; sourceTree = "<group>"; };
@@ -186,8 +188,9 @@
 			isa = PBXGroup;
 			children = (
 				OBJ_20 /* ConflictsConverter.swift */,
-				OBJ_21 /* EncoderDecoder.swift */,
+				OBJ_21 /* DictionaryDecoder.swift */,
 				94B256902482B0E9008FC23D /* KeyPathIntrospection.swift */,
+				9478D28824978A02002EEEF8 /* DictionaryEncoder.swift */,
 			);
 			path = Helper;
 			sourceTree = "<group>";
@@ -363,10 +366,11 @@
 				9477033E246E73C4000E952C /* Actor.swift in Sources */,
 				OBJ_50 /* Text.swift in Sources */,
 				OBJ_51 /* Diff.swift in Sources */,
+				9478D28924978A02002EEEF8 /* DictionaryEncoder.swift in Sources */,
 				OBJ_52 /* Document.swift in Sources */,
 				OBJ_53 /* Edit.swift in Sources */,
 				OBJ_54 /* ConflictsConverter.swift in Sources */,
-				OBJ_55 /* EncoderDecoder.swift in Sources */,
+				OBJ_55 /* DictionaryDecoder.swift in Sources */,
 				OBJ_56 /* Key.swift in Sources */,
 				OBJ_57 /* Op.swift in Sources */,
 				94F6D878248ABFE900FEAA43 /* Change.swift in Sources */,
@@ -439,6 +443,7 @@
 					"SWIFT_PACKAGE=1",
 					"DEBUG=1",
 				);
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_SWIFT_FLAGS = "$(inherited) -DXcode";
@@ -465,6 +470,7 @@
 					"$(inherited)",
 					"SWIFT_PACKAGE=1",
 				);
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_SWIFT_FLAGS = "$(inherited) -DXcode";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -489,7 +495,6 @@
 					"$(SRCROOT)/Source/include",
 				);
 				INFOPLIST_FILE = Automerge.xcodeproj/Automerge_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
@@ -526,7 +531,6 @@
 					"$(SRCROOT)/Source/include",
 				);
 				INFOPLIST_FILE = Automerge.xcodeproj/Automerge_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
@@ -591,7 +595,6 @@
 				);
 				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = Automerge.xcodeproj/AutomergeTests_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @loader_path/../Frameworks @loader_path/Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
@@ -616,7 +619,6 @@
 				);
 				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = Automerge.xcodeproj/AutomergeTests_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @loader_path/../Frameworks @loader_path/Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";

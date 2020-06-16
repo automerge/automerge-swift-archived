@@ -448,6 +448,31 @@ class ContextTest: XCTestCase {
         )
     }
 
+    // should allow assignment of nestedDateValue
+    func testContextSetMapKey11_1() {
+        //Given
+        struct Scheme: Codable { let now: Date }
+        let now = Date(timeIntervalSince1970: 0)
+        let actor = Actor()
+        let context = Context(
+            actorId: actor,
+            applyPatch: applyPatch.observerDiff,
+            updated: [:],
+            cache: [ROOT_ID: [:]],
+            ops: []
+        )
+        // WHEN
+        let encoder = DictionaryEncoder()
+        context.setMapKey(path: [], key: "now", value: try? encoder.encode(Scheme(now: now)))
+
+        //Then
+        XCTAssertEqual(context.ops, [
+            Op(action: .makeMap, obj: ROOT_ID, key: "now", child: context.ops[0].child),
+            Op(action: .set, obj: context.ops[0].child!, key: "now", value: .double(now.timeIntervalSince1970), datatype: .timestamp)
+        ])
+        XCTAssertEqual(applyPatch.callCount, 1)
+    }
+
     // should allow assignment of Counter values
     func testContextSetMapKey12() {
         //Given
