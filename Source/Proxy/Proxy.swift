@@ -96,3 +96,23 @@ public final class Proxy<T: Codable> {
         }
     }
 }
+
+extension Proxy where T: RawRepresentable {
+
+    public func set(_ newValue: T) {
+        guard let lastPathKey = path.last?.key else {
+            self.set(rootObject: newValue)
+            return
+        }
+        let encoded: Any = newValue.rawValue
+        switch lastPathKey {
+        case .string(let key):
+            let path = Array(self.path.dropLast())
+            context.setMapKey(path: path, key: key, value: encoded)
+        case .index(let index):
+            let path = Array(self.path.dropLast())
+            context.setListIndex(path: path, index: index, value: encoded)
+        }
+    }
+
+}

@@ -127,7 +127,7 @@ class ProxyCollectionTest: XCTestCase {
 
         document.change({ doc in
             let proxy: Proxy<[Int]> = doc.list
-            proxy[1] = 1
+            proxy[1].set(1)
             XCTAssertEqual(proxy[1], 1)
             XCTAssertEqual(doc.list.get(), [1, 1, 3])
         })

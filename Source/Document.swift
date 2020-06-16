@@ -57,10 +57,9 @@ public struct Document<T: Codable> {
     }
 
     public init(changes: [[UInt8]], actor: Actor = Actor()) {
-        let backend = RSBackend(changes: changes)
+        let (backend, patch) = RSBackend().apply(changes: changes)
         var doc = Document<T>(actor: actor, backend: backend)
 
-        let patch = backend.getPatch()
         doc.applyPatch(patch: patch)
         self = doc
     }
@@ -108,9 +107,7 @@ public struct Document<T: Codable> {
                              undoable: Bool
     ) -> Request?
     {
-        var state = self.state
         state.seq += 1
-
         let request = Request(requestType: requestType,
                               message: message,
                               time: Date(),
@@ -152,7 +149,7 @@ public struct Document<T: Codable> {
             state.canRedo = patch.canRedo
         }
 
-        updateRootObject(update: &updated, state: state)
+        updateRootObject(update: &updated)
     }
 
     /**
@@ -170,7 +167,7 @@ public struct Document<T: Codable> {
      * `state`, and returns a new immutable document root object based on `doc` that reflects
      * those updates.
      */
-    private mutating func updateRootObject(update: inout [String: [String: Any]], state: State) {
+    private mutating func updateRootObject(update: inout [String: [String: Any]]) {
         var newDoc = update[ROOT_ID]
         if newDoc == nil {
             newDoc = cache[ROOT_ID]
