@@ -557,35 +557,6 @@ final class Context {
 
         return subPatch
     }
-    //    getSubpatch(patch, path) {
-    //      let subpatch = patch.diffs, object = this.getObject(ROOT_ID)
-    //
-    //      for (let pathElem of path) {
-    //        if (!subpatch.props) {
-    //          subpatch.props = {}
-    //        }
-    //        if (!subpatch.props[pathElem.key]) {
-    //          subpatch.props[pathElem.key] = this.getValuesDescriptions(path, object, pathElem.key)
-    //        }
-    //
-    //        let nextOpId = null, values = subpatch.props[pathElem.key]
-    //        for (let opId of Object.keys(values)) {
-    //          if (values[opId].objectId === pathElem.objectId) {
-    //            nextOpId = opId
-    //          }
-    //        }
-    //        if (!nextOpId) {
-    //          throw new RangeError(`Cannot find path object with objectId ${pathElem.objectId}`)
-    //        }
-    //        subpatch = values[nextOpId]
-    //        object = this.getPropertyValue(object, pathElem.key, nextOpId)
-    //      }
-    //
-    //      if (!subpatch.props) {
-    //        subpatch.props = {}
-    //      }
-    //      return subpatch
-    //    }
 
     /**
      * Returns the value at property `key` of object `object`. In the case of a conflict, returns

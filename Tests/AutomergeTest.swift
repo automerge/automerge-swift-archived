@@ -71,7 +71,7 @@ class AutomergeTest: XCTestCase {
 
     // should group several changes
     func testSerialUseChanges1() {
-        struct Scheme: Codable, Equatable { var first: String?; var second: String?}
+        struct Scheme: Codable, Equatable { let first: String?; let second: String? }
         let s1 = Document(Scheme(first: nil, second: nil))
         var s2 = s1
         s2.change { doc in
@@ -408,8 +408,8 @@ class AutomergeTest: XCTestCase {
         }
         var s1 = Document(Scheme(japaneseFood: ["udon", "ramen", "soba"]))
         s1.change {
-            $0.japaneseFood[0] = "うどん"
-            $0.japaneseFood[2] = "そば"
+            $0.japaneseFood[0].set("うどん")
+            $0.japaneseFood[2].set("そば")
         }
         XCTAssertEqual(s1.content, Scheme(japaneseFood: ["うどん", "ramen", "そば"]))
         XCTAssertEqual(s1.content.japaneseFood, ["うどん", "ramen", "そば"])
@@ -424,10 +424,10 @@ class AutomergeTest: XCTestCase {
         struct Noodle: Codable, Equatable {
             enum TypeNoodle: String, Codable { case ramen, udon }
             let type: TypeNoodle
-            var dishes: [String]
+            let dishes: [String]
         }
         struct Scheme: Codable, Equatable {
-            var noodles: [Noodle]
+            let noodles: [Noodle]
         }
         var s1 = Document(Scheme(noodles: [.init(type: .ramen, dishes: ["tonkotsu", "shoyu"])]))
         s1.change {
