@@ -58,14 +58,14 @@ public final class Proxy<Wrapped: Codable> {
         return Proxy<Y>(context: context, objectId: objectId, path: path + [.init(key: .string(fieldName), objectId: objectId ?? "")], value: self.valueResolver()?[keyPath: dynamicMember])
     }
 
-    private func set(rootObject: Wrapped) {
+    private func set<T: Codable>(rootObject: T) {
         let dictionary = try! DictionaryEncoder().encode(rootObject) as [String: Any]
         for key in dictionary.keys {
             context.setMapKey(path: path, key: key, value: dictionary[key])
         }
     }
 
-    public func set(_ newValue: Wrapped) {
+    private func set<T: Codable>(newValue: T) {
         guard let lastPathKey = path.last?.key else {
             self.set(rootObject: newValue)
             return
@@ -80,24 +80,16 @@ public final class Proxy<Wrapped: Codable> {
             context.setListIndex(path: path, index: index, value: encoded)
         }
     }
+
+    public func set(_ newValue: Wrapped) {
+        set(newValue: newValue)
+    }
 }
 
-extension Proxy where T: RawRepresentable {
+extension Proxy where Wrapped: RawRepresentable, Wrapped.RawValue: Codable {
 
-    public func set(_ newValue: T) {
-        guard let lastPathKey = path.last?.key else {
-            self.set(rootObject: newValue)
-            return
-        }
-        let encoded: Any = newValue.rawValue
-        switch lastPathKey {
-        case .string(let key):
-            let path = Array(self.path.dropLast())
-            context.setMapKey(path: path, key: key, value: encoded)
-        case .index(let index):
-            let path = Array(self.path.dropLast())
-            context.setListIndex(path: path, index: index, value: encoded)
-        }
+    public func set(_ newValue: Wrapped) {
+        set(newValue: newValue.rawValue)
     }
 
 }
