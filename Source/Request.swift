@@ -18,7 +18,7 @@ public struct Request: Equatable, Codable {
     let requestType: RequestType
     let message: String
     let time: Date
-    let actor: String
+    let actor: Actor
     let seq: Int
     let version: Int
     let ops: [Op]

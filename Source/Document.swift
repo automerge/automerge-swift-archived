@@ -6,6 +6,7 @@
 //
 
 import Foundation
+
 public struct Document<T: Codable> {
 
     private struct State {
@@ -111,7 +112,7 @@ public struct Document<T: Codable> {
         let request = Request(requestType: requestType,
                               message: message,
                               time: Date(),
-                              actor: actor.actorId,
+                              actor: actor,
                               seq: state.seq,
                               version: state.version,
                               ops: context?.ops ?? [],
