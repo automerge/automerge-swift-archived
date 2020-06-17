@@ -9,7 +9,7 @@ import Foundation
 
 extension Proxy {
 
-    public func conflicts<Y: Codable>(dynamicMember: KeyPath<Wrapped, Y>) -> [String: Y]? {
+    public func conflicts<Y: Codable>(dynamicMember: KeyPath<Wrapped, Y>) -> [Actor: Y]? {
         guard let objectId = objectId else {
             return nil
         }
@@ -21,14 +21,14 @@ extension Proxy {
             return nil
         }
         let decoder = DictionaryDecoder()
-        return try? decoder.decode([String: Y].self, from: realConflicts)
+        return (try? decoder.decode([String: Y].self, from: realConflicts))?.compactMapKeys({ Actor(actorId: $0) })
     }
-    
+
 }
 
 extension Proxy where Wrapped: Collection, Wrapped.Index == Int, Wrapped.Element: Codable {
 
-    public func conflicts(index: Int) -> [String: Wrapped.Element]? {
+    public func conflicts(index: Int) -> [Actor: Wrapped.Element]? {
         guard let objectId = objectId else {
             return nil
         }
@@ -37,6 +37,16 @@ extension Proxy where Wrapped: Collection, Wrapped.Index == Int, Wrapped.Element
             return nil
         }
         let decoder = DictionaryDecoder()
-        return try? decoder.decode([String: Wrapped.Element].self, from: realConflicts)
+        return (try? decoder.decode([String: Wrapped.Element].self, from: realConflicts))?.compactMapKeys({ Actor(actorId: $0) })
+    }
+}
+
+extension Dictionary {
+    func compactMapKeys<T>(_ transform: ((Key) throws -> T?)) rethrows -> Dictionary<T, Value> {
+        return try self.reduce(into: [T: Value](), { (result, x) in
+            if let key = try transform(x.key) {
+                result[key] = x.value
+            }
+        })
     }
 }

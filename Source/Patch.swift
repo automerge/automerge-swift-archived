@@ -9,7 +9,7 @@ import Foundation
 
 public final class Patch: Codable {
 
-    init(actor: String? = nil, seq: Int? = nil, clock: Clock, version: Int, canUndo: Bool, canRedo: Bool, diffs: ObjectDiff) {
+    init(actor: Actor? = nil, seq: Int? = nil, clock: Clock, version: Int, canUndo: Bool, canRedo: Bool, diffs: ObjectDiff) {
         self.actor = actor
         self.seq = seq
         self.clock = clock
@@ -19,7 +19,7 @@ public final class Patch: Codable {
         self.diffs = diffs
     }
 
-    let actor: String?
+    let actor: Actor?
     let seq: Int?
     let clock: Clock
     let version: Int
@@ -29,7 +29,7 @@ public final class Patch: Codable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.actor = try container.decodeIfPresent(String.self, forKey: .actor)
+        self.actor = try container.decodeIfPresent(Actor.self, forKey: .actor)
         self.seq = try container.decodeIfPresent(Int.self, forKey: .seq)
         self.clock = try container.decode(Clock.self, forKey: .clock)
         self.version = try container.decode(Int.self, forKey: .version)

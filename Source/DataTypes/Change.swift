@@ -14,4 +14,5 @@ public struct Change: Codable {
         return Date(timeIntervalSince1970: time)
     }
     public let message: String?
+    public let actor: Actor
 }

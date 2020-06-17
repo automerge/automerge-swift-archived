@@ -7,13 +7,23 @@
 
 import Foundation
 
-public struct Actor: Equatable {
+public struct Actor: Equatable, Hashable, Codable {
 
     public init(actorId: String = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()) {
         self.actorId = actorId
     }
 
     public let actorId: String
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        self.actorId = try container.decode(String.self)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(actorId)
+    }
 }
 
 extension Actor: Comparable {
@@ -31,3 +41,12 @@ extension Actor: CustomStringConvertible {
     }
 
 }
+
+extension Actor: ExpressibleByStringLiteral {
+
+    public init(stringLiteral value: StringLiteralType) {
+        self.init(actorId: value)
+    }
+}
+
+extension Actor: ExpressibleByStringInterpolation {}
