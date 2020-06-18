@@ -51,7 +51,7 @@ class DocumentTest: XCTestCase {
         let req = doc.change { $0.bird.set("magpie") }
 
         XCTAssertEqual(doc.content, Schema(bird: "magpie"))
-        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: actor.actorId, seq: 1, version: 0, ops: [
+        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: actor, seq: 1, version: 0, ops: [
             Op(action: .set, obj: ROOT_ID, key: "bird", insert: false, value: .string("magpie"))
         ], undoable: true))
     }
@@ -65,7 +65,7 @@ class DocumentTest: XCTestCase {
         var doc = Document(Schema(birds: nil))
         let req = doc.change { $0.birds?.set(.init(wrens: 3)) }
         XCTAssertEqual(doc.content, Schema(birds: .init(wrens: 3)))
-        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc.actor.actorId, seq: 1, version: 0, ops: [
+        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc.actor, seq: 1, version: 0, ops: [
             Op(action: .makeMap, obj: ROOT_ID, key: "birds", insert: false, child: req!.ops[1].obj),
             Op(action: .set, obj: req!.ops[1].obj, key: "wrens", insert: false, value: .int(3))
         ], undoable: true))
@@ -85,7 +85,7 @@ class DocumentTest: XCTestCase {
 
         XCTAssertEqual(doc1.content, Schema(birds: .init(wrens: 3, sparrows: nil)))
         XCTAssertEqual(doc2.content, Schema(birds: .init(wrens: 3, sparrows: 15)))
-        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc1.actor.actorId, seq: 2, version: 1, ops: [
+        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc1.actor, seq: 2, version: 1, ops: [
             Op(action: .set, obj: birds!, key: "sparrows", insert: false, value: .int(15))
         ], undoable: true))
     }
@@ -101,7 +101,7 @@ class DocumentTest: XCTestCase {
         let req = doc2.change { $0.magpies.set(nil) }
         XCTAssertEqual(doc1.content, Schema(magpies: 2, sparrows: 15))
         XCTAssertEqual(doc2.content, Schema(magpies: nil, sparrows: 15))
-        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: actor.actorId, seq: 2, version: 1, ops: [
+        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: actor, seq: 2, version: 1, ops: [
             Op(action: .del, obj: ROOT_ID, key: "magpies", insert: false, value: nil)
         ], undoable: true))
     }
@@ -114,7 +114,7 @@ class DocumentTest: XCTestCase {
         var doc1 = Document(Schema(birds: nil))
         let req = doc1.change { $0.birds?.set(["chaffinch"])}
         XCTAssertEqual(doc1.content, Schema(birds: ["chaffinch"]))
-        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc1.actor.actorId, seq: 1, version: 0, ops: [
+        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc1.actor, seq: 1, version: 0, ops: [
             Op(action: .makeList, obj: ROOT_ID, key: "birds", insert: false, child: req!.ops[1].obj),
             Op(action: .set, obj: req!.ops[1].obj, key: 0, insert: true, value: .string("chaffinch"))
         ], undoable: true))
@@ -132,7 +132,7 @@ class DocumentTest: XCTestCase {
         let birds = doc2.rootProxy().birds?.objectId
         XCTAssertEqual(doc1.content, Schema(birds: ["chaffinch"]))
         XCTAssertEqual(doc2.content, Schema(birds: ["greenfinch"]))
-        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc1.actor.actorId, seq: 2, version: 1, ops: [
+        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc1.actor, seq: 2, version: 1, ops: [
             Op(action: .set, obj: birds!, key: 0, value: .string("greenfinch"))
         ], undoable: true))
     }
@@ -150,7 +150,7 @@ class DocumentTest: XCTestCase {
         let birds = doc2.rootProxy().birds.objectId
         XCTAssertEqual(doc1.content, Schema(birds: ["chaffinch", "goldfinch"]))
         XCTAssertEqual(doc2.content, Schema(birds: ["goldfinch"]))
-        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc2.actor.actorId, seq: 2, version: 1, ops: [
+        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc2.actor, seq: 2, version: 1, ops: [
             Op(action: .del, obj: birds!, key: 0)
         ], undoable: true))
     }
@@ -164,7 +164,7 @@ class DocumentTest: XCTestCase {
         var doc1 = Document(Schema(now: nil))
         let req = doc1.change { $0.now?.set(now) }
         XCTAssertEqual(doc1.content, Schema(now: now))
-        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc1.actor.actorId, seq: 1, version: 0, ops: [
+        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc1.actor, seq: 1, version: 0, ops: [
             Op(action: .set, obj: ROOT_ID, key: "now", insert: false, value: .double(now.timeIntervalSince1970), datatype: .timestamp)
         ], undoable: true))
     }
@@ -181,10 +181,10 @@ class DocumentTest: XCTestCase {
         let actor = doc2.actor
         XCTAssertEqual(doc1.content, Schema(wrens: 0))
         XCTAssertEqual(doc2.content, Schema(wrens: 1))
-        XCTAssertEqual(req1, Request(requestType: .change, message: "", time: req1!.time, actor: actor.actorId, seq: 1, version: 0, ops: [
+        XCTAssertEqual(req1, Request(requestType: .change, message: "", time: req1!.time, actor: actor, seq: 1, version: 0, ops: [
             Op(action: .set, obj: ROOT_ID, key: "wrens", value: .int(0), datatype: .counter)
         ], undoable: true))
-        XCTAssertEqual(req2, Request(requestType: .change, message: "", time: req2!.time, actor: actor.actorId, seq: 2, version: 1, ops: [
+        XCTAssertEqual(req2, Request(requestType: .change, message: "", time: req2!.time, actor: actor, seq: 2, version: 1, ops: [
             Op(action: .inc, obj: ROOT_ID, key: "wrens", value: .int(1))
         ], undoable: true))
     }
@@ -208,11 +208,11 @@ class DocumentTest: XCTestCase {
         let actor = doc2.actor
         XCTAssertEqual(doc1.content, Schema(counts: [1]))
         XCTAssertEqual(doc2.content, Schema(counts: [3]))
-        XCTAssertEqual(req1, Request(requestType: .change, message: "", time: req1!.time, actor: actor.actorId, seq: 1, version: 0, ops: [
+        XCTAssertEqual(req1, Request(requestType: .change, message: "", time: req1!.time, actor: actor, seq: 1, version: 0, ops: [
             Op(action: .makeList, obj: ROOT_ID, key: "counts", child: req1!.ops[0].child),
             Op(action: .set, obj: req1!.ops[1].obj, key: 0, insert: true, value: .int(1), datatype: .counter)
         ], undoable: true))
-        XCTAssertEqual(req2, Request(requestType: .change, message: "", time: req2!.time, actor: actor.actorId, seq: 2, version: 1, ops: [
+        XCTAssertEqual(req2, Request(requestType: .change, message: "", time: req2!.time, actor: actor, seq: 2, version: 1, ops: [
             Op(action: .inc, obj: req2!.ops[0].obj, key: 0, value: .int(2))
         ], undoable: true))
     }
@@ -236,7 +236,7 @@ class DocumentTest: XCTestCase {
 //        doc1.change { $0[\.partridges, "partridges"] = 1 }
 //        let requests = doc1.state.requests.map { $0.request }
 //        XCTAssertEqual(requests, [
-//           Request(requestType: .change, message: "", time: requests[0].time, actor: doc1.actor.actorId, seq: 5, version: 3, ops: [
+//           Request(requestType: .change, message: "", time: requests[0].time, actor: doc1.actor, seq: 5, version: 3, ops: [
 //            Op(action: .set, obj: ROOT_ID, key: "partridges", insert: false, value: .int(1))
 //            ], undoable: true)
 //        ])
@@ -272,14 +272,14 @@ class DocumentTest: XCTestCase {
 //        doc.change({ $0[\.partridges, "partridges"] = 1 })
 //        let requests = doc.state.requests.map { $0.request }
 //        XCTAssertEqual(requests, [
-//           Request(requestType: .change, message: "", time: requests[0].time, actor: actor.actorId, seq: 1, version: 0, ops: [
+//           Request(requestType: .change, message: "", time: requests[0].time, actor: actor, seq: 1, version: 0, ops: [
 //            Op(action: .set, obj: ROOT_ID, key: "blackbirds", insert: false, value: .int(24))
 //            ], undoable: true),
-//           Request(requestType: .change, message: "", time: requests[1].time, actor: actor.actorId, seq: 2, version: 0, ops: [
+//           Request(requestType: .change, message: "", time: requests[1].time, actor: actor, seq: 2, version: 0, ops: [
 //           Op(action: .set, obj: ROOT_ID, key: "partridges", insert: false, value: .int(1))
 //           ], undoable: true)
 //        ])
-//        doc.applyPatch(patch: Patch(actor: actor.actorId,
+//        doc.applyPatch(patch: Patch(actor: actor,
 //                                    seq: 1,
 //                                    clock: [actor.actorId: 1],
 //                                    version: 1,
@@ -292,12 +292,12 @@ class DocumentTest: XCTestCase {
 //        let requests2 = doc.state.requests.map { $0.request }
 //        XCTAssertEqual(doc.content, Schema(blackbirds: 24, partridges: 1))
 //        XCTAssertEqual(requests2, [
-//           Request(requestType: .change, message: "", time: requests2[0].time, actor: actor.actorId, seq: 2, version: 0, ops: [
+//           Request(requestType: .change, message: "", time: requests2[0].time, actor: actor, seq: 2, version: 0, ops: [
 //            Op(action: .set, obj: ROOT_ID, key: "partridges", insert: false, value: .int(1))
 //            ], undoable: true)
 //        ])
 //
-//        doc.applyPatch(patch: Patch(actor: actor.actorId,
+//        doc.applyPatch(patch: Patch(actor: actor,
 //                                    seq: 2,
 //                                    clock: [actor.actorId: 2],
 //                                    version: 2,
