@@ -1510,6 +1510,23 @@ class AutomergeTest: XCTestCase {
         XCTAssertEqual(message, "Add Huxley")
     }
 
+    // should contain actor
+    func testHistory4() {
+        struct Scheme: Codable, Equatable {
+            var books: [String]
+        }
+        let actor = Actor()
+        var s = Document(Scheme(books: []), actor: actor)
+        s.change(message: "Add Orwell") {
+            $0.books.append("Nineteen Eighty-Four")
+        }
+        s.change(message: "Add Huxley") {
+            $0.books.append("Brave New World")
+        }
+        let historyActor = History(document: s).last?.change.actor
+        XCTAssertEqual(historyActor, actor)
+    }
+
 }
 
 

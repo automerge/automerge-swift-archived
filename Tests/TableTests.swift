@@ -24,7 +24,7 @@ class TableTest: XCTestCase {
             $0.books?.set(Table())
         }
 
-        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: actor.actorId, seq: 1, version: 0, ops: [
+        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: actor, seq: 1, version: 0, ops: [
             Op(action: .makeTable, obj: ROOT_ID, key: "books", child: req!.ops[0].child)
         ], undoable: true))
     }
@@ -46,7 +46,7 @@ class TableTest: XCTestCase {
         }
 
         let rowId = req!.ops[0].key
-        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: actor.actorId, seq: 2, version: 1, ops: [
+        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: actor, seq: 2, version: 1, ops: [
             Op(action: .makeMap, obj: req!.ops[0].obj, key: rowId, child: req!.ops[0].child),
             Op(action: .set, obj: "\(rowId)", key: "authors", value: .string("Kleppmann, Martin")),
             Op(action: .set, obj: "\(rowId)", key: "title", value: .string("Designing Data-Intensive Applications")),
