@@ -80,6 +80,25 @@ class ProxyTest: XCTestCase {
             doc.unsafe().key1[1].set("2")
             XCTAssertEqual(doc.key1.get(), ["1", "2"])
         })
+        
+        XCTAssertEqual(document.content.key1, ["1", "2"])
+    }
+    
+    // should allow unsafe access for collection index
+    func testProxyUnsafe3() {
+        struct Scheme: Codable, Equatable {
+            var key1: [String]
+        }
+        // GIVEN
+        var document = Document(Scheme(key1: []))
+
+        // WHEN
+        document.change({ doc in
+            doc.unsafe().key1[0].set("1")
+            XCTAssertEqual(doc.key1.get(), ["1"])
+        })
+        
+        XCTAssertEqual(document.content.key1, ["1"])
     }
 
     // should allow deep object assigment
