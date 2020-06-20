@@ -63,6 +63,9 @@ public final class UnsafeProxy {
         get {
             let object = self.objectId.map { context.getObject(objectId: $0) }
             let listValues = object?[LIST_VALUES] as? [[String: Any]]
+            if index >= listValues?.count ?? 0 {
+                return UnsafeProxy(context: context, objectId: nil, path: path + [.init(key: .index(index), objectId: "")])
+            }
             let objectId = listValues?[index][OBJECT_ID] as? String
             return UnsafeProxy(context: context, objectId: objectId, path: path + [.init(key: .index(index), objectId: objectId ?? "")])
         }
