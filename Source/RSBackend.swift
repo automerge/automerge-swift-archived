@@ -6,7 +6,7 @@
 //
 
 import Foundation
-
+import AutomergeRSBackend
 
 public final class RSBackend {
 
