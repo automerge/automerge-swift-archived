@@ -1,4 +1,4 @@
-// swift-tools-version:5.0
+// swift-tools-version:5.3
 //
 //  Package.swift
 //
@@ -30,26 +30,29 @@ import PackageDescription
 let package = Package(
     name: "Automerge",
     platforms: [
-        .iOS(.v9),
-        .tvOS(.v9),
-        .watchOS(.v2),
-        .macOS(.v10_10)
+        .iOS(.v11)
     ],
     products: [
            .library(
                name: "Automerge",
                targets: ["Automerge"])
        ],
-    dependencies: [ ],
+    dependencies: [
+        .package(
+            name: "AutomergeRSBackend",
+            url: "https://github.com/lightsprint09/automerge-rs",
+            .branch("xcframework")
+        )
+    ],
 
     targets: [
         .target(
             name: "Automerge",
-            dependencies: [],
+            dependencies: ["AutomergeRSBackend"],
             path: "Source"),
         .testTarget(
             name: "AutomergeTests",
-            dependencies: ["Automerge"],
+            dependencies: ["Automerge", "AutomergeRSBackend"],
             path: "Tests")
     ]
 )

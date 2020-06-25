@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "AutomergeRSBackend",
+        "repositoryURL": "https://github.com/lightsprint09/automerge-rs",
+        "state": {
+          "branch": "xcframework",
+          "revision": "9bde3a2cb4e23b796788c24e6240cb110fa4c4da",
+          "version": null
+        }
+      }
+    ]
+  },
+  "version": 1
+}
