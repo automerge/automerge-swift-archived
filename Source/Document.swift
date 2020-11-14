@@ -258,6 +258,10 @@ public struct Document<T: Codable> {
         return makeChange(requestType: .redo, context: nil, message: message, undoable: undoable)
     }
 
+    public func getMissingsDeps() -> [String] {
+        return backend.getMissingDeps()
+    }
+
 }
 
 

@@ -108,14 +108,11 @@ public final class RSBackend {
         return resut
     }
 
-
-    public func decode(change: [UInt8]) -> Change {
-        let length = automerge_decode_change(automerge, UInt(change.count), change)
+    public func getMissingDeps() -> [String] {
+        let length = automerge_get_missing_deps(automerge)
         var buffer = Array<Int8>(repeating: 0, count: length)
         automerge_read_json(automerge, &buffer)
         let newString = String(cString: buffer)
-        let change = try! decoder.decode(Change.self, from: newString.data(using: .utf8)!)
-
-        return change
+        return try! decoder.decode([String].self, from: newString.data(using: .utf8)!)
     }
 }
