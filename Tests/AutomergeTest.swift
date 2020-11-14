@@ -1527,6 +1527,24 @@ class AutomergeTest: XCTestCase {
         XCTAssertEqual(historyActor, actor)
     }
 
+    // should report missing dependencies
+    func testgetMissingDeps1() {
+        struct Scheme: Codable, Equatable {
+            var birds: [String]
+        }
+        let s1 = Document(Scheme(birds: ["Chaffinch"]))
+        var s2 = Document<Scheme>(data: s1.save())
+        s2.change({
+            $0.birds.append("Bullfinch")
+        })
+        let changes = s2.allChanges()
+        var s3 = Document<Scheme>(changes: [changes[1]])
+        XCTAssertEqual(s3.getMissingsDeps(), Change(change: changes[1]).deps)
+        s3.apply(changes: [changes[0]])
+        XCTAssertEqual(s3.content, Scheme(birds: ["Chaffinch", "Bullfinch"]))
+        XCTAssertEqual(s3.getMissingsDeps(), [])
+    }
+
 }
 
 
