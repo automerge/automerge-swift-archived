@@ -30,7 +30,8 @@ import PackageDescription
 let package = Package(
     name: "Automerge",
     platforms: [
-        .iOS(.v12)
+        .iOS(.v12),
+        .macOS(.v10_10)
     ],
     products: [
         .library(
