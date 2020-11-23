@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import AutomergeBackend
 
 public struct Change: Codable {
     let time: Double
