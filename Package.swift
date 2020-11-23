@@ -30,29 +30,30 @@ import PackageDescription
 let package = Package(
     name: "Automerge",
     platforms: [
-        .iOS(.v11)
+        .iOS(.v12)
     ],
     products: [
-           .library(
-               name: "Automerge",
-               targets: ["Automerge"])
-       ],
-    dependencies: [
-        .package(
-            name: "AutomergeRSBackend",
-            url: "https://github.com/lightsprint09/automerge-rs",
-            .branch("xcframework")
+        .library(
+            name: "Automerge",
+            targets: ["Automerge"]
         )
     ],
-
+    dependencies: [
+    ],
     targets: [
+        .binaryTarget(
+            name: "AutomergeBackend",
+            path: "./AutomergeRSBackend.xcframework"
+        ),
         .target(
             name: "Automerge",
-            dependencies: ["AutomergeRSBackend"],
-            path: "Source"),
+            dependencies: ["AutomergeBackend"],
+            path: "Source"
+        ),
         .testTarget(
             name: "AutomergeTests",
-            dependencies: ["Automerge", "AutomergeRSBackend"],
-            path: "Tests")
+            dependencies: ["Automerge"],
+            path: "Tests"
+        )
     ]
 )
