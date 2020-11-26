@@ -1,4 +1,4 @@
-// swift-tools-version:5.0
+// swift-tools-version:5.3
 //
 //  Package.swift
 //
@@ -30,26 +30,31 @@ import PackageDescription
 let package = Package(
     name: "Automerge",
     platforms: [
-        .iOS(.v9),
-        .tvOS(.v9),
-        .watchOS(.v2),
+        .iOS(.v12),
         .macOS(.v10_10)
     ],
     products: [
-           .library(
-               name: "Automerge",
-               targets: ["Automerge"])
-       ],
-    dependencies: [ ],
-
+        .library(
+            name: "Automerge",
+            targets: ["Automerge"]
+        )
+    ],
+    dependencies: [
+    ],
     targets: [
+        .binaryTarget(
+            name: "AutomergeBackend",
+            path: "./AutomergeRSBackend.xcframework"
+        ),
         .target(
             name: "Automerge",
-            dependencies: [],
-            path: "Source"),
+            dependencies: ["AutomergeBackend"],
+            path: "Source"
+        ),
         .testTarget(
             name: "AutomergeTests",
             dependencies: ["Automerge"],
-            path: "Tests")
+            path: "Tests"
+        )
     ]
 )
