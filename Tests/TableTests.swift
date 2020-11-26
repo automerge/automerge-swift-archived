@@ -110,7 +110,7 @@ class TableTest: XCTestCase {
         s1.change {
             rowId = $0.books.add(.ddia)
         }
-        XCTAssertEqual(s1.content.books.ids, [rowId])
+        XCTAssertEqual(s1.content.books.ids, [rowId!])
     }
 
     // should save and reload

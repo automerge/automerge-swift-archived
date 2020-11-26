@@ -2,6 +2,18 @@
 # automerge-swift
 A automerge frontend in Swift using the rs-backend
 
+## Installation
+
+### Swift Package Manager
+
+[SPM](https://swift.org/package-manager/) is integrated with the Swift build system to automate the process of downloading, compiling, and linking dependencies.
+
+Specify the following in your `Package.swift`:
+
+```swift
+.package(url: "https://github.com/automerge/automerge-swift", .branch("main")),
+```
+
 ## Usage
 
 The following code sample gives a quick overview of ho to use Automerge
