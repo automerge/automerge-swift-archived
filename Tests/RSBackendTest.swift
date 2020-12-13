@@ -68,15 +68,27 @@ final class RSBackendTest: XCTestCase {
     }
 
     func testLoadPerformance() {
-        struct Schema: Codable, Equatable {
-            var birds: [String]
+        struct Object: Codable, Equatable {
+            let date: Date
+            let name: String
         }
-        let automerge = Document(Schema(birds: ["Test"]))
+        struct Schema: Codable, Equatable {
+            var birds: [Object]
+        }
+        var automerge = Document(Schema(birds: [Object(date: Date(), name: "Test")]))
+        (0...1000).forEach({ i in
+            automerge.change({
+                $0.birds.append(Object(date: Date(), name: "\(i)"))
+            })
+        })
+
 
         let document = automerge.save()
-        let newDocument = Document<Schema>(data: document, actor: Actor())
-        XCTAssertEqual(newDocument.content, automerge.content)
 
+        measure() {
+            let newDocument = Document<Schema>(data: document, actor: Actor())
+            XCTAssertEqual(newDocument.content, automerge.content)
+        }
     }
 
 }
