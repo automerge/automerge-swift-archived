@@ -16,7 +16,7 @@ Specify the following in your `Package.swift`:
 
 ## Usage
 
-The following code sample gives a quick overview of ho to use Automerge
+The following code sample gives a quick overview of how to use Automerge
 ```swift
 import Automerge
 /// Define your model object, which will be stored in automerge.
