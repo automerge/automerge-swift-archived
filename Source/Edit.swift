@@ -30,7 +30,7 @@ extension Array where Element == Edit {
         var deletions: Int!
         var insertions: Int!
 
-        for (i, edit) in self.enumerated() {
+        for (i, edit) in enumerated() {
             let index = edit.index
 
             if splicePosition < 0 {
@@ -44,7 +44,7 @@ extension Array where Element == Edit {
 
                 // If there are multiple consecutive insertions at successive indexes,
                 // accumulate them and then process them in a single insertCallback
-                if i == self.count - 1 || self[i + 1].action != .insert || self[i + 1].index != index + 1 {
+                if i == count - 1 || self[i + 1].action != .insert || self[i + 1].index != index + 1 {
                     insertCallback(splicePosition, insertions)
                     splicePosition = -1
                 }
@@ -53,7 +53,7 @@ extension Array where Element == Edit {
 
                 // If there are multiple consecutive removals of the same index,
                 // accumulate them and then process them in a single removeCallback
-                if i == self.count - 1 || self[i + 1].action != .remove || self[i + 1].index != index {
+                if i == count - 1 || self[i + 1].action != .remove || self[i + 1].index != index {
                     removeCallback(splicePosition, deletions)
                     splicePosition = -1
                 }
