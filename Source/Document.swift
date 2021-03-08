@@ -102,10 +102,11 @@ public struct Document<T: Codable> {
      * particular, the `message` property of `options` is an optional human-readable
      * string describing the change.
      */
-    private mutating func makeChange(requestType: Request.RequestType,
-                             context: Context?,
-                             message: String,
-                             undoable: Bool
+    private mutating func makeChange(
+        requestType: Request.RequestType,
+        context: Context?,
+        message: String,
+        undoable: Bool
     ) -> Request?
     {
         state.seq += 1
