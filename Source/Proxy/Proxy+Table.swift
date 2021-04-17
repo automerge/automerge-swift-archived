@@ -14,7 +14,8 @@ public extension Proxy {
         guard let encoded = (try? DictionaryEncoder().encode(row)) else {
             fatalError()
         }
-        return context.addTableRow(path: path, row: encoded)
+        fatalError()
+//        return context.addTableRow(path: path, row: encoded)
     }
 
     func row<Row: Codable>(by rowId: String) -> Proxy<Row>? where Wrapped == Table<Row> {

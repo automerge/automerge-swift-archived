@@ -13,15 +13,18 @@ extension Proxy {
         guard let objectId = objectId else {
             return nil
         }
-        let object = context.getObject(objectId: objectId)
-        guard let conflicts = object[CONFLICTS] as? [Key: Any] else {
-            return nil
-        }
-        guard let fieldName = dynamicMember.fieldName, let realConflicts = conflicts[.string(fieldName)] as? [String: Any], realConflicts.count > 1 else {
-            return nil
-        }
-        let decoder = DictionaryDecoder()
-        return (try? decoder.decode([String: Y].self, from: realConflicts))?.compactMapKeys({ Actor(actorId: $0) })
+        fatalError()
+//        let object = context.getObject(objectId: objectId)
+//        guard let conflicts = object[CONFLICTS] as? [Key: Any] else {
+//            return nil
+//        }
+//        guard let fieldName = dynamicMember.fieldName,
+//              let realConflicts = conflicts[.string(fieldName)] as? [String: Any],
+//              realConflicts.count > 1 else {
+//            return nil
+//        }
+//        let decoder = DictionaryDecoder()
+//        return (try? decoder.decode([String: Y].self, from: realConflicts))?.compactMapKeys({ Actor(actorId: $0) })
     }
 
 }
@@ -32,12 +35,13 @@ extension Proxy where Wrapped: Collection, Wrapped.Index == Int, Wrapped.Element
         guard let objectId = objectId else {
             return nil
         }
-        let object = context.getObject(objectId: objectId)
-        guard let conflicts = object[CONFLICTS] as? [Key: Any], let realConflicts = conflicts[.index(index)] as? [String: Any], realConflicts.count > 1 else {
-            return nil
-        }
-        let decoder = DictionaryDecoder()
-        return (try? decoder.decode([String: Wrapped.Element].self, from: realConflicts))?.compactMapKeys({ Actor(actorId: $0) })
+        fatalError()
+//        let object = context.getObject(objectId: objectId)
+//        guard let conflicts = object[CONFLICTS] as? [Key: Any], let realConflicts = conflicts[.index(index)] as? [String: Any], realConflicts.count > 1 else {
+//            return nil
+//        }
+//        let decoder = DictionaryDecoder()
+//        return (try? decoder.decode([String: Wrapped.Element].self, from: realConflicts))?.compactMapKeys({ Actor(actorId: $0) })
     }
 }
 

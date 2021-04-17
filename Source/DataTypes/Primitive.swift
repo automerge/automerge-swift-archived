@@ -7,7 +7,8 @@
 
 import Foundation
 
-public enum Primitive: Equatable, Codable {
+public enum Primitive: Equatable, Codable, ExpressibleByStringLiteral, ExpressibleByIntegerLiteral {
+
     case string(String)
     case double(Double)
     case int(Int)
@@ -27,6 +28,14 @@ public enum Primitive: Equatable, Codable {
         case .null:
             return nil
         }
+    }
+
+    public init(stringLiteral value: StringLiteralType) {
+        self = .string(value)
+    }
+
+    public init(integerLiteral value: IntegerLiteralType) {
+        self = .int(value)
     }
 
     public init(from decoder: Decoder) throws {

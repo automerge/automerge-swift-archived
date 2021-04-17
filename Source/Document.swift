@@ -27,16 +27,14 @@ public struct Document<T: Codable> {
 
     private var backend: RSBackend
     private var state: State
-    private var root: [String: Any]
+    private var root: Map
+    private var cache: [String: Object]
 
     private init(actor: Actor, backend: RSBackend) {
         self.actor = actor
         self.backend = backend
-        self.root = [
-            OBJECT_ID: ROOT_ID,
-            CONFLICTS: [Key: [String: Any]]()
-        ]
-        self.root[CACHE] = [ROOT_ID: root]
+        self.root = Map(objectId: ROOT_ID, mapValues: [:], conflicts: [:])
+        self.cache = [ROOT_ID: .map(root)]
         self.state = State(seq: 0, version: 0, clock: [:], canUndo: false, canRedo: false)
     }
 
@@ -63,10 +61,6 @@ public struct Document<T: Codable> {
 
         doc.applyPatch(patch: patch)
         self = doc
-    }
-
-    private var cache: [String: [String: Any]] {
-       root[CACHE] as! [String: [String: Any]]
     }
 
     /**
@@ -135,10 +129,10 @@ public struct Document<T: Codable> {
      * change from the frontend.
      */
     private mutating func applyPatchToDoc(patch: Patch, fromBackend: Bool, context: Context?) {
-        var updated = [String: [String: Any]]()
-        var newRoot = interpretPatch(patch: patch.diffs, obj: root, updated: &updated)
-        let cache = newRoot?[CACHE]
-        newRoot?[CACHE] = context?.updated ?? cache
+        var updated = [String: Object]()
+        let newRoot = interpretPatch2(patch: patch.diffs, obj: .map(root), updated: &updated)
+        var cache = self.cache
+        cache = context?.updated ?? cache
         updated[ROOT_ID] = newRoot
 
         if fromBackend {
@@ -169,7 +163,7 @@ public struct Document<T: Codable> {
      * `state`, and returns a new immutable document root object based on `doc` that reflects
      * those updates.
      */
-    private mutating func updateRootObject(update: inout [String: [String: Any]]) {
+    private mutating func updateRootObject(update: inout [String: Object]) {
         var newDoc = update[ROOT_ID]
         if newDoc == nil {
             newDoc = cache[ROOT_ID]
@@ -178,9 +172,14 @@ public struct Document<T: Codable> {
         for objectId in cache.keys where update[objectId] == nil {
             update[objectId] = cache[objectId]
         }
-        newDoc?[CACHE] = update
+        self.cache = update
 
-        self.root = newDoc!
+        if case .map(let newRoot)? = newDoc {
+            self.root = newRoot
+        } else {
+            fatalError()
+        }
+
     }
 
     public func save() -> [UInt8] {

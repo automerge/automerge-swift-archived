@@ -23,12 +23,38 @@ extension Array where Element == [String: Any]? {
 
 }
 
-extension Dictionary where Key == Automerge.Key, Value == [String: Any]? {
+extension Array where Element == [String: Object]? {
+
+    init(_ values: [Int: [String: Object]]) {
+        var result = Array<[String: Object]?>(repeating: nil, count: values.count)
+        for key in values.keys {
+            result[key] = values[key]!
+        }
+
+        self = result.compactMap({ $0 })
+    }
+
+}
+
+extension Dictionary where Key == Automerge.Key, Value == [String: Any] {
 
     init(_ values: [[String: Any]?]) {
         var result = [Key: [String: Any]]()
         for (index, value) in values.enumerated() {
             result[.index(index)] = value
+        }
+
+        self = result
+    }
+
+}
+
+extension Dictionary where Key == Int, Value == [String: Object] {
+
+    init(_ values: [[String: Object]?]) {
+        var result = [Int: [String: Object]]()
+        for (index, value) in values.enumerated() {
+            result[index] = value
         }
 
         self = result
