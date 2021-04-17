@@ -17,9 +17,10 @@ extension Proxy: Collection, Sequence where Wrapped: Collection, Wrapped.Element
 
     public subscript(position: Int) -> Proxy<Wrapped.Element> {
         get {
-            let object = self.objectId.map { context.getObject(objectId: $0) }
-            let listValues = object?[LIST_VALUES] as? [[String: Any]]
-            let objectId = listValues?[position][OBJECT_ID] as? String
+            guard case .list(let list)? = self.objectId.map({ context.getObject(objectId: $0) }) else {
+                fatalError()
+            }
+            let objectId = list.listValues[position].objectId
             return Proxy<Wrapped.Element>(context: context, objectId: objectId, path: path + [.init(key: .index(position), objectId: objectId ?? "")], value: self.get()[position])
         }
     }
@@ -35,10 +36,16 @@ extension Proxy: MutableCollection where Wrapped: MutableCollection, Wrapped.Ele
 
     public subscript(position: Int) -> Proxy<Wrapped.Element> {
         get {
-            let object = self.objectId.map { context.getObject(objectId: $0) }
-            let listValues = object?[LIST_VALUES] as? [[String: Any]]
-            let objectId = listValues?[position][OBJECT_ID] as? String
-            return Proxy<Wrapped.Element>(context: context, objectId: objectId, path: path + [.init(key: .index(position), objectId: objectId ?? "")], value: self.get()[position])
+            guard case .list(let list)? = self.objectId.map({ context.getObject(objectId: $0) }) else {
+                fatalError()
+            }
+            let objectId = list.listValues[position].objectId
+            return Proxy<Wrapped.Element>(
+                context: context,
+                objectId: objectId,
+                path: path + [.init(key: .index(position), objectId: objectId ?? "")]
+                , value: self.get()[position]
+            )
         }
         set {
             fatalError()
@@ -50,8 +57,9 @@ extension Proxy: MutableCollection where Wrapped: MutableCollection, Wrapped.Ele
 }
 
 extension Proxy: RangeReplaceableCollection where Wrapped: RangeReplaceableCollection, Wrapped.Index == Int, Wrapped.Element: Codable {
+
     public convenience init() {
-        let void: (ObjectDiff, [String: Any]?, inout [String: [String: Any]]) -> [String: Any]? = { _, _, _ in
+        let void: (ObjectDiff, Object?, inout [String: Object]) -> Object? = { _, _, _ in
             fatalError()
         }
         self.init(context: Context(actorId: Actor(), applyPatch: void, updated: [:], cache: [:], ops: []), objectId: "", path: [], value: nil)
@@ -62,7 +70,7 @@ extension Proxy: RangeReplaceableCollection where Wrapped: RangeReplaceableColle
         let start = subrange.relative(to: self).startIndex
         let deleteCount = subrange.relative(to: self).endIndex - subrange.relative(to: self).startIndex
         let encoded: [Any] = (try? DictionaryEncoder().encode(Array(newElements)) as [[String: Any]]) ?? Array(newElements)
-        context.splice(path: path, start: start, deletions: deleteCount, insertions: encoded)
+//        context.splice(path: path, start: start, deletions: deleteCount, insertions: encoded)
     }
 
     public func reserveCapacity(_ n: Int) {}
@@ -75,7 +83,7 @@ extension Proxy where Wrapped: RangeReplaceableCollection, Wrapped.Index == Int,
         let start = subrange.relative(to: self).startIndex
         let deleteCount = subrange.relative(to: self).endIndex - subrange.relative(to: self).startIndex
         let encoded: [Any] = (try? DictionaryEncoder().encode(Array(newElements)) as [[String: Any]]) ?? Array(newElements)
-        context.splice(path: path, start: start, deletions: deleteCount, insertions: encoded)
+//        context.splice(path: path, start: start, deletions: deleteCount, insertions: encoded)
     }
 
     public func append(_ newElement: __owned Wrapped.Element) {

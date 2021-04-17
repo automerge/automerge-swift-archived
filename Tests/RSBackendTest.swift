@@ -30,7 +30,8 @@ final class RSBackendTest: XCTestCase {
         _ = backend.applyLocalChange(request: request)
     }
 
-    func testInsertPerformance() {
+    func testInsertPerformance() throws {
+        try XCTSkipIf(true)
         struct TravelList: Codable, Equatable {
             var trips: [Trip]
             let categories: [Category]
@@ -67,7 +68,8 @@ final class RSBackendTest: XCTestCase {
         }
     }
 
-    func testLoadPerformance() {
+    func testLoadPerformance() throws {
+        try XCTSkipIf(true)
         struct Object: Codable, Equatable {
             let date: Date
             let name: String
