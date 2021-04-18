@@ -62,6 +62,20 @@ final class Context {
             return .value(primitive)
         case .map(let map):
             return .object(createNestedMap(obj: objectId, key: key, map: map, insert: insert))
+        case .list(let list):
+            return .object(createNestedList(obj: objectId, key: key, list: list, insert: insert))
+        case .text(let text):
+            return .object(createNestedText(obj: objectId, key: key, text: text, insert: insert))
+        case .table:
+            return .object(createNestedTable(obj: objectId, key: key, insert: insert))
+        case .date(let date):
+            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .double(date.timeIntervalSince1970), datatype: .timestamp)
+            ops.append(operation)
+            return .value(.init(value: .double(date.timeIntervalSince1970), datatype: .timestamp))
+        case .counter(let counter):
+            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: counter.value, datatype: .counter)
+            ops.append(operation)
+            return .value(.init(value: counter.value, datatype: .counter))
         default:
             fatalError()
         }
@@ -168,6 +182,25 @@ final class Context {
         return ObjectDiff(objectId: child, type: .map, props: props)
     }
 
+    /**
+     * Recursively creates Automerge versions of all the objects and nested objects in `value`,
+     * constructing a patch and operations that describe the object tree. The new object is
+     * assigned to the property `key` in the object with ID `obj`. If `insert` is true, a new
+     * list element is created at index `key`, and the new object is assigned to that list
+     * element. If `key` is null, the ID of the new object is used as key (this construction
+     * is used by Automerge.Table).
+     */
+    private func createNestedList(obj: String, key: Key?, list: List, insert: Bool) -> ObjectDiff {
+        let child = UUID().uuidString
+        let key = key ?? .string(child)
+
+        let operation = Op(action: .makeList, obj: obj, key: key, insert: insert, child: child)
+        ops.append(operation)
+        let subpatch = ObjectDiff(objectId: child, type: .list, edits: [], props: [:])
+        insertListItems(subPatch: subpatch, index: 0, values: list.listValues, newObject: true)
+
+        return subpatch
+    }
 
     /**
      * Recursively creates Automerge versions of all the objects and nested objects in `value`,
@@ -177,52 +210,36 @@ final class Context {
      * element. If `key` is null, the ID of the new object is used as key (this construction
      * is used by Automerge.Table).
      */
-    private func createNestedObjects(obj: String, key: Key?, value: Any, insert: Bool) -> ObjectDiff {
-        fatalError()
-//        let child = UUID().uuidString
-//        let key = key ?? .string(child)
-//        switch value {
-//        case let object as [String: Any]:
-//            precondition(object[OBJECT_ID] == nil, "Cannot create a reference to an existing document object")
-//            if object[ISTEXT] != nil, let elms = object[LIST_VALUES] as? [String]  {
-//                let operation = Op(action: .makeText, obj: obj, key: key, insert: insert, child: child)
-//                ops.append(operation)
-//                let subpatch = ObjectDiff(objectId: child, type: .text, edits: [], props: [:])
-//                insertListItems(subPatch: subpatch, index: 0, values: elms, newObject: true)
-//
-//                return subpatch
-//            }
-//
-//            if object[TABLE_VALUES] != nil {
-//                let operation = Op(action: .makeTable, obj: obj, key: key, insert: insert, child: child)
-//                ops.append(operation)
-//                let subpatch = ObjectDiff(objectId: child, type: .table, props: [:])
-//
-//                return subpatch
-//            }
-//
-//            let operation = Op(action: .makeMap, obj: obj, key: key, insert: insert, child: child)
-//            ops.append(operation)
-//
-//            var props = Props()
-//            #warning("fix me")
-////            for nested in object.keys.sorted() {
-////                let valuePatch = setValue(objectId: child, key: .string(nested), value: object[nested], insert: false)
-////                props[.string(nested)] = [actorId.actorId: valuePatch]
-////            }
-//
-//            return ObjectDiff(objectId: child, type: .map, props: props)
-//        case let array as Array<Any>:
-//            let operation = Op(action: .makeList, obj: obj, key: key, insert: insert, child: child)
-//            ops.append(operation)
-//            let subpatch = ObjectDiff(objectId: child, type: .list, edits: [], props: [:])
-//            insertListItems(subPatch: subpatch, index: 0, values: array, newObject: true)
-//
-//            return subpatch
-//
-//        default:
-//            fatalError()
-//        }
+    private func createNestedText(obj: String, key: Key?, text: TextObj, insert: Bool) -> ObjectDiff {
+        let child = UUID().uuidString
+        let key = key ?? .string(child)
+
+        let elems: [Object] = text.characters.map { .primitive(.string($0.value)) }
+        let operation = Op(action: .makeText, obj: obj, key: key, insert: insert, child: child)
+        ops.append(operation)
+        let subpatch = ObjectDiff(objectId: child, type: .text, edits: [], props: [:])
+        insertListItems(subPatch: subpatch, index: 0, values: elems, newObject: true)
+
+        return subpatch
+    }
+
+
+    /**
+     * Recursively creates Automerge versions of all the objects and nested objects in `value`,
+     * constructing a patch and operations that describe the object tree. The new object is
+     * assigned to the property `key` in the object with ID `obj`. If `insert` is true, a new
+     * list element is created at index `key`, and the new object is assigned to that list
+     * element. If `key` is null, the ID of the new object is used as key (this construction
+     * is used by Automerge.Table).
+     */
+    private func createNestedTable(obj: String, key: Key?, insert: Bool) -> ObjectDiff {
+        let child = UUID().uuidString
+        let key = key ?? .string(child)
+        let operation = Op(action: .makeTable, obj: obj, key: key, insert: insert, child: child)
+        ops.append(operation)
+        let subpatch = ObjectDiff(objectId: child, type: .table, props: [:])
+
+        return subpatch
     }
 
     /**
@@ -310,6 +327,10 @@ final class Context {
         switch value {
         case .map(let map):
             return .object(.init(objectId: map.objectId, type: .map))
+        case .list(let list):
+            return .object(.init(objectId: list.objectId, type: .list))
+        case .table(let table):
+            return .object(.init(objectId: table.objectId, type: .table))
         case .primitive(let primitive):
             return .value(primitive)
         case .counter(let counter):
