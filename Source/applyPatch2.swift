@@ -59,13 +59,29 @@ struct TableObj: Equatable {
 
 struct TextObj: Equatable {
     let objectId: String
-    var conflicts: [Int: [String: Object]]
     var characters: [Character]
+    var conflicts: [Int: [String: Object]]
 
-    struct Character: Equatable {
+    struct Character: Equatable, ExpressibleByStringLiteral {
         let value: String
         var conflicts: [String: [String: Object]]
         let opId: String
+
+        init(
+            value: String,
+            conflicts: [String: [String: Object]],
+            opId: String
+        ) {
+            self.value = value
+            self.conflicts = conflicts
+            self.opId = opId
+        }
+
+        init(stringLiteral value: StringLiteralType) {
+            self.value = value
+            self.conflicts = [:]
+            self.opId = ""
+        }
 
         static let blank = Character(value: "", conflicts: [:], opId: "")
     }
@@ -211,7 +227,7 @@ func updateTextObject2(patch: ObjectDiff, text: TextObj?, updated: inout [String
             fatalError()
         }
     }
-    let text = TextObj(objectId: objectId, conflicts: [:], characters: elems)
+    let text = TextObj(objectId: objectId, characters: elems, conflicts: [:])
     updated[objectId] = .text(text)
 
     return text
