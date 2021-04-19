@@ -73,79 +73,11 @@ final class Context {
             ops.append(operation)
             return .value(.init(value: .double(date.timeIntervalSince1970), datatype: .timestamp))
         case .counter(let counter):
-            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: counter.value, datatype: .counter)
+            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .int(counter.value), datatype: .counter)
             ops.append(operation)
-            return .value(.init(value: counter.value, datatype: .counter))
-        default:
-            fatalError()
+            return .value(.init(value: .int(counter.value), datatype: .counter))
         }
-//        switch value {
-//        case let number as NSNumber:
-//            switch CFNumberGetType(number) {
-//            case .intType, .sInt8Type, .sInt16Type, .sInt32Type, .sInt64Type:
-//                let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .int(number.intValue))
-//                ops.append(operation)
-//                return .value(.int(number.intValue))
-//            case .charType:
-//                let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .bool(number.boolValue))
-//                ops.append(operation)
-//                return .value(.bool(number.boolValue))
-//            case .floatType, .float32Type, .float64Type, .cgFloatType:
-//                let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .double(number.doubleValue))
-//                ops.append(operation)
-//                return .value(.double(number.doubleValue))
-//            default:
-//                fatalError("Unsuported")
-//            }
-//        case let bool as Bool:
-//            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .bool(bool))
-//            ops.append(operation)
-//            return .value(.bool(bool))
-//        case  let value as Int:
-//            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .int(value))
-//            ops.append(operation)
-//            return .value(.int(value))
-//        case  let value as Double:
-//            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .double(value))
-//            ops.append(operation)
-//            return .value(.double(value))
-//        case let string as String:
-//            if string.starts(with: "_am_date:"), let date = EncoderDateFormatter().date(from: string) {
-//                let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .double(date.timeIntervalSince1970), datatype: .timestamp)
-//                ops.append(operation)
-//                return .value(.init(value: .double(date.timeIntervalSince1970), datatype: .timestamp))
-//            } else {
-//                let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .string(string))
-//                ops.append(operation)
-//                return .value(.string(string))
-//            }
-//        case let uuid as UUID:
-//            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .string(uuid.uuidString))
-//            ops.append(operation)
-//            return .value(.string(uuid.uuidString))
-//        case let character as Character:
-//            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .string(String(character)))
-//            ops.append(operation)
-//            return .value(.string(String(character)))
-//        case let date as Date:
-//            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .double(date.timeIntervalSince1970), datatype: .timestamp)
-//            ops.append(operation)
-//            return .value(.init(value: .double(date.timeIntervalSince1970), datatype: .timestamp))
-//        case let couter as Counter:
-//            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .int(couter.value), datatype: .counter)
-//            ops.append(operation)
-//            return .value(.init(value: .int(couter.value), datatype: .counter))
-//        case let object as [String: Any]:
-//            return setValue(objectId: objectId, key: key, object: object, insert: insert)
-//        case let array as [Any]:
-//            return .object(createNestedObjects(obj: objectId, key: key, value: array, insert: insert))
-//        case is Optional<Any>:
-//            let operation = Op(action: .del, obj: objectId, key: key!, insert: insert)
-//            ops.append(operation)
-//            return .value(.null)
-//        default:
-//            fatalError()
-//        }
+
     }
 
     func setValue(objectId: String, key: Key?, counter: Counter, insert: Bool) -> Diff {
@@ -300,21 +232,21 @@ final class Context {
      */
     func setMapKey(path: [KeyPathElement], key: String, value: Object) {
         let objectId = path.isEmpty ? ROOT_ID : path[path.count - 1].objectId
-        guard case .map(let object) = getObject(objectId: objectId) else {
+        guard case .map(let map) = getObject(objectId: objectId) else {
             fatalError("Must be Map")
         }
-        if case .counter = object[key] {
+        if case .counter = map[key] {
             fatalError("Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.")
         }
         // If the assigned field value is the same as the existing value, and
         // the assignment does not resolve a conflict, do nothing
 
-        if object[key] != value {
+        if map[key] != value {
             applyAt(path: path, callback: { subpatch in
                 let valuePatch = setValue(objectId: objectId, key: .string(key), value: value, insert: false)
                 subpatch.props?[.string(key)] = [actorId.actorId: valuePatch]
             })
-        } else if object.conflicts[key]?.count ?? 0 > 1 {
+        } else if map.conflicts[key]?.count ?? 0 > 1 {
             fatalError()
         }
     }
@@ -334,7 +266,7 @@ final class Context {
         case .primitive(let primitive):
             return .value(primitive)
         case .counter(let counter):
-            return .value(.init(value: counter.value, datatype: .counter))
+            return .value(.init(value: .int(counter.value), datatype: .counter))
         case .date(let date):
             return .value(.init(value: .double(date.timeIntervalSince1970), datatype: .timestamp))
         default:
@@ -540,24 +472,15 @@ final class Context {
         switch key {
         case .string(let key):
             if  case .map(let map) = object,
-                case .counter(let counter) = map[key],
-               case .int(let value) = counter.value {
-                counterValue = value
-            } else if case .counter(let counter) = object,
-                      case .double(let value) = counter.value {
-                counterValue = Int(value)
-            }else {
+                case .counter(let counter) = map[key] {
+                counterValue = counter.value
+            } else {
                 fatalError()
             }
         case .index(let index):
             if case .list(let list) = object,
-               case .counter(let counter) = list.listValues[index],
-               case .int(let value) = counter.value {
-                counterValue = value
-            } else if case .list(let list) = object,
-                      case .counter(let counter) = list.listValues[index],
-                      case .double(let value) = counter.value{
-                counterValue = Int(value)
+               case .counter(let counter) = list.listValues[index] {
+                counterValue = counter.value
             } else {
                 fatalError()
             }

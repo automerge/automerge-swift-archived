@@ -13,11 +13,20 @@ extension Proxy {
         guard let objectId = objectId else {
             return nil
         }
-        fatalError()
-//        let object = context.getObject(objectId: objectId)
-//        guard let conflicts = object[CONFLICTS] as? [Key: Any] else {
-//            return nil
-//        }
+        let object = context.getObject(objectId: objectId)
+        switch object {
+        case .primitive:
+            return nil
+        case .map(let map):
+            guard let fieldName = dynamicMember.fieldName,
+                  let realConflicts = map.conflicts[fieldName],
+                  realConflicts.count > 1 else {
+                return nil
+            }
+            fatalError()
+        default:
+            fatalError()
+        }
 //        guard let fieldName = dynamicMember.fieldName,
 //              let realConflicts = conflicts[.string(fieldName)] as? [String: Any],
 //              realConflicts.count > 1 else {

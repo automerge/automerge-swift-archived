@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Map: Equatable {
+struct Map: Equatable, Codable {
 
     init(objectId: String, mapValues: [String: Object] = [:], conflicts: [String: [String: Object]] = [:]) {
         self.objectId = objectId
@@ -22,13 +22,43 @@ struct Map: Equatable {
     subscript(_ key: String) -> Object? {
         return mapValues[key]
     }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(mapValues)
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        self.mapValues = try container.decode([String: Object].self)
+        self.objectId = ""
+        self.conflicts = [:]
+    }
 }
 
-struct List: Equatable, Collection {
+struct List: Equatable, Collection, Codable {
 
     let objectId: String
     var listValues: [Object]
     var conflicts: [Int: [String: Object]]
+
+    init(objectId: String, listValues: [Object] = [], conflicts: [Int: [String: Object]] = [:]) {
+        self.objectId = objectId
+        self.listValues = listValues
+        self.conflicts = conflicts
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(listValues)
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        self.listValues = try container.decode([Object].self)
+        self.objectId = ""
+        self.conflicts = [:]
+    }
 
     var startIndex: Int {
         return listValues.startIndex
@@ -50,17 +80,41 @@ struct List: Equatable, Collection {
     }
 }
 
-struct TableObj: Equatable {
+struct TableObj: Equatable, Codable {
     let objectId: String
     var tableValues: [String: Object]
     var conflicts: [String: Object]
 
+    init(objectId: String, tableValues: [String: Object] = [:], conflicts: [String: Object] = [:]) {
+        self.objectId = objectId
+        self.tableValues = tableValues
+        self.conflicts = conflicts
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(tableValues)
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        self.tableValues = try container.decode([String: Object].self)
+        self.objectId = ""
+        self.conflicts = [:]
+    }
+
 }
 
-struct TextObj: Equatable {
+struct TextObj: Equatable, Codable {
     let objectId: String
     var characters: [Character]
     var conflicts: [Int: [String: Object]]
+
+    init(objectId: String, characters: [Character] = [], conflicts: [Int: [String: Object]] = [:]) {
+        self.objectId = objectId
+        self.characters = characters
+        self.conflicts = conflicts
+    }
 
     struct Character: Equatable, ExpressibleByStringLiteral {
         let value: String
@@ -86,26 +140,28 @@ struct TextObj: Equatable {
         static let blank = Character(value: "", conflicts: [:], opId: "")
     }
 
-}
-
-struct CounterObj: Equatable {
-    let value: Primitive
-
-    init(value: Primitive) {
-        self.value = value
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(characters.map({ $0.value }))
     }
 
-    init(integerLiteral value: IntegerLiteralType) {
-        self.value = .int(value)
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let characters = try container.decode([String].self)
+        self.characters = characters.map({ Character(value: $0, conflicts: [:], opId: "") })
+        self.conflicts = [:]
+        self.objectId = ""
     }
+
 }
 
-enum Object: Equatable, ExpressibleByStringLiteral, ExpressibleByIntegerLiteral {
+enum Object: Equatable, ExpressibleByStringLiteral, ExpressibleByIntegerLiteral, Codable {
+
     case text(TextObj)
     case map(Map)
     case table(TableObj)
     case list(List)
-    case counter(CounterObj)
+    case counter(Counter)
     case date(Date)
     case primitive(Primitive)
 
@@ -131,6 +187,49 @@ enum Object: Equatable, ExpressibleByStringLiteral, ExpressibleByIntegerLiteral 
     init(stringLiteral value: StringLiteralType) {
         self = .primitive(.string(value))
     }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .map(let map):
+            try container.encode(map)
+        case .table(let table):
+            try container.encode(table)
+        case .counter(let counter):
+            try container.encode(counter)
+        case .date(let date):
+            try container.encode(date)
+        case .primitive(let primitive):
+            try container.encode(primitive)
+        case .text(let text):
+            try container.encode(text)
+        case .list(let list):
+            try container.encode(list)
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let map = try? container.decode(Map.self) {
+            self = .map(map)
+        } else if let table = try? container.decode(TableObj.self) {
+            self = .table(table)
+        } else if let list = try? container.decode(List.self) {
+            self = .list(list)
+        } else if let date = try? container.decode(Date.self) {
+            self = .date(date)
+        } else if let primitive = try? container.decode(Primitive.self) {
+            self = .primitive(primitive)
+        } else if let counter = try? container.decode(Counter.self) {
+            self = .counter(counter)
+        } else if let text = try? container.decode(TextObj.self) {
+            self = .text(text)
+        } else {
+            fatalError()
+        }
+    }
+
+
 }
 
 /**
@@ -163,6 +262,9 @@ func interpretPatch2(patch: ObjectDiff, obj: Object?, updated: inout [String: Ob
         return .table(newTable)
     case (.text, .text(let text)):
         let newText = updateTextObject2(patch: patch, text: text, updated: &updated)
+        return .text(newText)
+    case (.text, .none):
+        let newText = updateTextObject2(patch: patch, text: nil, updated: &updated)
         return .text(newText)
     default:
         fatalError()
@@ -217,6 +319,8 @@ func updateTextObject2(patch: ObjectDiff, text: TextObj?, updated: inout [String
     keys?.forEach { index in
         let opId = patch.props![.index(index)]?.keys.sorted(by: lamportCompare2)[0]
         if let value = getValue2(patch: patch.props![.index(index)]![opId!]!, object: nil, updated: &updated) {
+//            elems[index].value = value
+//            elems
             //            elems[index] = value
             //            elems[index]["opId"] = opId
             fatalError("Fix this")
@@ -392,7 +496,15 @@ func getValue2(patch: Diff, object: Object?, updated: inout [String: Object]) ->
     case .object(let objectDiff):
         return interpretPatch2(patch: objectDiff, obj: object, updated: &updated)
     case .value(let valueDiff) where valueDiff.datatype == .counter:
-        return .counter(CounterObj(value: valueDiff.value))
+        if case .int(let counterValue) = valueDiff.value {
+            return .counter(Counter(counterValue))
+        }
+        fatalError()
+    case .value(let valueDiff) where valueDiff.datatype == .timestamp:
+        if case .double(let timeIntervalSince1970) = valueDiff.value {
+            return .date(Date(timeIntervalSince1970: timeIntervalSince1970))
+        }
+        fatalError()
     case .value(let valueDiff):
         return .primitive(valueDiff.value)
     }
