@@ -266,7 +266,7 @@ class ContextTest: XCTestCase {
                                 mapValues: ["values": child],
                                 conflicts: ["values": [
                                     "actor1": .date(dateValue),
-                                    "actor2": .counter(CounterObj(value: 0)),
+                                    "actor2": .counter(0),
                                     "actor3": 42,
                                     "actor4": .primitive(.null),
                                     "actor5": child
@@ -474,7 +474,7 @@ class ContextTest: XCTestCase {
             ops: []
         )
         // WHEN
-        context.setMapKey(path: [], key: "counter", value: .counter(CounterObj(value: 3)))
+        context.setMapKey(path: [], key: "counter", value: .counter(3))
 
         //Then
         XCTAssertEqual(context.ops, [
@@ -977,7 +977,7 @@ class ContextTest: XCTestCase {
 
         //should increment a counter
         func testCounter1() {
-            let counter: Object = .counter(CounterObj(value: 0))
+            let counter: Object = .counter(0)
             let actor = Actor()
             let context = Context(
                 actorId: actor,
