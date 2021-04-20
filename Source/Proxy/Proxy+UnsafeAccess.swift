@@ -38,28 +38,27 @@ public final class UnsafeProxy {
         return UnsafeProxy(context: context, objectId: objectId, path: path + [.init(key: .string(dynamicMember), objectId: objectId ?? "")])
     }
 
-//    private func set<T: Codable>(rootObject: T) {
-//        let dictionary = try! DictionaryEncoder().encode(rootObject) as [String: Any]
-//        for key in dictionary.keys {
-//            context.setMapKey(path: path, key: key, value: dictionary[key])
-//        }
-//    }
+    private func set(rootObject: Map) {
+        for (key, value) in rootObject.mapValues {
+            context.setMapKey(path: path, key: key, value: value)
+        }
+    }
 
     public func set<T: Codable>(_ newValue: T) {
+        let newObject: Object = try! TypeToObject().map(newValue)
         guard let lastPathKey = path.last?.key else {
-//            self.set(rootObject: newValue)
-            #warning("fix me")
+            if case .map(let root) = newObject {
+                self.set(rootObject: root)
+            }
             return
         }
-        let encoded: Any = (try? DictionaryEncoder().encode(newValue)) ?? newValue
         switch lastPathKey {
         case .string(let key):
             let path = Array(self.path.dropLast())
-//            context.setMapKey(path: path, key: key, value: encoded)
-            #warning("fix me")
+            context.setMapKey(path: path, key: key, value: newObject)
         case .index(let index):
             let path = Array(self.path.dropLast())
-//            context.setListIndex(path: path, index: index, value: encoded)
+            context.setListIndex(path: path, index: index, value: newObject)
         }
     }
 
@@ -77,4 +76,28 @@ public final class UnsafeProxy {
     }
 
 }
+
+//func set(newValue: Object) {
+//    guard let lastPathKey = path.last?.key else {
+//        if case .map(let root) = newValue {
+//            self.set(rootObject: root)
+//        }
+//        return
+//    }
+//    switch lastPathKey {
+//    case .string(let key):
+//        let path = Array(self.path.dropLast())
+//        context.setMapKey(path: path, key: key, value: newValue)
+//    case .index(let index):
+//        let path = Array(self.path.dropLast())
+//        context.setListIndex(path: path, index: index, value: newValue)
+//    }
+//}
+//
+//public func set(_ newValue: Wrapped) {
+//    let mapper = TypeToObject()
+//    let object = try! mapper.map(newValue)
+//
+//    set(newValue: object)
+//}
 

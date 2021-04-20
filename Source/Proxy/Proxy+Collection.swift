@@ -69,8 +69,8 @@ extension Proxy: RangeReplaceableCollection where Wrapped: RangeReplaceableColle
         let newElements = proxyElements.map { $0.get() }
         let start = subrange.relative(to: self).startIndex
         let deleteCount = subrange.relative(to: self).endIndex - subrange.relative(to: self).startIndex
-        let encoded: [Any] = (try? DictionaryEncoder().encode(Array(newElements)) as [[String: Any]]) ?? Array(newElements)
-//        context.splice(path: path, start: start, deletions: deleteCount, insertions: encoded)
+        let encoded = try!TypeToObject().map(Array(newElements))
+        context.splice(path: path, start: start, deletions: deleteCount, insertions: encoded)
     }
 
     public func reserveCapacity(_ n: Int) {}
@@ -82,8 +82,8 @@ extension Proxy where Wrapped: RangeReplaceableCollection, Wrapped.Index == Int,
     public func replaceSubrange<C, R>(_ subrange: R, with newElements: C) where C : Collection, R : RangeExpression, C.Element == Wrapped.Element, Index == R.Bound {
         let start = subrange.relative(to: self).startIndex
         let deleteCount = subrange.relative(to: self).endIndex - subrange.relative(to: self).startIndex
-        let encoded: [Any] = (try? DictionaryEncoder().encode(Array(newElements)) as [[String: Any]]) ?? Array(newElements)
-//        context.splice(path: path, start: start, deletions: deleteCount, insertions: encoded)
+        let encoded = try! TypeToObject().map(Array(newElements))
+        context.splice(path: path, start: start, deletions: deleteCount, insertions: encoded)
     }
 
     public func append(_ newElement: __owned Wrapped.Element) {

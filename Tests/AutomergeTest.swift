@@ -502,7 +502,7 @@ class AutomergeTest: XCTestCase {
         struct Scheme: Codable, Equatable {
             var counter: Counter?
         }
-        var s1 = Document(Scheme(counter: nil))
+        var s1 = Document(Scheme(counter: Counter(0)))
         s1.change { $0.counter?.set(1) }
         s1.change { $0.counter?.increment(2) }
 

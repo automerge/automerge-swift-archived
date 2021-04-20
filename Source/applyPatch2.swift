@@ -40,9 +40,9 @@ struct List: Equatable, Collection, Codable {
 
     let objectId: String
     var listValues: [Object]
-    var conflicts: [Int: [String: Object]]
+    var conflicts: [[String: Object]]
 
-    init(objectId: String, listValues: [Object] = [], conflicts: [Int: [String: Object]] = [:]) {
+    init(objectId: String, listValues: [Object] = [], conflicts: [[String: Object]] = []) {
         self.objectId = objectId
         self.listValues = listValues
         self.conflicts = conflicts
@@ -57,7 +57,7 @@ struct List: Equatable, Collection, Codable {
         let container = try decoder.singleValueContainer()
         self.listValues = try container.decode([Object].self)
         self.objectId = ""
-        self.conflicts = [:]
+        self.conflicts = []
     }
 
     var startIndex: Int {
@@ -155,7 +155,7 @@ struct TextObj: Equatable, Codable {
 
 }
 
-enum Object: Equatable, ExpressibleByStringLiteral, ExpressibleByIntegerLiteral, Codable {
+enum Object: Equatable, ExpressibleByStringLiteral, ExpressibleByFloatLiteral, ExpressibleByArrayLiteral, Codable {
 
     case text(TextObj)
     case map(Map)
@@ -180,8 +180,12 @@ enum Object: Equatable, ExpressibleByStringLiteral, ExpressibleByIntegerLiteral,
         }
     }
 
-    init(integerLiteral value: IntegerLiteralType) {
-        self = .primitive(.int(value))
+    init(arrayLiteral elements: Object...) {
+        self = .list(List(objectId: "", listValues: elements))
+    }
+
+    public init(floatLiteral value: Float) {
+        self = .primitive(.number(Double(value)))
     }
 
     init(stringLiteral value: StringLiteralType) {
@@ -210,22 +214,22 @@ enum Object: Equatable, ExpressibleByStringLiteral, ExpressibleByIntegerLiteral,
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
-        if let map = try? container.decode(Map.self) {
-            self = .map(map)
-        } else if let table = try? container.decode(TableObj.self) {
-            self = .table(table)
-        } else if let list = try? container.decode(List.self) {
+        if let list = try? container.decode(List.self) {
             self = .list(list)
         } else if let date = try? container.decode(Date.self) {
             self = .date(date)
-        } else if let primitive = try? container.decode(Primitive.self) {
-            self = .primitive(primitive)
         } else if let counter = try? container.decode(Counter.self) {
             self = .counter(counter)
+        } else if let table = try? container.decode(TableObj.self) {
+            self = .table(table)
+        } else if let map = try? container.decode(Map.self) {
+            self = .map(map)
         } else if let text = try? container.decode(TextObj.self) {
             self = .text(text)
+        } else if let primitive = try? container.decode(Primitive.self) {
+            self = .primitive(primitive)
         } else {
-            fatalError()
+            self = .primitive(.null)
         }
     }
 
@@ -344,12 +348,12 @@ func updateTextObject2(patch: ObjectDiff, text: TextObj?, updated: inout [String
  */
 func updateListObject2(patch: ObjectDiff, list: List?, updated: inout [String: Object]) -> List {
     let objectId = patch.objectId
-    var list = list ?? List(objectId: objectId, listValues: [], conflicts: [:])
+    var list = list ?? List(objectId: objectId, listValues: [])
     var listValues = list.listValues
-    var conflicts = Array(list.conflicts)
+    var conflicts: [[String: Object]?] = list.conflicts
     patch.edits?.iterate(
         insertCallback: { index, insertions in
-            let blanksValues = Array<Object>(repeating: .primitive(1), count: insertions)
+            let blanksValues = Array<Object>(repeating: .primitive(1.0), count: insertions)
             listValues.replaceSubrange(index..<index, with: blanksValues)
             let blanksConflicts = Array<[String : Object]?>(repeating: nil, count: insertions)
             conflicts.replaceSubrange(index..<index, with: blanksConflicts)
@@ -358,10 +362,9 @@ func updateListObject2(patch: ObjectDiff, list: List?, updated: inout [String: O
             listValues.removeSubrange(index..<index + deletions)
             conflicts.removeSubrange(index..<index + deletions)
         })
-    var dictConflicts = [Int: [String: Object]](conflicts)
     list.listValues = listValues
-    applyProperties2(props: patch.props, list: &list, conflicts: &dictConflicts, updated: &updated)
-    list.conflicts = dictConflicts
+    applyProperties2(props: patch.props, list: &list, conflicts: &conflicts, updated: &updated)
+    list.conflicts = conflicts.compactMap({ $0 })
     updated[objectId] = .list(list)
 
     return list
@@ -398,7 +401,7 @@ func updateMapObject2(patch: ObjectDiff, map: Map?, updated: inout [String: Obje
 func applyProperties2(
     props: Props?,
     list: inout List,
-    conflicts: inout [Int: [String: Object]],
+    conflicts: inout [[String: Object]?],
     updated: inout [String: Object]
 ) {
     guard let props = props else {
@@ -496,12 +499,12 @@ func getValue2(patch: Diff, object: Object?, updated: inout [String: Object]) ->
     case .object(let objectDiff):
         return interpretPatch2(patch: objectDiff, obj: object, updated: &updated)
     case .value(let valueDiff) where valueDiff.datatype == .counter:
-        if case .int(let counterValue) = valueDiff.value {
-            return .counter(Counter(counterValue))
+        if case .number(let counterValue) = valueDiff.value {
+            return .counter(Counter(Int(counterValue)))
         }
         fatalError()
     case .value(let valueDiff) where valueDiff.datatype == .timestamp:
-        if case .double(let timeIntervalSince1970) = valueDiff.value {
+        if case .number(let timeIntervalSince1970) = valueDiff.value {
             return .date(Date(timeIntervalSince1970: timeIntervalSince1970))
         }
         fatalError()
