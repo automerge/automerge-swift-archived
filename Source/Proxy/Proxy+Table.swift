@@ -11,11 +11,11 @@ public extension Proxy {
 
     @discardableResult
     func add<Row: Codable>(_ row: Row) -> String where Wrapped == Table<Row>  {
-        guard let encoded = (try? DictionaryEncoder().encode(row)) else {
+        guard case .map(let row) = try! TypeToObject().map(row) as Object else {
             fatalError()
         }
-        fatalError()
-//        return context.addTableRow(path: path, row: encoded)
+
+        return context.addTableRow(path: path, row: row)
     }
 
     func row<Row: Codable>(by rowId: String) -> Proxy<Row>? where Wrapped == Table<Row> {

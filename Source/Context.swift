@@ -57,7 +57,12 @@ final class Context {
     func setValue(objectId: String, key: Key?, value: Object, insert: Bool) -> Diff {
         switch value {
         case .primitive(let primitive):
-            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: primitive)
+            let operation: Op
+            if case .null = primitive {
+                operation = Op(action: .del, obj: objectId, key: key!, insert: insert)
+            } else {
+                operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: primitive)
+            }
             ops.append(operation)
             return .value(primitive)
         case .map(let map):
@@ -69,26 +74,15 @@ final class Context {
         case .table:
             return .object(createNestedTable(obj: objectId, key: key, insert: insert))
         case .date(let date):
-            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .double(date.timeIntervalSince1970), datatype: .timestamp)
+            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .number(date.timeIntervalSince1970), datatype: .timestamp)
             ops.append(operation)
-            return .value(.init(value: .double(date.timeIntervalSince1970), datatype: .timestamp))
+            return .value(.init(value: .number(date.timeIntervalSince1970), datatype: .timestamp))
         case .counter(let counter):
-            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .int(counter.value), datatype: .counter)
+            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .number(Double(counter.value)), datatype: .counter)
             ops.append(operation)
-            return .value(.init(value: .int(counter.value), datatype: .counter))
+            return .value(.init(value: .number(Double(counter.value)), datatype: .counter))
         }
 
-    }
-
-    func setValue(objectId: String, key: Key?, counter: Counter, insert: Bool) -> Diff {
-        fatalError()
-//        if let counterValue = object[COUNTER_VALUE] as? Int {
-//            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .int(counterValue), datatype: .counter)
-//            ops.append(operation)
-//            return .value(.init(value: .int(counterValue), datatype: .counter))
-//        } else {
-//            return .object(createNestedObjects(obj: objectId, key: key, value: object, insert: insert))
-//        }
     }
 
     /**
@@ -235,9 +229,9 @@ final class Context {
         guard case .map(let map) = getObject(objectId: objectId) else {
             fatalError("Must be Map")
         }
-        if case .counter = map[key] {
-            fatalError("Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.")
-        }
+//        if case .counter = map[key] {
+//            fatalError("Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.")
+//        }
         // If the assigned field value is the same as the existing value, and
         // the assignment does not resolve a conflict, do nothing
 
@@ -266,9 +260,9 @@ final class Context {
         case .primitive(let primitive):
             return .value(primitive)
         case .counter(let counter):
-            return .value(.init(value: .int(counter.value), datatype: .counter))
+            return .value(.init(value: .number(Double(counter.value)), datatype: .counter))
         case .date(let date):
-            return .value(.init(value: .double(date.timeIntervalSince1970), datatype: .timestamp))
+            return .value(.init(value: .number(date.timeIntervalSince1970), datatype: .timestamp))
         default:
             fatalError()
         }
@@ -341,8 +335,8 @@ final class Context {
             if subPatch.props == nil {
                 subPatch.props = [:]
             }
-            if subPatch.props?[pathElem.key] == nil, case .string(let key) = pathElem.key {
-                subPatch.props?[pathElem.key] = getValuesDescriptions(path: path, object: object, key: key)
+            if subPatch.props?[pathElem.key] == nil {
+                subPatch.props?[pathElem.key] = getValuesDescriptions(path: path, object: object, key:  pathElem.key)
             }
             var nextOpId: String?
             let values = subPatch.props![pathElem.key]!
@@ -351,11 +345,11 @@ final class Context {
                     nextOpId = opId
                 }
             }
-            guard let nextOpId2 = nextOpId, case .object(let objectDiff) = values[nextOpId2], case .string(let key) = pathElem.key else {
+            guard let nextOpId2 = nextOpId, case .object(let objectDiff) = values[nextOpId2]  else {
                 fatalError("Cannot find path object with objectId \(pathElem.objectId)")
             }
             subPatch = objectDiff
-            object = getPropertyValue(object: object, key: key, opId: nextOpId2)
+            object = getPropertyValue(object: object, key: pathElem.key, opId: nextOpId2)
 
         }
         if subPatch.props == nil {
@@ -369,12 +363,14 @@ final class Context {
      * Returns the value at property `key` of object `object`. In the case of a conflict, returns
      * the value whose assignment operation has the ID `opId`.
      */
-    func getPropertyValue(object: Object, key: String, opId: String) -> Object {
-        switch object {
-        case .table(let table):
+    func getPropertyValue(object: Object, key: Key, opId: String) -> Object {
+        switch (object, key) {
+        case (.table(let table), .string(let key)):
             return table.tableValues[key]!
-        case .map(let map):
+        case (.map(let map), .string(let key)):
             return map.conflicts[key]![opId]!
+        case (.list(let list), .index(let index)):
+            return list.conflicts[index][opId]!
         default:
         fatalError()
         }
@@ -385,16 +381,24 @@ final class Context {
      * property `key` of `object` (there might be multiple values in the case of a conflict), and
      * returns an object that maps operation IDs to descriptions of values.
      */
-    func getValuesDescriptions(path: [KeyPathElement], object: Object, key: String) -> [String: Diff] {
-        switch object {
-        case .table(let table):
+    func getValuesDescriptions(path: [KeyPathElement], object: Object, key: Key) -> [String: Diff] {
+        switch (object, key) {
+        case (.table(let table), .string(let key)):
             if let value = table.tableValues[key]  {
-             return [key: getValueDescription(value: value)]
+                return [key: getValueDescription(value: value)]
             } else {
                 return [:]
             }
-        case .map(let map):
+        case (.map(let map), .string(let key)):
             let conflict = map.conflicts[key]!
+            var values = [String: Diff]()
+            for opId in conflict.keys {
+                values[opId] = getValueDescription(value: conflict[opId]!)
+            }
+
+            return values
+        case (.list(let list), .index(let index)):
+            let conflict = list.conflicts[index]
             var values = [String: Diff]()
             for opId in conflict.keys {
                 values[opId] = getValueDescription(value: conflict[opId]!)
@@ -434,7 +438,7 @@ final class Context {
      * Returns the objectId of the new row.
      */
     func addTableRow(path: [KeyPathElement], row: Map) -> String {
-        precondition(row[OBJECT_ID] == nil, "Cannot reuse an existing object as table row")
+        precondition(row.objectId == "", "Cannot reuse an existing object as table row")
         precondition(row["id"] == nil, "A table row must not have an id property; it is generated automatically")
 
         let valuePatch = setValue(objectId: path[path.count - 1].objectId, key: nil, value: .map(row), insert: false)
@@ -486,9 +490,9 @@ final class Context {
             }
         }
         // TODO what if there is a conflicting value on the same key as the counter?
-        ops.append(Op(action: .inc, obj: objectId, key: key, value: .int(delta)))
+        ops.append(Op(action: .inc, obj: objectId, key: key, value: .number(Double(delta))))
         applyAt(path: path, callback: { subpatch in
-            subpatch.props?[key] = [actorId.actorId: .value(.init(value: .int(counterValue + delta), datatype: .counter))]
+            subpatch.props?[key] = [actorId.actorId: .value(.init(value: .number(Double(counterValue + delta)), datatype: .counter))]
         })
     }
 

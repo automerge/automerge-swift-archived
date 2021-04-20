@@ -54,7 +54,7 @@ final class ApplyPatchTest: XCTestCase {
         XCTAssertEqual(newList.objectId, "E10E9F4C-721D-4925-A580-C667DD538A02")
         XCTAssertEqual(newList.conflicts.count, 1)
         XCTAssertEqual(newList.conflicts, [
-            0: ["595663f742244778981c54fbe0ee6bd7": .primitive("chaffinch")]
+            ["595663f742244778981c54fbe0ee6bd7": .primitive("chaffinch")]
         ])
     }
 

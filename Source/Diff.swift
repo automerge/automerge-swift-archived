@@ -49,10 +49,10 @@ enum Diff: Equatable, Codable {
     }
 }
 
-extension Diff: ExpressibleByIntegerLiteral {
+extension Diff: ExpressibleByFloatLiteral {
     
-    init(integerLiteral value: Int) {
-        self = .value(.int(value))
+    init(floatLiteral value: Float) {
+        self = .value(.number(Double(value)))
     }
 
 }

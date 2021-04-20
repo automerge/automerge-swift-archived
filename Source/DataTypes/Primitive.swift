@@ -7,11 +7,10 @@
 
 import Foundation
 
-public enum Primitive: Equatable, Codable, ExpressibleByStringLiteral, ExpressibleByIntegerLiteral {
+public enum Primitive: Equatable, Codable, ExpressibleByStringLiteral, ExpressibleByFloatLiteral, ExpressibleByBooleanLiteral , ExpressibleByNilLiteral {
 
     case string(String)
-    case double(Double)
-    case int(Int)
+    case number(Double)
     case bool(Bool)
     case null
 
@@ -19,10 +18,8 @@ public enum Primitive: Equatable, Codable, ExpressibleByStringLiteral, Expressib
         switch self {
         case .string(let stringValue):
             return stringValue
-        case .double(let doubleValue):
-            return doubleValue
-        case .int(let intValue):
-            return intValue
+        case .number(let number):
+            return number
         case .bool(let boolValue):
             return boolValue
         case .null:
@@ -34,8 +31,16 @@ public enum Primitive: Equatable, Codable, ExpressibleByStringLiteral, Expressib
         self = .string(value)
     }
 
-    public init(integerLiteral value: IntegerLiteralType) {
-        self = .int(value)
+    public init(floatLiteral value: Float) {
+        self = .number(Double(value))
+    }
+
+    public init(booleanLiteral value: Bool) {
+        self = .bool(value)
+    }
+
+    public init(nilLiteral: Void) {
+        self = .null
     }
 
     public init(from decoder: Decoder) throws {
@@ -43,9 +48,7 @@ public enum Primitive: Equatable, Codable, ExpressibleByStringLiteral, Expressib
         if let string = try? container.decode(String.self) {
             self = .string(string)
         } else if let double = try? container.decode(Double.self) {
-            self = .double(double)
-        } else if let int = try? container.decode(Int.self) {
-            self = .int(int)
+            self = .number(double)
         } else if let bool = try? container.decode(Bool.self) {
             self = .bool(bool)
         } else {
@@ -58,10 +61,8 @@ public enum Primitive: Equatable, Codable, ExpressibleByStringLiteral, Expressib
         switch self {
         case .string(let string):
             try container.encode(string)
-        case .double(let double):
-            try container.encode(double)
-        case .int(let int):
-            try container.encode(int)
+        case .number(let number):
+            try container.encode(number)
         case .bool(let bool):
             try container.encode(bool)
         case .null:
