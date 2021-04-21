@@ -80,31 +80,6 @@ struct List: Equatable, Collection, Codable {
     }
 }
 
-struct TableObj: Equatable, Codable {
-    let objectId: String
-    var tableValues: [String: Object]
-    var conflicts: [String: Object]
-
-    init(objectId: String, tableValues: [String: Object] = [:], conflicts: [String: Object] = [:]) {
-        self.objectId = objectId
-        self.tableValues = tableValues
-        self.conflicts = conflicts
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try container.encode(tableValues)
-    }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        self.tableValues = try container.decode([String: Object].self)
-        self.objectId = ""
-        self.conflicts = [:]
-    }
-
-}
-
 struct TextObj: Equatable, Codable {
     let objectId: String
     var characters: [Character]
@@ -159,7 +134,7 @@ enum Object: Equatable, ExpressibleByStringLiteral, ExpressibleByFloatLiteral, E
 
     case text(TextObj)
     case map(Map)
-    case table(TableObj)
+    case table(Table<Map>)
     case list(List)
     case counter(Counter)
     case date(Date)
@@ -220,7 +195,7 @@ enum Object: Equatable, ExpressibleByStringLiteral, ExpressibleByFloatLiteral, E
             self = .date(date)
         } else if let counter = try? container.decode(Counter.self) {
             self = .counter(counter)
-        } else if let table = try? container.decode(TableObj.self) {
+        } else if let table = try? container.decode(Table<Map>.self) {
             self = .table(table)
         } else if let map = try? container.decode(Map.self) {
             self = .map(map)
@@ -281,17 +256,19 @@ func interpretPatch2(patch: ObjectDiff, obj: Object?, updated: inout [String: Ob
  * `patch`, or creates a new object if `obj` is undefined. Mutates `updated`
  * to map the objectId to the new object, and returns the new object.
  */
-func updateTableObject2(patch: ObjectDiff, table: TableObj?, updated: inout [String: Object]) -> TableObj {
+func updateTableObject2(patch: ObjectDiff, table: Table<Map>?, updated: inout [String: Object]) -> Table<Map> {
     let objectId = patch.objectId
-    var table = table ?? TableObj(objectId: objectId, tableValues: [:], conflicts: [:])
+    var table = table ?? Table<Map>(tableValues: [:], objectId: objectId)
 
     let keys = patch.props?.keys.strings
     keys?.forEach({ (key) in
         let opIds = Array(patch.props![.string(key)]!.keys)
-        let subpatch = patch.props![.string(key)]![opIds[0]]
-
-        let newValue = opIds.isEmpty ? nil : getValue2(patch: subpatch!, object: table.tableValues[key], updated: &updated)
-        table.tableValues[key] = newValue
+        if opIds.isEmpty {
+            table.entries[key] = nil
+        } else if opIds.count == 1 {
+            let subpatch = patch.props![.string(key)]![opIds[0]]
+            table.entries[key] = getValue2(patch: subpatch!, object: table.entries[key], updated: &updated)
+        }
     })
     updated[objectId] = .table(table)
 
