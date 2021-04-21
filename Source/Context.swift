@@ -229,9 +229,9 @@ final class Context {
         guard case .map(let map) = getObject(objectId: objectId) else {
             fatalError("Must be Map")
         }
-//        if case .counter = map[key] {
-//            fatalError("Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.")
-//        }
+        if case .counter = map[key] {
+            fatalError("Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.")
+        }
         // If the assigned field value is the same as the existing value, and
         // the assignment does not resolve a conflict, do nothing
 
@@ -256,7 +256,7 @@ final class Context {
         case .list(let list):
             return .object(.init(objectId: list.objectId, type: .list))
         case .table(let table):
-            return .object(.init(objectId: table.objectId, type: .table))
+            return .object(.init(objectId: table.objectId!, type: .table))
         case .primitive(let primitive):
             return .value(primitive)
         case .counter(let counter):
@@ -319,7 +319,8 @@ final class Context {
      */
     func applyAt(path: [KeyPathElement], callback: (ObjectDiff) -> Void) {
         let patch = Patch(clock: [:], version: 0, canUndo: false, canRedo: false, diffs: ObjectDiff(objectId: ROOT_ID, type: .map))
-        callback(getSubpatch(patch: patch, path: path))
+        let subPatch = getSubpatch(patch: patch, path: path)
+        callback(subPatch)
         cache[ROOT_ID] = applyPatch(patch.diffs, cache[ROOT_ID], &updated)
         updated[ROOT_ID] = cache[ROOT_ID]
     }
@@ -336,7 +337,7 @@ final class Context {
                 subPatch.props = [:]
             }
             if subPatch.props?[pathElem.key] == nil {
-                subPatch.props?[pathElem.key] = getValuesDescriptions(path: path, object: object, key:  pathElem.key)
+                subPatch.props?[pathElem.key] = getValuesDescriptions(path: path, object: object, key: pathElem.key)
             }
             var nextOpId: String?
             let values = subPatch.props![pathElem.key]!
@@ -366,7 +367,7 @@ final class Context {
     func getPropertyValue(object: Object, key: Key, opId: String) -> Object {
         switch (object, key) {
         case (.table(let table), .string(let key)):
-            return table.tableValues[key]!
+            return table.entries[key]!
         case (.map(let map), .string(let key)):
             return map.conflicts[key]![opId]!
         case (.list(let list), .index(let index)):
@@ -384,7 +385,7 @@ final class Context {
     func getValuesDescriptions(path: [KeyPathElement], object: Object, key: Key) -> [String: Diff] {
         switch (object, key) {
         case (.table(let table), .string(let key)):
-            if let value = table.tableValues[key]  {
+            if let value = table.entries[key]  {
                 return [key: getValueDescription(value: value)]
             } else {
                 return [:]
@@ -437,11 +438,11 @@ final class Context {
      * Updates the table object at path `path`, adding a new entry `row`.
      * Returns the objectId of the new row.
      */
-    func addTableRow(path: [KeyPathElement], row: Map) -> String {
+    func addTableRow(path: [KeyPathElement], row: Object) -> String {
         precondition(row.objectId == "", "Cannot reuse an existing object as table row")
-        precondition(row["id"] == nil, "A table row must not have an id property; it is generated automatically")
 
-        let valuePatch = setValue(objectId: path[path.count - 1].objectId, key: nil, value: .map(row), insert: false)
+        let valuePatch = setValue(objectId: path[path.count - 1].objectId, key: nil, value: row, insert: false)
+
         applyAt(path: path) { subpatch in
             subpatch.props?[.string(valuePatch.objectId!)] = [valuePatch.objectId!: valuePatch]
         }
@@ -457,7 +458,7 @@ final class Context {
         guard case .table(let table) = getObject(objectId: objectId) else {
             fatalError()
         }
-        if table.tableValues[rowId] != nil {
+        if table.entries[rowId] != nil {
             ops.append(Op(action: .del, obj: objectId, key: .string(rowId)))
             applyAt(path: path, callback: { subpatch in
                 subpatch.props?[.string(rowId)] = [:]

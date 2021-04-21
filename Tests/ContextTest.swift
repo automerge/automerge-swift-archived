@@ -387,7 +387,7 @@ class ContextTest: XCTestCase {
             ops: []
         )
         // WHEN
-        context.setMapKey(path: [], key: "books", value: .table(TableObj(objectId: "", tableValues: [:], conflicts: [:])))
+        context.setMapKey(path: [], key: "books", value: .table(Table(tableValues: [:], objectId: "")))
 
         //Then
         let objectId = applyPatch.value!.props!["books"]![actor.actorId]!.objectId!
@@ -862,12 +862,7 @@ class ContextTest: XCTestCase {
 
         func testTableManipulation1() {
             let tableId = UUID().uuidString
-            let table: Object = .table(
-                TableObj(
-                    objectId: tableId,
-                    tableValues: [:],
-                    conflicts: [:])
-            )
+            let table: Object = .table(Table(tableValues: [:], objectId: tableId))
             let actor = Actor()
             let context = Context(
                 actorId: actor,
@@ -884,7 +879,10 @@ class ContextTest: XCTestCase {
             )
 
             //When
-            let rowId = context.addTableRow(path: [.init(key: "books", objectId: tableId)], row: Map(objectId: "", mapValues: ["author": "Mary Shelley", "title": "Frankenstein"], conflicts: [:]))
+            let rowId = context.addTableRow(
+                path: [.init(key: "books", objectId: tableId)],
+                row: .map(Map(objectId: "", mapValues: ["author": "Mary Shelley", "title": "Frankenstein"], conflicts: [:]))
+            )
 
             // Then
             XCTAssertEqual(context.ops, [
@@ -921,20 +919,15 @@ class ContextTest: XCTestCase {
         // should delete a table row
         func testTableManipulation2() {
             let rowId = UUID()
-            let row = Map(
+            let row: Object = .map(Map(
                 objectId: rowId.uuidString,
                 mapValues: [
                     "author": "Mary Shelley",
                     "title": "Frankenstein"],
                 conflicts: [:]
-            )
+            ))
             let tableId = UUID().uuidString
-            let table: Object = .table(
-                TableObj(
-                    objectId: tableId,
-                    tableValues: [rowId.uuidString: .map(row)],
-                    conflicts: [:])
-            )
+            let table: Object = .table(Table(tableValues: [rowId.uuidString: row], objectId: tableId))
             let actor = Actor()
             let context = Context(
                 actorId: actor,

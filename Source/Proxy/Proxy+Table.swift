@@ -11,19 +11,21 @@ public extension Proxy {
 
     @discardableResult
     func add<Row: Codable>(_ row: Row) -> String where Wrapped == Table<Row>  {
-        guard case .map(let row) = try! TypeToObject().map(row) as Object else {
-            fatalError()
-        }
+        let row: Object = try! TypeToObject().map(row)
 
         return context.addTableRow(path: path, row: row)
     }
 
     func row<Row: Codable>(by rowId: String) -> Proxy<Row>? where Wrapped == Table<Row> {
-        guard let container = get().row(by: rowId) else {
+        guard let container = get().entries[rowId], let objectId = container.objectId else {
             return nil
         }
-        let objectId = container.objectId
-        return Proxy<Row>(context: context, objectId: objectId, path: path + [.init(key: .string(rowId), objectId: objectId)], value: container.value)
+
+        let encoder = JSONEncoder()
+        let decoder = JSONDecoder()
+
+        let json = try! encoder.encode(container)
+        return Proxy<Row>(context: context, objectId: objectId, path: path + [.init(key: .string(rowId), objectId: objectId)], value: try! decoder.decode(Row.self, from: json))
     }
 
     /**
