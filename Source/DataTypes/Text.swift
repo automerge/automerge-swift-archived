@@ -20,23 +20,23 @@ public struct Text: Equatable {
 
     public init() {
         self.content = []
-        self.objectId = ""
+        self.objectId = ObjectId(objectId: "")
         self.conflicts = []
     }
 
     public init(_ content: String) {
         self.content = [Swift.Character](content).map { Character(value: String($0), opId: "") }
-        self.objectId = ""
+        self.objectId = ObjectId(objectId: "")
         self.conflicts = []
     }
 
-    init(objectId: String, content: [Character], conflicts: [[String: Character]] = []) {
+    init(objectId: ObjectId, content: [Character], conflicts: [[String: Character]] = []) {
         self.objectId = objectId
         self.content = content
         self.conflicts = conflicts
     }
 
-    let objectId: String
+    let objectId: ObjectId
     var content: [Character]
     var conflicts: [[String: Character]]
 
@@ -66,7 +66,7 @@ extension Text: Codable {
     public init(from decoder: Decoder) throws {
         let contaier = try decoder.container(keyedBy: CodingKeys.self)
         self.content = try contaier.decode([Character].self, forKey: .content)
-        self.objectId = ""
+        self.objectId = ObjectId(objectId: "")
         self.conflicts = []
     }
 

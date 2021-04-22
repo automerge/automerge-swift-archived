@@ -11,17 +11,17 @@ final class Context {
 
     struct KeyPathElement: Equatable {
         let key: Key
-        let objectId: String
+        let objectId: ObjectId
     }
 
-    convenience init(cache: [String: Object], actorId: Actor) {
-        self.init(actorId: actorId, applyPatch: interpretPatch, updated: [String: Object](), cache: cache, ops: [])
+    convenience init(cache: [ObjectId: Object], actorId: Actor) {
+        self.init(actorId: actorId, applyPatch: interpretPatch, updated: [ObjectId: Object](), cache: cache, ops: [])
     }
 
     init(actorId: Actor,
-         applyPatch: @escaping (ObjectDiff, Object?, inout [String: Object]) -> Object?,
-         updated: [String: Object],
-         cache: [String: Object],
+         applyPatch: @escaping (ObjectDiff, Object?, inout [ObjectId: Object]) -> Object?,
+         updated: [ObjectId: Object],
+         cache: [ObjectId: Object],
          ops: [Op] = []
     ) {
         self.actorId = actorId
@@ -33,9 +33,9 @@ final class Context {
     }
 
     private let actorId: Actor
-    private let applyPatch: (ObjectDiff, Object?, inout [String:Object]) -> Object?
-    private(set) var updated: [String: Object]
-    private var cache: [String: Object]
+    private let applyPatch: (ObjectDiff, Object?, inout [ObjectId: Object]) -> Object?
+    private(set) var updated: [ObjectId: Object]
+    private var cache: [ObjectId: Object]
     private let dateFormatter: EncoderDateFormatter
 
     var idUpdated: Bool {
@@ -54,7 +54,7 @@ final class Context {
      * `{objectId, type, props}` if `value` is an object, or `{value, datatype}` if it is a
      * primitive value. For string, number, boolean, or null the datatype is omitted.
      */
-    func setValue(objectId: String, key: Key?, value: Object, insert: Bool) -> Diff {
+    func setValue(objectId: ObjectId, key: Key?, value: Object, insert: Bool) -> Diff {
         switch value {
         case .primitive(let primitive):
             let operation: Op
@@ -93,9 +93,9 @@ final class Context {
      * element. If `key` is null, the ID of the new object is used as key (this construction
      * is used by Automerge.Table).
      */
-    private func createNestedMap(obj: String, key: Key?, map: Map, insert: Bool) -> ObjectDiff {
-        let child = UUID().uuidString
-        let key = key ?? .string(child)
+    private func createNestedMap(obj: ObjectId, key: Key?, map: Map, insert: Bool) -> ObjectDiff {
+        let child = ObjectId()
+        let key = key ?? .string(child.objectId)
         let operation = Op(action: .makeMap, obj: obj, key: key, insert: insert, child: child)
         ops.append(operation)
 
@@ -116,9 +116,9 @@ final class Context {
      * element. If `key` is null, the ID of the new object is used as key (this construction
      * is used by Automerge.Table).
      */
-    private func createNestedList(obj: String, key: Key?, list: List, insert: Bool) -> ObjectDiff {
-        let child = UUID().uuidString
-        let key = key ?? .string(child)
+    private func createNestedList(obj: ObjectId, key: Key?, list: List, insert: Bool) -> ObjectDiff {
+        let child = ObjectId()
+        let key = key ?? .string(child.objectId)
 
         let operation = Op(action: .makeList, obj: obj, key: key, insert: insert, child: child)
         ops.append(operation)
@@ -136,9 +136,9 @@ final class Context {
      * element. If `key` is null, the ID of the new object is used as key (this construction
      * is used by Automerge.Table).
      */
-    private func createNestedText(obj: String, key: Key?, text: Text, insert: Bool) -> ObjectDiff {
-        let child = UUID().uuidString
-        let key = key ?? .string(child)
+    private func createNestedText(obj: ObjectId, key: Key?, text: Text, insert: Bool) -> ObjectDiff {
+        let child = ObjectId()
+        let key = key ?? .string(child.objectId)
 
         let elems: [Object] = text.content.map { .primitive(.string($0.value)) }
         let operation = Op(action: .makeText, obj: obj, key: key, insert: insert, child: child)
@@ -158,9 +158,9 @@ final class Context {
      * element. If `key` is null, the ID of the new object is used as key (this construction
      * is used by Automerge.Table).
      */
-    private func createNestedTable(obj: String, key: Key?, insert: Bool) -> ObjectDiff {
-        let child = UUID().uuidString
-        let key = key ?? .string(child)
+    private func createNestedTable(obj: ObjectId, key: Key?, insert: Bool) -> ObjectDiff {
+        let child = ObjectId()
+        let key = key ?? .string(child.objectId)
         let operation = Op(action: .makeTable, obj: obj, key: key, insert: insert, child: child)
         ops.append(operation)
         let subpatch = ObjectDiff(objectId: child, type: .table, props: [:])
@@ -190,7 +190,7 @@ final class Context {
      * list index `start`, and inserting the list of new elements `insertions` at that position.
      */
     func splice(path: [KeyPathElement], start: Int, deletions: Int, insertions: [Object]) {
-        let objectId = path.isEmpty ? ROOT_ID : path[path.count - 1].objectId
+        let objectId = path.isEmpty ? .root : path[path.count - 1].objectId
 
         let elements: [Any]
         let object = getObject(objectId: objectId)
@@ -207,7 +207,7 @@ final class Context {
         if deletions == 0 && insertions.count == 0 {
             return
         }
-        let patch = Patch(clock: [:], version: 0, canUndo: false, canRedo: false, diffs: ObjectDiff(objectId: ROOT_ID, type: .map))
+        let patch = Patch(clock: [:], version: 0, canUndo: false, canRedo: false, diffs: ObjectDiff(objectId: .root, type: .map))
         let subPatch = getSubpatch(patch: patch, path: path)
         if subPatch.edits == nil {
             subPatch.edits = []
@@ -221,8 +221,8 @@ final class Context {
         if insertions.count > 0 {
             insertListItems(subPatch: subPatch, index: start, values: insertions, newObject: false)
         }
-        cache[ROOT_ID] = applyPatch(patch.diffs, cache[ROOT_ID]!, &updated)
-        updated[ROOT_ID] = cache[ROOT_ID]
+        cache[.root] = applyPatch(patch.diffs, cache[.root]!, &updated)
+        updated[.root] = cache[.root]
     }
 
     /**
@@ -230,7 +230,7 @@ final class Context {
      * `key` to `value`.
      */
     func setMapKey(path: [KeyPathElement], key: String, value: Object) {
-        let objectId = path.isEmpty ? ROOT_ID : path[path.count - 1].objectId
+        let objectId = path.isEmpty ? .root : path[path.count - 1].objectId
         guard case .map(let map) = getObject(objectId: objectId) else {
             fatalError("Must be Map")
         }
@@ -277,8 +277,8 @@ final class Context {
      * Returns a string that is either 'map', 'table', 'list', or 'text', indicating
      * the type of the object with ID `objectId`.
      */
-    private func getObjectType(objectId: String) -> CollectionType {
-        if objectId == ROOT_ID {
+    private func getObjectType(objectId: ObjectId) -> CollectionType {
+        if objectId == .root {
             return .map
         }
         let object = getObject(objectId: objectId)
@@ -299,7 +299,7 @@ final class Context {
     /**
      * Returns an object (not proxied) from the cache or updated set, as appropriate.
      */
-    private func getList(objectId: String) -> [Any] {
+    private func getList(objectId: ObjectId) -> [Any] {
         let object = getObject(objectId: objectId)
         if case .list(let list) = object {
             return list.listValues
@@ -313,7 +313,7 @@ final class Context {
     /**
      * Returns an object (not proxied) from the cache or updated set, as appropriate.
      */
-    func getObject(objectId: String) -> Object {
+    func getObject(objectId: ObjectId) -> Object {
         let updatedObject = updated[objectId]
         let cachedObject = cache[objectId]
         guard let object = updatedObject ?? cachedObject else {
@@ -327,11 +327,11 @@ final class Context {
      * and then immediately applies the patch to the document.
      */
     func applyAt(path: [KeyPathElement], callback: (ObjectDiff) -> Void) {
-        let patch = Patch(clock: [:], version: 0, canUndo: false, canRedo: false, diffs: ObjectDiff(objectId: ROOT_ID, type: .map))
+        let patch = Patch(clock: [:], version: 0, canUndo: false, canRedo: false, diffs: ObjectDiff(objectId: .root, type: .map))
         let subPatch = getSubpatch(patch: patch, path: path)
         callback(subPatch)
-        cache[ROOT_ID] = applyPatch(patch.diffs, cache[ROOT_ID], &updated)
-        updated[ROOT_ID] = cache[ROOT_ID]
+        cache[.root] = applyPatch(patch.diffs, cache[.root], &updated)
+        updated[.root] = cache[.root]
     }
 
     /**
@@ -340,7 +340,7 @@ final class Context {
      */
     func getSubpatch(patch: Patch, path: [KeyPathElement]) -> ObjectDiff {
         var subPatch = patch.diffs
-        var object = getObject(objectId: ROOT_ID)
+        var object = getObject(objectId: .root)
         for pathElem in path {
             if subPatch.props == nil {
                 subPatch.props = [:]
@@ -376,7 +376,7 @@ final class Context {
     func getPropertyValue(object: Object, key: Key, opId: String) -> Object {
         switch (object, key) {
         case (.table(let table), .string(let key)):
-            return table.entries[key]!
+            return table.entries[ObjectId(objectId: key)]!
         case (.map(let map), .string(let key)):
             return map.conflicts[key]![opId]!
         case (.list(let list), .index(let index)):
@@ -394,7 +394,7 @@ final class Context {
     func getValuesDescriptions(path: [KeyPathElement], object: Object, key: Key) -> [String: Diff] {
         switch (object, key) {
         case (.table(let table), .string(let key)):
-            if let value = table.entries[key]  {
+            if let value = table.entries[ObjectId(objectId: key)]  {
                 return [key: getValueDescription(value: value)]
             } else {
                 return [:]
@@ -425,7 +425,7 @@ final class Context {
      * position `index` with the new value `value`.
      */
     func setListIndex(path: [KeyPathElement], index: Int, value: Object) {
-        let objectId = path.isEmpty ? ROOT_ID : path[path.count - 1].objectId
+        let objectId = path.isEmpty ? .root : path[path.count - 1].objectId
         guard case .list(let list) = getObject(objectId: objectId) else {
             fatalError("Must be a list")
         }
@@ -447,13 +447,13 @@ final class Context {
      * Updates the table object at path `path`, adding a new entry `row`.
      * Returns the objectId of the new row.
      */
-    func addTableRow(path: [KeyPathElement], row: Object) -> String {
-        precondition(row.objectId == "" || row.objectId == nil, "Cannot reuse an existing object as table row")
+    func addTableRow(path: [KeyPathElement], row: Object) -> ObjectId {
+        precondition(row.objectId == ObjectId(objectId: "") || row.objectId == nil, "Cannot reuse an existing object as table row")
 
         let valuePatch = setValue(objectId: path[path.count - 1].objectId, key: nil, value: row, insert: false)
 
         applyAt(path: path) { subpatch in
-            subpatch.props?[.string(valuePatch.objectId!)] = [valuePatch.objectId!: valuePatch]
+            subpatch.props?[.string(valuePatch.objectId!.objectId)] = [valuePatch.objectId!.objectId: valuePatch]
         }
 
         return valuePatch.objectId!
@@ -462,15 +462,15 @@ final class Context {
     /**
      * Updates the table object at path `path`, deleting the row with ID `rowId`.
      */
-    func deleteTableRow(path: [KeyPathElement], rowId: String) {
+    func deleteTableRow(path: [KeyPathElement], rowId: ObjectId) {
         let objectId =  path[path.count - 1].objectId
         guard case .table(let table) = getObject(objectId: objectId) else {
             fatalError()
         }
         if table.entries[rowId] != nil {
-            ops.append(Op(action: .del, obj: objectId, key: .string(rowId)))
+            ops.append(Op(action: .del, obj: objectId, key: .string(rowId.objectId)))
             applyAt(path: path, callback: { subpatch in
-                subpatch.props?[.string(rowId)] = [:]
+                subpatch.props?[.string(rowId.objectId)] = [:]
             })
         }
     }
@@ -480,7 +480,7 @@ final class Context {
      * `key` in the object at path `path`.
      */
     func increment(path: [KeyPathElement], key: Key, delta: Int) {
-        let objectId = path.count == 0 ? ROOT_ID : path[path.count - 1].objectId
+        let objectId = path.count == 0 ? .root : path[path.count - 1].objectId
         let object = getObject(objectId: objectId)
         let counterValue: Int
         switch key {

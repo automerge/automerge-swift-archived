@@ -18,7 +18,7 @@ public final class UnsafeProxy {
 
     init(
         context: Context,
-        objectId: String?,
+        objectId: ObjectId?,
         path: [Context.KeyPathElement]
     ) {
         self.context = context
@@ -26,7 +26,7 @@ public final class UnsafeProxy {
         self.path = path
     }
 
-    public let objectId: String?
+    public let objectId: ObjectId?
     let context: Context
     let path: [Context.KeyPathElement]
 
@@ -35,7 +35,7 @@ public final class UnsafeProxy {
             fatalError()
         }
         let objectId = map.mapValues[dynamicMember]?.objectId
-        return UnsafeProxy(context: context, objectId: objectId, path: path + [.init(key: .string(dynamicMember), objectId: objectId ?? "")])
+        return UnsafeProxy(context: context, objectId: objectId, path: path + [.init(key: .string(dynamicMember), objectId: objectId ?? ObjectId(objectId: ""))])
     }
 
     private func set(rootObject: Map) {
@@ -68,10 +68,10 @@ public final class UnsafeProxy {
                 fatalError()
             }
             if index >= list.listValues.count {
-                return UnsafeProxy(context: context, objectId: nil, path: path + [.init(key: .index(index), objectId: "")])
+                return UnsafeProxy(context: context, objectId: nil, path: path + [.init(key: .index(index), objectId: ObjectId(objectId: ""))])
             }
             let objectId = list[index].objectId
-            return UnsafeProxy(context: context, objectId: objectId, path: path + [.init(key: .index(index), objectId: objectId ?? "")])
+            return UnsafeProxy(context: context, objectId: objectId, path: path + [.init(key: .index(index), objectId: objectId ?? ObjectId(objectId: ""))])
         }
     }
 

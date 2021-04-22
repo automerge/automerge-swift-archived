@@ -28,13 +28,13 @@ public struct Document<T: Codable> {
     private var backend: RSBackend
     private var state: State
     private var root: Map
-    private var cache: [String: Object]
+    private var cache: [ObjectId: Object]
 
     private init(actor: Actor, backend: RSBackend) {
         self.actor = actor
         self.backend = backend
-        self.root = Map(objectId: ROOT_ID, mapValues: [:], conflicts: [:])
-        self.cache = [ROOT_ID: .map(root)]
+        self.root = Map(objectId: .root, mapValues: [:], conflicts: [:])
+        self.cache = [.root: .map(root)]
         self.state = State(seq: 0, version: 0, clock: [:], canUndo: false, canRedo: false)
     }
 
@@ -129,11 +129,11 @@ public struct Document<T: Codable> {
      * change from the frontend.
      */
     private mutating func applyPatchToDoc(patch: Patch, fromBackend: Bool, context: Context?) {
-        var updated = [String: Object]()
+        var updated = [ObjectId: Object]()
         let newRoot = interpretPatch(patch: patch.diffs, obj: .map(root), updated: &updated)
         var cache = self.cache
         cache = context?.updated ?? cache
-        updated[ROOT_ID] = newRoot
+        updated[.root] = newRoot
 
         if fromBackend {
             if let clockValue = patch.clock[actor.actorId], clockValue > state.seq {
@@ -163,11 +163,11 @@ public struct Document<T: Codable> {
      * `state`, and returns a new immutable document root object based on `doc` that reflects
      * those updates.
      */
-    private mutating func updateRootObject(update: inout [String: Object]) {
-        var newDoc = update[ROOT_ID]
+    private mutating func updateRootObject(update: inout [ObjectId: Object]) {
+        var newDoc = update[.root]
         if newDoc == nil {
-            newDoc = cache[ROOT_ID]
-            update[ROOT_ID] = newDoc
+            newDoc = cache[.root]
+            update[.root] = newDoc
         }
         for objectId in cache.keys where update[objectId] == nil {
             update[objectId] = cache[objectId]

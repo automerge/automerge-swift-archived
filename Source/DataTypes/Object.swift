@@ -7,6 +7,31 @@
 
 import Foundation
 
+public struct ObjectId: Equatable, Hashable, Codable, ExpressibleByStringLiteral {
+
+    init(objectId: String = UUID().uuidString) {
+        self.objectId = objectId
+    }
+
+    let objectId: String
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        self.objectId = try container.decode(String.self)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(objectId)
+    }
+
+    static let root = ObjectId(objectId: ROOT_ID)
+
+    public init(stringLiteral value: StringLiteralType) {
+        self.objectId = value
+    }
+}
+
 enum Object: Equatable, ExpressibleByStringLiteral, ExpressibleByFloatLiteral, ExpressibleByArrayLiteral, Codable {
 
     case text(Text)
@@ -17,7 +42,7 @@ enum Object: Equatable, ExpressibleByStringLiteral, ExpressibleByFloatLiteral, E
     case date(Date)
     case primitive(Primitive)
 
-    var objectId: String? {
+    var objectId: ObjectId? {
         switch self {
         case .text(let obj):
             return obj.objectId
@@ -33,7 +58,7 @@ enum Object: Equatable, ExpressibleByStringLiteral, ExpressibleByFloatLiteral, E
     }
 
     init(arrayLiteral elements: Object...) {
-        self = .list(List(objectId: "", listValues: elements))
+        self = .list(List(objectId: ObjectId(objectId: ""), listValues: elements))
     }
 
     public init(floatLiteral value: Float) {

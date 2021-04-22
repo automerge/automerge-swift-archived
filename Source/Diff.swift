@@ -11,7 +11,7 @@ enum Diff: Equatable, Codable {
     case object(ObjectDiff)
     case value(ValueDiff)
 
-    var objectId: String? {
+    var objectId: ObjectId? {
         if case .object(let object) = self {
             return object.objectId
         }

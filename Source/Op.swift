@@ -14,7 +14,7 @@ public enum DataType: String, Equatable, Codable {
 
 public struct Op: Equatable, Codable {
 
-    init(action: OpAction, obj: String, key: Key, insert: Bool = false, child: String? = nil, value: Primitive? = nil, datatype: DataType? = nil) {
+    init(action: OpAction, obj: ObjectId, key: Key, insert: Bool = false, child: ObjectId? = nil, value: Primitive? = nil, datatype: DataType? = nil) {
         self.action = action
         self.obj = obj
         self.key = key
@@ -25,10 +25,10 @@ public struct Op: Equatable, Codable {
     }
 
     public let action: OpAction
-    public let obj: String
+    public let obj: ObjectId
     public let key: Key
     public let insert: Bool
-    public let child: String?
+    public let child: ObjectId?
     public let value: Primitive?
     public let datatype: DataType?
 }
