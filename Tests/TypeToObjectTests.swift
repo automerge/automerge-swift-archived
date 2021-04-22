@@ -156,14 +156,14 @@ final class TypeToObjectTests: XCTestCase {
         XCTAssertEqual(result, .map(Map(objectId: "", mapValues: ["list": .list(List(objectId: "", listValues: [1.0, 2.0], conflicts: []))])))
     }
 
-//    // Transform Counter to Counter
-//    func testMap12() throws {
-//        let value = Table
-//        let mapper = TypeToObject()
-//
-//        let result = try mapper.map(value)
-//
-//        XCTAssertEqual(result, .map(Map(objectId: "", mapValues: ["list": .list(List(objectId: "", listValues: [1.0, 2.0], conflicts: []))])))
-//    }
+    // Transform Text to .text
+    func testMap13() throws {
+        let value = Text()
+        let mapper = TypeToObject()
+
+        let result = try mapper.map(value)
+
+        XCTAssertEqual(result, .text(value))
+    }
 
 }

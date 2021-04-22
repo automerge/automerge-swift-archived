@@ -30,6 +30,13 @@ extension Proxy: Collection, Sequence where Wrapped: Collection, Wrapped.Element
         return self.get().index(after: i)
     }
 
+    private var elements: [Object] {
+        guard case .list(let list)? = self.objectId.map({ context.getObject(objectId: $0) }) else {
+            fatalError()
+        }
+        return list.listValues
+    }
+
 }
 
 extension Proxy: MutableCollection where Wrapped: MutableCollection, Wrapped.Element: Codable, Wrapped.Index == Int {
