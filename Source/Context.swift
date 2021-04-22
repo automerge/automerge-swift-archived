@@ -11,7 +11,7 @@ final class Context {
 
     struct KeyPathElement: Equatable {
         let key: Key
-        let objectId: ObjectId
+        let objectId: ObjectId?
     }
 
     convenience init(cache: [ObjectId: Object], actorId: Actor) {
@@ -190,7 +190,9 @@ final class Context {
      * list index `start`, and inserting the list of new elements `insertions` at that position.
      */
     func splice(path: [KeyPathElement], start: Int, deletions: Int, insertions: [Object]) {
-        let objectId = path.isEmpty ? .root : path[path.count - 1].objectId
+        guard let objectId = path.isEmpty ? .root : path[path.count - 1].objectId else {
+            fatalError("objectId must exist")
+        }
 
         let elements: [Any]
         let object = getObject(objectId: objectId)
@@ -230,7 +232,9 @@ final class Context {
      * `key` to `value`.
      */
     func setMapKey(path: [KeyPathElement], key: String, value: Object) {
-        let objectId = path.isEmpty ? .root : path[path.count - 1].objectId
+        guard let objectId = path.isEmpty ? .root : path[path.count - 1].objectId else {
+            fatalError("objectId must exist")
+        }
         guard case .map(let map) = getObject(objectId: objectId) else {
             fatalError("Must be Map")
         }
@@ -356,7 +360,7 @@ final class Context {
                 }
             }
             guard let nextOpId2 = nextOpId, case .object(let objectDiff) = values[nextOpId2]  else {
-                fatalError("Cannot find path object with objectId \(pathElem.objectId)")
+                fatalError("Cannot find path object with objectId \(pathElem)")
             }
             subPatch = objectDiff
             object = getPropertyValue(object: object, key: pathElem.key, opId: nextOpId2)
@@ -425,7 +429,9 @@ final class Context {
      * position `index` with the new value `value`.
      */
     func setListIndex(path: [KeyPathElement], index: Int, value: Object) {
-        let objectId = path.isEmpty ? .root : path[path.count - 1].objectId
+        guard let objectId = path.isEmpty ? .root : path[path.count - 1].objectId else {
+            fatalError("objectId must exist")
+        }
         guard case .list(let list) = getObject(objectId: objectId) else {
             fatalError("Must be a list")
         }
@@ -450,7 +456,7 @@ final class Context {
     func addTableRow(path: [KeyPathElement], row: Object) -> ObjectId {
         precondition(row.objectId == ObjectId(objectId: "") || row.objectId == nil, "Cannot reuse an existing object as table row")
 
-        let valuePatch = setValue(objectId: path[path.count - 1].objectId, key: nil, value: row, insert: false)
+        let valuePatch = setValue(objectId: path[path.count - 1].objectId!, key: nil, value: row, insert: false)
 
         applyAt(path: path) { subpatch in
             subpatch.props?[.string(valuePatch.objectId!.objectId)] = [valuePatch.objectId!.objectId: valuePatch]
@@ -463,7 +469,7 @@ final class Context {
      * Updates the table object at path `path`, deleting the row with ID `rowId`.
      */
     func deleteTableRow(path: [KeyPathElement], rowId: ObjectId) {
-        let objectId =  path[path.count - 1].objectId
+        let objectId =  path[path.count - 1].objectId!
         guard case .table(let table) = getObject(objectId: objectId) else {
             fatalError()
         }
@@ -480,7 +486,9 @@ final class Context {
      * `key` in the object at path `path`.
      */
     func increment(path: [KeyPathElement], key: Key, delta: Int) {
-        let objectId = path.count == 0 ? .root : path[path.count - 1].objectId
+        guard let objectId = path.isEmpty ? .root : path[path.count - 1].objectId else {
+            fatalError("objectId must exist")
+        }
         let object = getObject(objectId: objectId)
         let counterValue: Int
         switch key {

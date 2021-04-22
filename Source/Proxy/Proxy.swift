@@ -52,7 +52,12 @@ public final class Proxy<Wrapped: Codable> {
         }
 
         let objectId = map?.mapValues[fieldName]?.objectId
-        return Proxy<Y>(context: context, objectId: objectId, path: path + [.init(key: .string(fieldName), objectId: objectId ?? ObjectId(objectId: ""))], value: self.valueResolver()?[keyPath: dynamicMember])
+        return Proxy<Y>(
+            context: context,
+            objectId: objectId,
+            path: path + [.init(key: .string(fieldName), objectId: objectId)],
+            value: self.valueResolver()?[keyPath: dynamicMember]
+        )
     }
 
     public subscript<Y>(dynamicMember dynamicMember: KeyPath<Wrapped, Y?>) -> Proxy<Y>? {
@@ -61,7 +66,12 @@ public final class Proxy<Wrapped: Codable> {
             fatalError()
         }
         let objectId = map.mapValues[fieldName]?.objectId
-        return Proxy<Y>(context: context, objectId: objectId, path: path + [.init(key: .string(fieldName), objectId: objectId ?? ObjectId(objectId: ""))], value: self.valueResolver()?[keyPath: dynamicMember])
+        return Proxy<Y>(
+            context: context,
+            objectId: objectId,
+            path: path + [.init(key: .string(fieldName), objectId: objectId)],
+            value: self.valueResolver()?[keyPath: dynamicMember]
+        )
     }
 
     private func set(rootObject: Map) {
