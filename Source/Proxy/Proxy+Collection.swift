@@ -21,7 +21,12 @@ extension Proxy: Collection, Sequence where Wrapped: Collection, Wrapped.Element
                 fatalError()
             }
             let objectId = list.listValues[position].objectId
-            return Proxy<Wrapped.Element>(context: context, objectId: objectId, path: path + [.init(key: .index(position), objectId: objectId ?? ObjectId(objectId: ""))], value: self.get()[position])
+            return Proxy<Wrapped.Element>(
+                context: context,
+                objectId: objectId,
+                path: path + [.init(key: .index(position), objectId: objectId)],
+                value: self.get()[position]
+            )
         }
     }
 
@@ -50,7 +55,7 @@ extension Proxy: MutableCollection where Wrapped: MutableCollection, Wrapped.Ele
             return Proxy<Wrapped.Element>(
                 context: context,
                 objectId: objectId,
-                path: path + [.init(key: .index(position), objectId: objectId ?? ObjectId(objectId: ""))]
+                path: path + [.init(key: .index(position), objectId: objectId)]
                 , value: self.get()[position]
             )
         }
