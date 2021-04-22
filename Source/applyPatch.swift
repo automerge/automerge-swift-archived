@@ -12,7 +12,7 @@ import Foundation
  * Clones a writable copy of `obj` and places it in `updated` (indexed by
  * objectId), if that has not already been done. Returns the updated object.
  */
-func interpretPatch(patch: ObjectDiff, obj: Object?, updated: inout [String: Object]) -> Object? {
+func interpretPatch(patch: ObjectDiff, obj: Object?, updated: inout [ObjectId: Object]) -> Object? {
     if patch.props != nil && patch.edits != nil && patch == .empty && updated[patch.objectId] != nil {
         return obj
     }
@@ -52,17 +52,18 @@ func interpretPatch(patch: ObjectDiff, obj: Object?, updated: inout [String: Obj
  * `patch`, or creates a new object if `obj` is undefined. Mutates `updated`
  * to map the objectId to the new object, and returns the new object.
  */
-func updateTable(patch: ObjectDiff, table: Table<Map>?, updated: inout [String: Object]) -> Table<Map> {
+func updateTable(patch: ObjectDiff, table: Table<Map>?, updated: inout [ObjectId: Object]) -> Table<Map> {
     let objectId = patch.objectId
     var table = table ?? Table<Map>(tableValues: [:], objectId: objectId)
 
     let keys = patch.props?.keys.strings
     keys?.forEach({ (key) in
-        let opIds = Array(patch.props![.string(key)]!.keys)
+        let key = ObjectId(objectId: key)
+        let opIds = Array(patch.props![.string(key.objectId)]!.keys)
         if opIds.isEmpty {
             table.entries[key] = nil
         } else if opIds.count == 1 {
-            let subpatch = patch.props![.string(key)]![opIds[0]]
+            let subpatch = patch.props![.string(key.objectId)]![opIds[0]]
             let row = getValue(patch: subpatch!, object: table.entries[key], updated: &updated)
             table.entries[key] = row
         }
@@ -77,7 +78,7 @@ func updateTable(patch: ObjectDiff, table: Table<Map>?, updated: inout [String: 
  * `patch`, or creates a new object if `obj` is undefined. Mutates `updated`
  * to map the objectId to the new object, and returns the new object.
  */
-func updateText(patch: ObjectDiff, text: Text?, updated: inout [String: Object]) -> Text {
+func updateText(patch: ObjectDiff, text: Text?, updated: inout [ObjectId: Object]) -> Text {
     let objectId = patch.objectId
     var elems: [Text.Character]
     if case .text(let text) = updated[objectId] {
@@ -113,7 +114,7 @@ func updateText(patch: ObjectDiff, text: Text?, updated: inout [String: Object])
  * `patch`, or creates a new object if `obj` is undefined. Mutates `updated`
  * to map the objectId to the new object, and returns the new object.
  */
-func updateList(patch: ObjectDiff, list: List?, updated: inout [String: Object]) -> List {
+func updateList(patch: ObjectDiff, list: List?, updated: inout [ObjectId: Object]) -> List {
     let objectId = patch.objectId
     var list = list ?? List(objectId: objectId, listValues: [])
     var listValues = list.listValues
@@ -130,7 +131,7 @@ func updateList(patch: ObjectDiff, list: List?, updated: inout [String: Object])
             conflicts.removeSubrange(index..<index + deletions)
         })
     list.listValues = listValues
-    applyProperties2(props: patch.props, list: &list, conflicts: &conflicts, updated: &updated)
+    applyProperties(props: patch.props, list: &list, conflicts: &conflicts, updated: &updated)
     list.conflicts = conflicts.compactMap({ $0 })
     updated[objectId] = .list(list)
 
@@ -142,11 +143,11 @@ func updateList(patch: ObjectDiff, list: List?, updated: inout [String: Object])
  * `patch`, or creates a new object if `obj` is undefined. Mutates `updated`
  * to map the objectId to the new object, and returns the new object.
  */
-func updateMap(patch: ObjectDiff, map: Map?, updated: inout [String: Object]) -> Map {
+func updateMap(patch: ObjectDiff, map: Map?, updated: inout [ObjectId: Object]) -> Map {
     let objectId = patch.objectId
     var map = map ?? Map(objectId: objectId, mapValues: [:], conflicts: [:])
 
-    applyProperties2(props: patch.props, objectId: objectId, map: &map, updated: &updated)
+    applyProperties(props: patch.props, objectId: objectId, map: &map, updated: &updated)
     updated[objectId] = .map(map)
 
     return map
@@ -165,11 +166,11 @@ func updateMap(patch: ObjectDiff, map: Map?, updated: inout [String: Object]) ->
  * to `conflicts[key]`. If there is no conflict, the conflicts object contains
  * just a single opId-value mapping.
  */
-func applyProperties2(
+func applyProperties(
     props: Props?,
     list: inout List,
     conflicts: inout [[String: Object]?],
-    updated: inout [String: Object]
+    updated: inout [ObjectId: Object]
 ) {
     guard let props = props else {
         return
@@ -208,11 +209,11 @@ func applyProperties2(
  * to `conflicts[key]`. If there is no conflict, the conflicts object contains
  * just a single opId-value mapping.
  */
-func applyProperties2(
+func applyProperties(
     props: Props?,
-    objectId: String,
+    objectId: ObjectId,
     map: inout Map,
-    updated: inout [String: Object]
+    updated: inout [ObjectId: Object]
 ) {
     guard let props = props else {
         return
@@ -259,7 +260,7 @@ func parseOpId2(opId: String) -> (counter: Int, actorId: String) {
 /**
  * Reconstructs the value from the patch object `patch`.
  */
-func getValue(patch: Diff, object: Object?, updated: inout [String: Object]) -> Object? {
+func getValue(patch: Diff, object: Object?, updated: inout [ObjectId: Object]) -> Object? {
     switch patch {
     case .object(let objectDiff) where object?.objectId != patch.objectId:
         return interpretPatch(patch: objectDiff, obj: nil, updated: &updated)

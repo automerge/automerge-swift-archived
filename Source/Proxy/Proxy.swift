@@ -12,7 +12,7 @@ public final class Proxy<Wrapped: Codable> {
 
     init(
         context: Context,
-        objectId: String?,
+        objectId: ObjectId?,
         path: [Context.KeyPathElement],
         value: @escaping () -> Wrapped?
     ) {
@@ -24,7 +24,7 @@ public final class Proxy<Wrapped: Codable> {
 
     init(
         context: Context,
-        objectId: String?,
+        objectId: ObjectId?,
         path: [Context.KeyPathElement],
         value: @autoclosure @escaping () -> Wrapped?
     ) {
@@ -34,7 +34,7 @@ public final class Proxy<Wrapped: Codable> {
         self.valueResolver = value
     }
 
-    public let objectId: String?
+    public let objectId: ObjectId?
     let context: Context
     let path: [Context.KeyPathElement]
     private let valueResolver: () -> Wrapped?
@@ -47,12 +47,12 @@ public final class Proxy<Wrapped: Codable> {
     public subscript<Y>(dynamicMember dynamicMember: KeyPath<Wrapped, Y>) -> Proxy<Y> {
         let fieldName = dynamicMember.fieldName!
         var map: Map?
-        if self.objectId != "", case .map(let map2)? = self.objectId.map({ context.getObject(objectId: $0) })  {
+        if self.objectId != ObjectId(objectId: ""), case .map(let map2)? = self.objectId.map({ context.getObject(objectId: $0) })  {
             map = map2
         }
 
         let objectId = map?.mapValues[fieldName]?.objectId
-        return Proxy<Y>(context: context, objectId: objectId, path: path + [.init(key: .string(fieldName), objectId: objectId ?? "")], value: self.valueResolver()?[keyPath: dynamicMember])
+        return Proxy<Y>(context: context, objectId: objectId, path: path + [.init(key: .string(fieldName), objectId: objectId ?? ObjectId(objectId: ""))], value: self.valueResolver()?[keyPath: dynamicMember])
     }
 
     public subscript<Y>(dynamicMember dynamicMember: KeyPath<Wrapped, Y?>) -> Proxy<Y>? {
@@ -61,7 +61,7 @@ public final class Proxy<Wrapped: Codable> {
             fatalError()
         }
         let objectId = map.mapValues[fieldName]?.objectId
-        return Proxy<Y>(context: context, objectId: objectId, path: path + [.init(key: .string(fieldName), objectId: objectId ?? "")], value: self.valueResolver()?[keyPath: dynamicMember])
+        return Proxy<Y>(context: context, objectId: objectId, path: path + [.init(key: .string(fieldName), objectId: objectId ?? ObjectId(objectId: ""))], value: self.valueResolver()?[keyPath: dynamicMember])
     }
 
     private func set(rootObject: Map) {

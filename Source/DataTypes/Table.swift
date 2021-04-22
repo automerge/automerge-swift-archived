@@ -11,12 +11,12 @@ public struct Table<RowValue: Codable>: Codable {
 
     public struct Row<T: Codable> {
 
-        init(id: String, object: Object) {
+        init(id: ObjectId, object: Object) {
             self.id = id
             self.object = object
         }
 
-        public let id: String
+        public let id: ObjectId
         public var value: T {
             let encoder = JSONEncoder()
             let decoder = JSONDecoder()
@@ -29,10 +29,10 @@ public struct Table<RowValue: Codable>: Codable {
 
     public init(entries: [String: RowValue] = [:]) {
         self.entries = [:]
-        self.objectId = ""
+        self.objectId = ObjectId(objectId: "")
     }
 
-    init(tableValues: [String: Object], objectId: String = "") {
+    init(tableValues: [ObjectId: Object], objectId: ObjectId = ObjectId(objectId: "")) {
         self.entries = tableValues
         self.objectId = objectId
     }
@@ -42,10 +42,10 @@ public struct Table<RowValue: Codable>: Codable {
         case objectId
     }
 
-    var entries: [String: Object]
-    let objectId: String
+    var entries: [ObjectId: Object]
+    let objectId: ObjectId
 
-    public func row(by id: String) -> Row<RowValue>? {
+    public func row(by id: ObjectId) -> Row<RowValue>? {
         guard let row = entries[id] else {
             return nil
         }
@@ -56,7 +56,7 @@ public struct Table<RowValue: Codable>: Codable {
         return entries.count
     }
 
-    public var ids: Set<String> {
+    public var ids: Set<ObjectId> {
         return Set(entries.keys)
     }
 

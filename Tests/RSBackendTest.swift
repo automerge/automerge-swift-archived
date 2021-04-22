@@ -26,7 +26,7 @@ final class RSBackendTest: XCTestCase {
 
     func testApplayLocal() {
         let backend = RSBackend()
-        let request = Request(requestType: .change, message: "Test", time: Date(), actor: "111111", seq: 1, version: 0, ops: [Op(action: .set, obj: ROOT_ID, key: "bird", value: .string("magpie"))], undoable: false)
+        let request = Request(requestType: .change, message: "Test", time: Date(), actor: "111111", seq: 1, version: 0, ops: [Op(action: .set, obj: .root, key: "bird", value: .string("magpie"))], undoable: false)
         _ = backend.applyLocalChange(request: request)
     }
 

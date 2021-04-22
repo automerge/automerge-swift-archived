@@ -9,11 +9,11 @@ import Foundation
 
 struct List: Equatable, Collection, Codable {
 
-    let objectId: String
+    let objectId: ObjectId
     var listValues: [Object]
     var conflicts: [[String: Object]]
 
-    init(objectId: String, listValues: [Object] = [], conflicts: [[String: Object]] = []) {
+    init(objectId: ObjectId, listValues: [Object] = [], conflicts: [[String: Object]] = []) {
         self.objectId = objectId
         self.listValues = listValues
         self.conflicts = conflicts
@@ -27,7 +27,7 @@ struct List: Equatable, Collection, Codable {
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         self.listValues = try container.decode([Object].self)
-        self.objectId = ""
+        self.objectId = ObjectId(objectId: "")
         self.conflicts = []
     }
 

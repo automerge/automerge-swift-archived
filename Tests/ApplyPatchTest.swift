@@ -16,7 +16,7 @@ final class ApplyPatchTest: XCTestCase {
         // GIVEN
         let patch = ObjectDiff(objectId: "00000000-0000-0000-0000-000000000000", type: .map, props: ["key1": ["f788794f7f0f48fbb44289b2a06d4d5b": "value1"]])
         let obj: Object = .map(Map(objectId: "00000000-0000-0000-0000-000000000000", mapValues: [:], conflicts: [:]))
-        var updated = [String: Object]()
+        var updated = [ObjectId: Object]()
 
         // WHEN
         guard case .map(let newMap)? = interpretPatch(patch: patch, obj: obj, updated: &updated) else {
@@ -40,7 +40,7 @@ final class ApplyPatchTest: XCTestCase {
             edits: [Edit(action: .insert, index: 0)],
             props: [0: ["595663f742244778981c54fbe0ee6bd7": "chaffinch"]]
         )
-        var updated: [String: Object] = [
+        var updated: [ObjectId: Object] = [
             "00000000-0000-0000-0000-000000000000": .map(Map(objectId: "00000000-0000-0000-0000-000000000000", mapValues: [:], conflicts: [:]))
         ]
 

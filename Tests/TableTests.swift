@@ -25,7 +25,7 @@ class TableTest: XCTestCase {
         }
 
         XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: actor, seq: 1, version: 0, ops: [
-            Op(action: .makeTable, obj: ROOT_ID, key: "books", child: req!.ops[0].child)
+            Op(action: .makeTable, obj: .root, key: "books", child: req!.ops[0].child)
         ], undoable: true))
     }
 
@@ -48,8 +48,8 @@ class TableTest: XCTestCase {
         let rowId = req!.ops[0].key
         XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: actor, seq: 2, version: 1, ops: [
             Op(action: .makeMap, obj: req!.ops[0].obj, key: rowId, child: req!.ops[0].child),
-            Op(action: .set, obj: "\(rowId)", key: "authors", value: .string("Kleppmann, Martin")),
-            Op(action: .set, obj: "\(rowId)", key: "title", value: .string("Designing Data-Intensive Applications")),
+            Op(action: .set, obj: ObjectId(objectId: "\(rowId)"), key: "authors", value: .string("Kleppmann, Martin")),
+            Op(action: .set, obj: ObjectId(objectId: "\(rowId)"), key: "title", value: .string("Designing Data-Intensive Applications")),
         ], undoable: true))
     }
 
@@ -66,7 +66,7 @@ class TableTest: XCTestCase {
         let actor = Actor()
         var s1 = Document(Scheme(books: Table()), actor: actor)
 
-        var rowId: String?
+        var rowId: ObjectId?
         s1.change {
             rowId = $0.books.add(.ddia)
         }
@@ -106,7 +106,7 @@ class TableTest: XCTestCase {
         let actor = Actor()
         var s1 = Document(Scheme(books: Table()), actor: actor)
 
-        var rowId: String?
+        var rowId: ObjectId?
         s1.change {
             rowId = $0.books.add(.ddia)
         }
@@ -126,7 +126,7 @@ class TableTest: XCTestCase {
         let actor = Actor()
         var s1 = Document(Scheme(books: Table()), actor: actor)
 
-        var rowId: String?
+        var rowId: ObjectId?
         s1.change {
             rowId = $0.books.add(.ddia)
         }
@@ -147,7 +147,7 @@ class TableTest: XCTestCase {
         let actor = Actor()
         var s1 = Document(Scheme(books: Table()), actor: actor)
 
-        var rowId: String!
+        var rowId: ObjectId!
         s1.change {
             rowId = $0.books.add(.ddia)
         }
@@ -170,7 +170,7 @@ class TableTest: XCTestCase {
         let actor = Actor()
         var s1 = Document(Scheme(books: Table()), actor: actor)
 
-        var rowId: String!
+        var rowId: ObjectId!
         s1.change {
             rowId = $0.books.add(.ddia)
         }
@@ -195,8 +195,8 @@ class TableTest: XCTestCase {
         var s1 = Document(Scheme(books: Table()), actor: actor)
         var s2 = Document<Scheme>(changes: s1.allChanges())
 
-        var ddia: String!
-        var rsdp: String!
+        var ddia: ObjectId!
+        var rsdp: ObjectId!
         s1.change {
             ddia = $0.books.add(.ddia)
         }
