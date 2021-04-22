@@ -130,7 +130,7 @@ public struct Document<T: Codable> {
      */
     private mutating func applyPatchToDoc(patch: Patch, fromBackend: Bool, context: Context?) {
         var updated = [String: Object]()
-        let newRoot = interpretPatch2(patch: patch.diffs, obj: .map(root), updated: &updated)
+        let newRoot = interpretPatch(patch: patch.diffs, obj: .map(root), updated: &updated)
         var cache = self.cache
         cache = context?.updated ?? cache
         updated[ROOT_ID] = newRoot

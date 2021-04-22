@@ -347,7 +347,7 @@ class ContextTest: XCTestCase {
             ops: []
         )
         // WHEN
-        context.setMapKey(path: [], key: "text", value: .text(TextObj(objectId: "", characters: ["h", "i"], conflicts: [:])))
+        context.setMapKey(path: [], key: "text", value: .text(Text("hi")))
 
         //THEN
         let objectId = applyPatch.value!.props!["text"]![actor.actorId]!.objectId!

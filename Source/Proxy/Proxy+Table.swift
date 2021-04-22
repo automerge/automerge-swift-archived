@@ -17,14 +17,16 @@ public extension Proxy {
     }
 
     func row<Row: Codable>(by rowId: String) -> Proxy<Row>? where Wrapped == Table<Row> {
-        guard let container = get().entries[rowId], let objectId = container.objectId else {
+        guard case .table(let table) = context.getObject(objectId: objectId!),
+              let row = table.entries[rowId],
+              let objectId = row.objectId else {
             return nil
         }
 
         let encoder = JSONEncoder()
         let decoder = JSONDecoder()
 
-        let json = try! encoder.encode(container)
+        let json = try! encoder.encode(row)
         return Proxy<Row>(context: context, objectId: objectId, path: path + [.init(key: .string(rowId), objectId: objectId)], value: try! decoder.decode(Row.self, from: json))
     }
 

@@ -15,7 +15,7 @@ final class Context {
     }
 
     convenience init(cache: [String: Object], actorId: Actor) {
-        self.init(actorId: actorId, applyPatch: interpretPatch2, updated: [String: Object](), cache: cache, ops: [])
+        self.init(actorId: actorId, applyPatch: interpretPatch, updated: [String: Object](), cache: cache, ops: [])
     }
 
     init(actorId: Actor,
@@ -136,11 +136,11 @@ final class Context {
      * element. If `key` is null, the ID of the new object is used as key (this construction
      * is used by Automerge.Table).
      */
-    private func createNestedText(obj: String, key: Key?, text: TextObj, insert: Bool) -> ObjectDiff {
+    private func createNestedText(obj: String, key: Key?, text: Text, insert: Bool) -> ObjectDiff {
         let child = UUID().uuidString
         let key = key ?? .string(child)
 
-        let elems: [Object] = text.characters.map { .primitive(.string($0.value)) }
+        let elems: [Object] = text.content.map { .primitive(.string($0.value)) }
         let operation = Op(action: .makeText, obj: obj, key: key, insert: insert, child: child)
         ops.append(operation)
         let subpatch = ObjectDiff(objectId: child, type: .text, edits: [], props: [:])
@@ -191,12 +191,18 @@ final class Context {
      */
     func splice(path: [KeyPathElement], start: Int, deletions: Int, insertions: [Object]) {
         let objectId = path.isEmpty ? ROOT_ID : path[path.count - 1].objectId
-        guard case .list(let listObj) = getObject(objectId: objectId) else {
-            fatalError("Must be a list")
+
+        let elements: [Any]
+        let object = getObject(objectId: objectId)
+        if case .list(let list) = object {
+            elements = list.listValues
+        } else if case .text(let text) = object {
+            elements = text.content
+        } else {
+            fatalError("Must be a list or text")
         }
-        let list = listObj.listValues
-        if (start < 0 || deletions < 0 || start > list.count - deletions) {
-            fatalError("\(deletions) deletions starting at index \(start) are out of bounds for list of length \(list.count)")
+        if (start < 0 || deletions < 0 || start > elements.count - deletions) {
+            fatalError("\(deletions) deletions starting at index \(start) are out of bounds for list of length \(elements.count)")
         }
         if deletions == 0 && insertions.count == 0 {
             return
@@ -217,7 +223,6 @@ final class Context {
         }
         cache[ROOT_ID] = applyPatch(patch.diffs, cache[ROOT_ID]!, &updated)
         updated[ROOT_ID] = cache[ROOT_ID]
-
     }
 
     /**
@@ -256,15 +261,15 @@ final class Context {
         case .list(let list):
             return .object(.init(objectId: list.objectId, type: .list))
         case .table(let table):
-            return .object(.init(objectId: table.objectId!, type: .table))
+            return .object(.init(objectId: table.objectId, type: .table))
         case .primitive(let primitive):
             return .value(primitive)
         case .counter(let counter):
             return .value(.init(value: .number(Double(counter.value)), datatype: .counter))
         case .date(let date):
             return .value(.init(value: .number(date.timeIntervalSince1970), datatype: .timestamp))
-        default:
-            fatalError()
+        case .text(let text):
+            return .object(.init(objectId: text.objectId, type: .text))
         }
     }
 
@@ -295,10 +300,14 @@ final class Context {
      * Returns an object (not proxied) from the cache or updated set, as appropriate.
      */
     private func getList(objectId: String) -> [Any] {
-        guard case .list(let list) = (updated[objectId] ?? cache[objectId]) else {
+        let object = getObject(objectId: objectId)
+        if case .list(let list) = object {
+            return list.listValues
+        } else if case .text(let text) = object {
+            return text.content
+        } else {
             fatalError("Target object does not exist: \(objectId)")
         }
-        return list.listValues
     }
 
     /**
@@ -439,7 +448,7 @@ final class Context {
      * Returns the objectId of the new row.
      */
     func addTableRow(path: [KeyPathElement], row: Object) -> String {
-        precondition(row.objectId == "", "Cannot reuse an existing object as table row")
+        precondition(row.objectId == "" || row.objectId == nil, "Cannot reuse an existing object as table row")
 
         let valuePatch = setValue(objectId: path[path.count - 1].objectId, key: nil, value: row, insert: false)
 

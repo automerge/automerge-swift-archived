@@ -19,7 +19,7 @@ final class ApplyPatchTest: XCTestCase {
         var updated = [String: Object]()
 
         // WHEN
-        guard case .map(let newMap)? = interpretPatch2(patch: patch, obj: obj, updated: &updated) else {
+        guard case .map(let newMap)? = interpretPatch(patch: patch, obj: obj, updated: &updated) else {
             XCTFail()
             return
         }
@@ -45,7 +45,7 @@ final class ApplyPatchTest: XCTestCase {
         ]
 
         // WHEN
-        guard case .list(let newList)? = interpretPatch2(patch: patch, obj: nil, updated: &updated) else {
+        guard case .list(let newList)? = interpretPatch(patch: patch, obj: nil, updated: &updated) else {
             XCTFail()
             return
         }
