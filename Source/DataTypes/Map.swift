@@ -9,7 +9,7 @@ import Foundation
 
 struct Map: Equatable, Codable {
 
-    init(objectId: ObjectId, mapValues: [String: Object] = [:], conflicts: [String: [String: Object]] = [:]) {
+    init(objectId: ObjectId = "", mapValues: [String: Object] = [:], conflicts: [String: [ObjectId: Object]] = [:]) {
         self.objectId = objectId
         self.mapValues = mapValues
         self.conflicts = conflicts
@@ -17,7 +17,7 @@ struct Map: Equatable, Codable {
 
     let objectId: ObjectId
     var mapValues: [String: Object]
-    var conflicts: [String: [String: Object]]
+    var conflicts: [String: [ObjectId: Object]]
 
     subscript(_ key: String) -> Object? {
         return mapValues[key]
@@ -31,7 +31,7 @@ struct Map: Equatable, Codable {
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         self.mapValues = try container.decode([String: Object].self)
-        self.objectId = ObjectId(objectId: "")
+        self.objectId = ObjectId("")
         self.conflicts = [:]
     }
 }

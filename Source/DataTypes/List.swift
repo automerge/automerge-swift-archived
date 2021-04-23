@@ -11,12 +11,14 @@ struct List: Equatable, Collection, Codable {
 
     let objectId: ObjectId
     var listValues: [Object]
-    var conflicts: [[String: Object]]
+    var conflicts: [[ObjectId: Object]]
+    var elemIds: [ObjectId]
 
-    init(objectId: ObjectId, listValues: [Object] = [], conflicts: [[String: Object]] = []) {
+    init(objectId: ObjectId, listValues: [Object] = [], conflicts: [[ObjectId: Object]] = [], elemIds: [ObjectId] = []) {
         self.objectId = objectId
         self.listValues = listValues
         self.conflicts = conflicts
+        self.elemIds = elemIds
     }
 
     func encode(to encoder: Encoder) throws {
@@ -27,8 +29,9 @@ struct List: Equatable, Collection, Codable {
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         self.listValues = try container.decode([Object].self)
-        self.objectId = ObjectId(objectId: "")
+        self.objectId = ObjectId("")
         self.conflicts = []
+        self.elemIds = []
     }
 
     var startIndex: Int {

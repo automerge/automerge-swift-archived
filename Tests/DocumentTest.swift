@@ -24,198 +24,198 @@ struct DocumentT2: Codable, Equatable {
 // Refers to test/frontend_test.js
 class DocumentTest: XCTestCase {
 
-    // should allow instantiating from an existing object
-    func testInitializing1() {
-        let initialState = DocumentState(birds: .init(wrens: 3, magpies: 4))
-        let document = Document(initialState)
-        XCTAssertEqual(document.content, initialState)
-    }
-
-    // should return the unmodified document if nothing changed
-    func testPerformingChanges1() {
-        let initialState = DocumentState(birds: .init(wrens: 3, magpies: 4))
-        var document = Document(initialState)
-        document.change({ _ in
-
-        })
-        XCTAssertEqual(document.content, initialState)
-    }
-
-    // should set root object properties
-    func testPerformingChanges2() {
-        struct Schema: Codable, Equatable {
-            var bird: String?
-        }
-        let actor = Actor()
-        var doc = Document(Schema(bird: nil), actor: actor)
-        let req = doc.change { $0.bird.set("magpie") }
-
-        XCTAssertEqual(doc.content, Schema(bird: "magpie"))
-        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: actor, seq: 1, version: 0, ops: [
-            Op(action: .set, obj: .root, key: "bird", insert: false, value: .string("magpie"))
-        ], undoable: true))
-    }
-
-    // should create nested maps
-    func testPerformingChanges3() {
-        struct Schema: Codable, Equatable {
-            struct Birds: Codable, Equatable { let wrens: Int }
-            var birds: Birds?
-        }
-        var doc = Document(Schema(birds: nil))
-        let req = doc.change { $0.birds?.set(.init(wrens: 3)) }
-        XCTAssertEqual(doc.content, Schema(birds: .init(wrens: 3)))
-        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc.actor, seq: 1, version: 0, ops: [
-            Op(action: .makeMap, obj: .root, key: "birds", insert: false, child: req!.ops[1].obj),
-            Op(action: .set, obj: req!.ops[1].obj, key: "wrens", insert: false, value: 3.0)
-        ], undoable: true))
-    }
-
-    // should apply updates inside nested maps
-    func testPerformingChanges4() {
-        struct Schema: Codable, Equatable {
-            struct Birds: Codable, Equatable { let wrens: Int; var sparrows: Int? }
-            var birds: Birds?
-        }
-        var doc1 = Document(Schema(birds: nil))
-        doc1.change { $0.birds?.set(.init(wrens: 3, sparrows: nil)) }
-        var doc2 = doc1
-        let req = doc2.change { $0.birds?.sparrows?.set(15) }
-        let birds = doc2.rootProxy().birds?.objectId
-
-        XCTAssertEqual(doc1.content, Schema(birds: .init(wrens: 3, sparrows: nil)))
-        XCTAssertEqual(doc2.content, Schema(birds: .init(wrens: 3, sparrows: 15)))
-        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc1.actor, seq: 2, version: 1, ops: [
-            Op(action: .set, obj: birds!, key: "sparrows", insert: false, value: 15.0)
-        ], undoable: true))
-    }
-
-    // should delete keys in maps
-    func testPerformingChanges5() {
-        struct Schema: Codable, Equatable {
-            var magpies: Int?; let sparrows: Int?
-        }
-        let actor = Actor()
-        let doc1 = Document(Schema(magpies: 2, sparrows: 15), actor: actor)
-        var doc2 = doc1
-        let req = doc2.change { $0.magpies.set(nil) }
-        XCTAssertEqual(doc1.content, Schema(magpies: 2, sparrows: 15))
-        XCTAssertEqual(doc2.content, Schema(magpies: nil, sparrows: 15))
-        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: actor, seq: 2, version: 1, ops: [
-            Op(action: .del, obj: .root, key: "magpies", insert: false, value: nil)
-        ], undoable: true))
-    }
-
-    // should create lists
-    func testPerformingChanges6() {
-        struct Schema: Codable, Equatable {
-            var birds: [String]?
-        }
-        var doc1 = Document(Schema(birds: nil))
-        let req = doc1.change { $0.birds?.set(["chaffinch"])}
-        XCTAssertEqual(doc1.content, Schema(birds: ["chaffinch"]))
-        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc1.actor, seq: 1, version: 0, ops: [
-            Op(action: .makeList, obj: .root, key: "birds", insert: false, child: req!.ops[1].obj),
-            Op(action: .set, obj: req!.ops[1].obj, key: 0, insert: true, value: .string("chaffinch"))
-        ], undoable: true))
-    }
-
-    // should apply updates inside lists
-    func testPerformingChanges7() {
-        struct Schema: Codable, Equatable {
-            var birds: [String]?
-        }
-        var doc1 = Document(Schema(birds: nil))
-        doc1.change { $0.birds?.set(["chaffinch"]) }
-        var doc2 = doc1
-        let req = doc2.change { $0.birds?[0].set("greenfinch") }
-        let birds = doc2.rootProxy().birds?.objectId
-        XCTAssertEqual(doc1.content, Schema(birds: ["chaffinch"]))
-        XCTAssertEqual(doc2.content, Schema(birds: ["greenfinch"]))
-        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc1.actor, seq: 2, version: 1, ops: [
-            Op(action: .set, obj: birds!, key: 0, value: .string("greenfinch"))
-        ], undoable: true))
-    }
-
-    // should delete list elements
-    func testPerformingChanges8() {
-        struct Schema: Codable, Equatable {
-            var birds: [String]
-        }
-        let doc1 = Document(Schema(birds: ["chaffinch", "goldfinch"]))
-        var doc2 = doc1
-        let req = doc2.change {
-            $0.birds.remove(at: 0)
-        }
-        let birds = doc2.rootProxy().birds.objectId
-        XCTAssertEqual(doc1.content, Schema(birds: ["chaffinch", "goldfinch"]))
-        XCTAssertEqual(doc2.content, Schema(birds: ["goldfinch"]))
-        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc2.actor, seq: 2, version: 1, ops: [
-            Op(action: .del, obj: birds!, key: 0)
-        ], undoable: true))
-    }
-
-    // should store Date objects as timestamps
-    func testPerformingChanges9() {
-        struct Schema: Codable, Equatable {
-            var now: Date?
-        }
-        let now = Date(timeIntervalSince1970: 0)
-        var doc1 = Document(Schema(now: nil))
-        let req = doc1.change { $0.now?.set(now) }
-        XCTAssertEqual(doc1.content, Schema(now: now))
-        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc1.actor, seq: 1, version: 0, ops: [
-            Op(action: .set, obj: .root, key: "now", insert: false, value: .number(now.timeIntervalSince1970), datatype: .timestamp)
-        ], undoable: true))
-    }
-
-    // should handle counters inside maps
-    func testCounters1() {
-        struct Schema: Codable, Equatable {
-            var wrens: Counter?
-        }
-        var doc1 = Document(Schema())
-        let req1 = doc1.change { $0.wrens?.set(0) }
-        var doc2 = doc1
-        let req2 = doc2.change { $0.wrens?.increment() }
-        let actor = doc2.actor
-        XCTAssertEqual(doc1.content, Schema(wrens: 0))
-        XCTAssertEqual(doc2.content, Schema(wrens: 1))
-        XCTAssertEqual(req1, Request(requestType: .change, message: "", time: req1!.time, actor: actor, seq: 1, version: 0, ops: [
-            Op(action: .set, obj: .root, key: "wrens", value: 0.0, datatype: .counter)
-        ], undoable: true))
-        XCTAssertEqual(req2, Request(requestType: .change, message: "", time: req2!.time, actor: actor, seq: 2, version: 1, ops: [
-            Op(action: .inc, obj: .root, key: "wrens", value: 1.0)
-        ], undoable: true))
-    }
-
-    // should handle counters inside lists
-    func testCounters2() {
-        struct Schema: Codable, Equatable {
-            var counts: [Counter]?
-        }
-
-        var doc1 = Document(Schema())
-        let req1 = doc1.change {
-            $0.counts?.set([1])
-            XCTAssertEqual($0.counts?.get(), [1])
-        }
-        var doc2 = doc1
-        let req2 = doc2.change {
-            $0.counts?[0].increment(2)
-            XCTAssertEqual($0.counts?.get(), [3])
-        }
-        let actor = doc2.actor
-        XCTAssertEqual(doc1.content, Schema(counts: [1]))
-        XCTAssertEqual(doc2.content, Schema(counts: [3]))
-        XCTAssertEqual(req1, Request(requestType: .change, message: "", time: req1!.time, actor: actor, seq: 1, version: 0, ops: [
-            Op(action: .makeList, obj: .root, key: "counts", child: req1!.ops[0].child),
-            Op(action: .set, obj: req1!.ops[1].obj, key: 0, insert: true, value: 1.0, datatype: .counter)
-        ], undoable: true))
-        XCTAssertEqual(req2, Request(requestType: .change, message: "", time: req2!.time, actor: actor, seq: 2, version: 1, ops: [
-            Op(action: .inc, obj: req2!.ops[0].obj, key: 0, value: 2.0)
-        ], undoable: true))
-    }
+//    // should allow instantiating from an existing object
+//    func testInitializing1() {
+//        let initialState = DocumentState(birds: .init(wrens: 3, magpies: 4))
+//        let document = Document(initialState)
+//        XCTAssertEqual(document.content, initialState)
+//    }
+//
+//    // should return the unmodified document if nothing changed
+//    func testPerformingChanges1() {
+//        let initialState = DocumentState(birds: .init(wrens: 3, magpies: 4))
+//        var document = Document(initialState)
+//        document.change({ _ in
+//
+//        })
+//        XCTAssertEqual(document.content, initialState)
+//    }
+//
+//    // should set root object properties
+//    func testPerformingChanges2() {
+//        struct Schema: Codable, Equatable {
+//            var bird: String?
+//        }
+//        let actor = Actor()
+//        var doc = Document(Schema(bird: nil), actor: actor)
+//        let req = doc.change { $0.bird.set("magpie") }
+//
+//        XCTAssertEqual(doc.content, Schema(bird: "magpie"))
+//        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: actor, seq: 1, version: 0, ops: [
+//            Op(action: .set, obj: .root, key: "bird", insert: false, value: .string("magpie"))
+//        ], undoable: true))
+//    }
+//
+//    // should create nested maps
+//    func testPerformingChanges3() {
+//        struct Schema: Codable, Equatable {
+//            struct Birds: Codable, Equatable { let wrens: Int }
+//            var birds: Birds?
+//        }
+//        var doc = Document(Schema(birds: nil))
+//        let req = doc.change { $0.birds?.set(.init(wrens: 3)) }
+//        XCTAssertEqual(doc.content, Schema(birds: .init(wrens: 3)))
+//        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc.actor, seq: 1, version: 0, ops: [
+//            Op(action: .makeMap, obj: .root, key: "birds", insert: false, child: req!.ops[1].obj),
+//            Op(action: .set, obj: req!.ops[1].obj, key: "wrens", insert: false, value: 3.0)
+//        ], undoable: true))
+//    }
+//
+//    // should apply updates inside nested maps
+//    func testPerformingChanges4() {
+//        struct Schema: Codable, Equatable {
+//            struct Birds: Codable, Equatable { let wrens: Int; var sparrows: Int? }
+//            var birds: Birds?
+//        }
+//        var doc1 = Document(Schema(birds: nil))
+//        doc1.change { $0.birds?.set(.init(wrens: 3, sparrows: nil)) }
+//        var doc2 = doc1
+//        let req = doc2.change { $0.birds?.sparrows?.set(15) }
+//        let birds = doc2.rootProxy().birds?.objectId
+//
+//        XCTAssertEqual(doc1.content, Schema(birds: .init(wrens: 3, sparrows: nil)))
+//        XCTAssertEqual(doc2.content, Schema(birds: .init(wrens: 3, sparrows: 15)))
+//        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc1.actor, seq: 2, version: 1, ops: [
+//            Op(action: .set, obj: birds!, key: "sparrows", insert: false, value: 15.0)
+//        ], undoable: true))
+//    }
+//
+//    // should delete keys in maps
+//    func testPerformingChanges5() {
+//        struct Schema: Codable, Equatable {
+//            var magpies: Int?; let sparrows: Int?
+//        }
+//        let actor = Actor()
+//        let doc1 = Document(Schema(magpies: 2, sparrows: 15), actor: actor)
+//        var doc2 = doc1
+//        let req = doc2.change { $0.magpies.set(nil) }
+//        XCTAssertEqual(doc1.content, Schema(magpies: 2, sparrows: 15))
+//        XCTAssertEqual(doc2.content, Schema(magpies: nil, sparrows: 15))
+//        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: actor, seq: 2, version: 1, ops: [
+//            Op(action: .del, obj: .root, key: "magpies", insert: false, value: nil)
+//        ], undoable: true))
+//    }
+//
+//    // should create lists
+//    func testPerformingChanges6() {
+//        struct Schema: Codable, Equatable {
+//            var birds: [String]?
+//        }
+//        var doc1 = Document(Schema(birds: nil))
+//        let req = doc1.change { $0.birds?.set(["chaffinch"])}
+//        XCTAssertEqual(doc1.content, Schema(birds: ["chaffinch"]))
+//        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc1.actor, seq: 1, version: 0, ops: [
+//            Op(action: .makeList, obj: .root, key: "birds", insert: false, child: req!.ops[1].obj),
+//            Op(action: .set, obj: req!.ops[1].obj, key: 0, insert: true, value: .string("chaffinch"))
+//        ], undoable: true))
+//    }
+//
+//    // should apply updates inside lists
+//    func testPerformingChanges7() {
+//        struct Schema: Codable, Equatable {
+//            var birds: [String]?
+//        }
+//        var doc1 = Document(Schema(birds: nil))
+//        doc1.change { $0.birds?.set(["chaffinch"]) }
+//        var doc2 = doc1
+//        let req = doc2.change { $0.birds?[0].set("greenfinch") }
+//        let birds = doc2.rootProxy().birds?.objectId
+//        XCTAssertEqual(doc1.content, Schema(birds: ["chaffinch"]))
+//        XCTAssertEqual(doc2.content, Schema(birds: ["greenfinch"]))
+//        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc1.actor, seq: 2, version: 1, ops: [
+//            Op(action: .set, obj: birds!, key: 0, value: .string("greenfinch"))
+//        ], undoable: true))
+//    }
+//
+//    // should delete list elements
+//    func testPerformingChanges8() {
+//        struct Schema: Codable, Equatable {
+//            var birds: [String]
+//        }
+//        let doc1 = Document(Schema(birds: ["chaffinch", "goldfinch"]))
+//        var doc2 = doc1
+//        let req = doc2.change {
+//            $0.birds.remove(at: 0)
+//        }
+//        let birds = doc2.rootProxy().birds.objectId
+//        XCTAssertEqual(doc1.content, Schema(birds: ["chaffinch", "goldfinch"]))
+//        XCTAssertEqual(doc2.content, Schema(birds: ["goldfinch"]))
+//        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc2.actor, seq: 2, version: 1, ops: [
+//            Op(action: .del, obj: birds!, key: 0)
+//        ], undoable: true))
+//    }
+//
+//    // should store Date objects as timestamps
+//    func testPerformingChanges9() {
+//        struct Schema: Codable, Equatable {
+//            var now: Date?
+//        }
+//        let now = Date(timeIntervalSince1970: 0)
+//        var doc1 = Document(Schema(now: nil))
+//        let req = doc1.change { $0.now?.set(now) }
+//        XCTAssertEqual(doc1.content, Schema(now: now))
+//        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: doc1.actor, seq: 1, version: 0, ops: [
+//            Op(action: .set, obj: .root, key: "now", insert: false, value: .number(now.timeIntervalSince1970), datatype: .timestamp)
+//        ], undoable: true))
+//    }
+//
+//    // should handle counters inside maps
+//    func testCounters1() {
+//        struct Schema: Codable, Equatable {
+//            var wrens: Counter?
+//        }
+//        var doc1 = Document(Schema())
+//        let req1 = doc1.change { $0.wrens?.set(0) }
+//        var doc2 = doc1
+//        let req2 = doc2.change { $0.wrens?.increment() }
+//        let actor = doc2.actor
+//        XCTAssertEqual(doc1.content, Schema(wrens: 0))
+//        XCTAssertEqual(doc2.content, Schema(wrens: 1))
+//        XCTAssertEqual(req1, Request(requestType: .change, message: "", time: req1!.time, actor: actor, seq: 1, version: 0, ops: [
+//            Op(action: .set, obj: .root, key: "wrens", value: 0.0, datatype: .counter)
+//        ], undoable: true))
+//        XCTAssertEqual(req2, Request(requestType: .change, message: "", time: req2!.time, actor: actor, seq: 2, version: 1, ops: [
+//            Op(action: .inc, obj: .root, key: "wrens", value: 1.0)
+//        ], undoable: true))
+//    }
+//
+//    // should handle counters inside lists
+//    func testCounters2() {
+//        struct Schema: Codable, Equatable {
+//            var counts: [Counter]?
+//        }
+//
+//        var doc1 = Document(Schema())
+//        let req1 = doc1.change {
+//            $0.counts?.set([1])
+//            XCTAssertEqual($0.counts?.get(), [1])
+//        }
+//        var doc2 = doc1
+//        let req2 = doc2.change {
+//            $0.counts?[0].increment(2)
+//            XCTAssertEqual($0.counts?.get(), [3])
+//        }
+//        let actor = doc2.actor
+//        XCTAssertEqual(doc1.content, Schema(counts: [1]))
+//        XCTAssertEqual(doc2.content, Schema(counts: [3]))
+//        XCTAssertEqual(req1, Request(requestType: .change, message: "", time: req1!.time, actor: actor, seq: 1, version: 0, ops: [
+//            Op(action: .makeList, obj: .root, key: "counts", child: req1!.ops[0].child),
+//            Op(action: .set, obj: req1!.ops[1].obj, key: 0, insert: true, value: 1.0, datatype: .counter)
+//        ], undoable: true))
+//        XCTAssertEqual(req2, Request(requestType: .change, message: "", time: req2!.time, actor: actor, seq: 2, version: 1, ops: [
+//            Op(action: .inc, obj: req2!.ops[0].obj, key: 0, value: 2.0)
+//        ], undoable: true))
+//    }
 
 
 //    // should use version and sequence number from the backend
@@ -230,7 +230,7 @@ class DocumentTest: XCTestCase {
 //            version: 3,
 //            canUndo: false,
 //            canRedo: false,
-//            diffs: .init(objectId: ROOT_ID, type: .map, props: ["blackbirds": [local.actorId: 24]]))
+//            diffs: .init(ROOT_ID, type: .map, props: ["blackbirds": [local.actorId: 24]]))
 //        var doc1 = Document(Schema(blackbirds: nil, partridges: nil), options: .init(actorId: local))
 //        doc1.applyPatch(patch: patch1)
 //        doc1.change { $0[\.partridges, "partridges"] = 1 }
@@ -285,7 +285,7 @@ class DocumentTest: XCTestCase {
 //                                    version: 1,
 //                                    canUndo: true,
 //                                    canRedo: false,
-//                                    diffs: ObjectDiff(objectId: ROOT_ID, type: .map, props: ["blackbirds": [actor.actorId: 24]])
+//                                    diffs: ObjectDiff(ROOT_ID, type: .map, props: ["blackbirds": [actor.actorId: 24]])
 //            )
 //        )
 //
@@ -303,7 +303,7 @@ class DocumentTest: XCTestCase {
 //                                    version: 2,
 //                                    canUndo: true,
 //                                    canRedo: false,
-//                                    diffs: ObjectDiff(objectId: ROOT_ID, type: .map, props: ["partridges": [actor.actorId: 1]])
+//                                    diffs: ObjectDiff(ROOT_ID, type: .map, props: ["partridges": [actor.actorId: 1]])
 //            )
 //        )
 //

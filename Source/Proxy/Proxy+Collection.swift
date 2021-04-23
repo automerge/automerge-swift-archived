@@ -74,7 +74,7 @@ extension Proxy: RangeReplaceableCollection where Wrapped: RangeReplaceableColle
         let void: (ObjectDiff, Object?, inout [ObjectId: Object]) -> Object? = { _, _, _ in
             fatalError()
         }
-        self.init(context: Context(actorId: Actor(), applyPatch: void, updated: [:], cache: [:], ops: []), objectId: nil, path: [], value: nil)
+        self.init(context: Context(actorId: Actor(), applyPatch: void, updated: [:], cache: [:], ops: [], maxOp: 0), objectId: nil, path: [], value: nil)
     }
 
     public func replaceSubrange<C, R>(_ subrange: R, with proxyElements: C) where C : Collection, R : RangeExpression, Element == C.Element, Index == R.Bound {

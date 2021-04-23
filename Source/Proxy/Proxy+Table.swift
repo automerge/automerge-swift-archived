@@ -35,7 +35,8 @@ public extension Proxy {
      does not exist in the table.
     */
     func removeRow(by rowId: ObjectId) {
-        context.deleteTableRow(path: path, rowId: rowId)
+//        context.deleteTableRow(path: path, rowId: rowId, pred: )
+        fatalError()
     }
 
 }

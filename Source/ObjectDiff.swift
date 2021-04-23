@@ -7,7 +7,7 @@
 
 import Foundation
 
-typealias Props = [Key: [String: Diff]]
+typealias Props = [Key: [ObjectId: Diff]]
 
 final class ObjectDiff: Equatable, Codable {
 
@@ -41,7 +41,7 @@ final class ObjectDiff: Equatable, Codable {
         self.edits = try values.decodeIfPresent([Edit].self, forKey: .edits)
 
         var props = Props()
-        let stringProps = try? values.decodeIfPresent([String: [String: Diff]].self, forKey: .props)
+        let stringProps = try? values.decodeIfPresent([String: [ObjectId: Diff]].self, forKey: .props)
         if let keys = stringProps?.keys {
             for key in keys {
                 if let index = Int(key) {
@@ -56,5 +56,5 @@ final class ObjectDiff: Equatable, Codable {
         self.props = props
     }
 
-    static let empty = ObjectDiff(objectId: ObjectId(objectId: "EMPRY"), type: .map)
+    static let empty = ObjectDiff(objectId: ObjectId("EMPRY"), type: .map)
 }

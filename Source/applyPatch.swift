@@ -58,7 +58,7 @@ func updateTable(patch: ObjectDiff, table: Table<Map>?, updated: inout [ObjectId
 
     let keys = patch.props?.keys.strings
     keys?.forEach({ (key) in
-        let key = ObjectId(objectId: key)
+        let key = ObjectId(key)
         let opIds = Array(patch.props![.string(key.objectId)]!.keys)
         if opIds.isEmpty {
             table.entries[key] = nil
@@ -118,12 +118,12 @@ func updateList(patch: ObjectDiff, list: List?, updated: inout [ObjectId: Object
     let objectId = patch.objectId
     var list = list ?? List(objectId: objectId, listValues: [])
     var listValues = list.listValues
-    var conflicts: [[String: Object]?] = list.conflicts
+    var conflicts: [[ObjectId: Object]?] = list.conflicts
     patch.edits?.iterate(
         insertCallback: { index, insertions in
             let blanksValues = Array<Object>(repeating: .primitive(1.0), count: insertions)
             listValues.replaceSubrange(index..<index, with: blanksValues)
-            let blanksConflicts = Array<[String : Object]?>(repeating: nil, count: insertions)
+            let blanksConflicts = Array<[ObjectId : Object]?>(repeating: nil, count: insertions)
             conflicts.replaceSubrange(index..<index, with: blanksConflicts)
         },
         removeCallback: { index, deletions in
@@ -169,14 +169,14 @@ func updateMap(patch: ObjectDiff, map: Map?, updated: inout [ObjectId: Object]) 
 func applyProperties(
     props: Props?,
     list: inout List,
-    conflicts: inout [[String: Object]?],
+    conflicts: inout [[ObjectId: Object]?],
     updated: inout [ObjectId: Object]
 ) {
     guard let props = props else {
         return
     }
     for index in props.keys.indicies {
-        var values = [String: Object]()
+        var values = [ObjectId: Object]()
         let opIds = props[.index(index)]?.keys.sorted(by: lamportCompare) ?? []
         for opId in opIds {
             let subPatch = props[.index(index)]![opId]
@@ -219,7 +219,7 @@ func applyProperties(
         return
     }
     for key in props.keys.strings {
-        var values = [String: Object]()
+        var values = [ObjectId: Object]()
         let opIds = props[.string(key)]?.keys.sorted(by: lamportCompare) ?? []
         for opId in opIds {
             let subPatch = props[.string(key)]![opId]
@@ -239,22 +239,13 @@ func applyProperties(
  * Compares two strings, interpreted as Lamport timestamps of the form
  * 'counter@actorId'. Returns 1 if ts1 is greater, or -1 if ts2 is greater.
  */
-func  lamportCompare(ts1: String, ts2: String) -> Bool {
-    let time1 = ts1.contains("@") ? parseOpId2(opId: ts1) : (counter: 0, actorId: ts1)
-    let time2 = ts2.contains("@") ? parseOpId2(opId: ts2) : (counter: 0, actorId: ts2)
+func  lamportCompare(ts1: ObjectId, ts2: ObjectId) -> Bool {
+    let time1 = ts1.parseOpId() ?? (counter: 0, actorId: ts1.objectId)
+    let time2 = ts2.parseOpId() ?? (counter: 0, actorId: ts2.objectId)
     if time1.counter == time2.counter {
         return time1.actorId > time2.actorId
     }
     return time1.counter > time2.counter
-}
-
-/**
- * Takes a string in the form that is used to identify operations (a counter concatenated
- * with an actor ID, separated by an `@` sign) and returns an object `{counter, actorId}`.
- */
-func parseOpId2(opId: String) -> (counter: Int, actorId: String) {
-    let splitted = opId.split(separator: "@")
-    return (counter: Int(String(splitted[0]))!, actorId: String(splitted[1]))
 }
 
 /**

@@ -47,7 +47,7 @@ public final class Proxy<Wrapped: Codable> {
     public subscript<Y>(dynamicMember dynamicMember: KeyPath<Wrapped, Y>) -> Proxy<Y> {
         let fieldName = dynamicMember.fieldName!
         var map: Map?
-        if self.objectId != ObjectId(objectId: ""), case .map(let map2)? = self.objectId.map({ context.getObject(objectId: $0) })  {
+        if self.objectId != ObjectId(""), case .map(let map2)? = self.objectId.map({ context.getObject(objectId: $0) })  {
             map = map2
         }
 
