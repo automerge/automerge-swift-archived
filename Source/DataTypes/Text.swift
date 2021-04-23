@@ -10,23 +10,23 @@ import Foundation
 public struct Text: Equatable {
 
     struct Character: Codable, Equatable {
-        init(value: String, opId: String) {
+        init(value: String, opId: ObjectId) {
             self.value = value
             self.opId = opId
         }
         let value: String
-        let opId: String
+        let opId: ObjectId
     }
 
     public init() {
         self.content = []
-        self.objectId = ObjectId(objectId: "")
+        self.objectId = ObjectId("")
         self.conflicts = []
     }
 
     public init(_ content: String) {
         self.content = [Swift.Character](content).map { Character(value: String($0), opId: "") }
-        self.objectId = ObjectId(objectId: "")
+        self.objectId = ObjectId("")
         self.conflicts = []
     }
 
@@ -66,7 +66,7 @@ extension Text: Codable {
     public init(from decoder: Decoder) throws {
         let contaier = try decoder.container(keyedBy: CodingKeys.self)
         self.content = try contaier.decode([Character].self, forKey: .content)
-        self.objectId = ObjectId(objectId: "")
+        self.objectId = ObjectId("")
         self.conflicts = []
     }
 

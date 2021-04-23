@@ -27,23 +27,21 @@ public struct Table<RowValue: Codable>: Codable {
         private let object: Object
     }
 
-    public init(entries: [String: RowValue] = [:]) {
-        self.entries = [:]
-        self.objectId = ObjectId(objectId: "")
-    }
-
-    init(tableValues: [ObjectId: Object], objectId: ObjectId = ObjectId(objectId: "")) {
+    init(tableValues: [ObjectId: Object], objectId: ObjectId = ObjectId(""), opIds: [ObjectId] = []) {
         self.entries = tableValues
         self.objectId = objectId
+        self.opIds = opIds
     }
 
     enum CodingKeys: String, CodingKey {
         case entries = "_am_tabel_values_"
         case objectId
+        case opIds
     }
 
     var entries: [ObjectId: Object]
     let objectId: ObjectId
+    let opIds: [ObjectId]
 
     public func row(by id: ObjectId) -> Row<RowValue>? {
         guard let row = entries[id] else {

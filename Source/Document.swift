@@ -11,6 +11,7 @@ public struct Document<T: Codable> {
 
     private struct State {
         var seq: Int
+        var maxOp: Int
         var version: Int
         var clock: Clock
         var canUndo: Bool
@@ -20,7 +21,7 @@ public struct Document<T: Codable> {
     /// Returns the Automerge actor ID of the given document.
     public let actor: Actor
     public var content: T {
-        let context = Context(cache: cache, actorId: actor)
+        let context = Context(cache: cache, actorId: actor, maxOp: state.maxOp)
 
         return Proxy<T>.rootProxy(context: context).get()
     }
@@ -35,7 +36,7 @@ public struct Document<T: Codable> {
         self.backend = backend
         self.root = Map(objectId: .root, mapValues: [:], conflicts: [:])
         self.cache = [.root: .map(root)]
-        self.state = State(seq: 0, version: 0, clock: [:], canUndo: false, canRedo: false)
+        self.state = State(seq: 0, maxOp: 0, version: 0, clock: [:], canUndo: false, canRedo: false)
     }
 
     public init(_ initialState: T, actor: Actor = Actor()) {
@@ -78,7 +79,7 @@ public struct Document<T: Codable> {
      */
     @discardableResult
     public mutating func change(message: String = "", undoable: Bool = true, _ execute: (Proxy<T>) -> Void) -> Request? {
-        let context = Context(cache: cache, actorId: actor)
+        let context = Context(cache: cache, actorId: actor, maxOp: state.maxOp)
         execute(.rootProxy(context: context))
         if context.idUpdated {
             return makeChange(requestType: .change, context: context, message: message, undoable: undoable)
@@ -203,7 +204,7 @@ public struct Document<T: Codable> {
     }
 
     public func rootProxy() -> Proxy<T> {
-        let context = Context(cache: cache, actorId: actor)
+        let context = Context(cache: cache, actorId: actor, maxOp: state.maxOp)
         return .rootProxy(context: context)
     }
 

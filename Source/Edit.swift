@@ -15,6 +15,7 @@ struct Edit: Equatable, Codable {
 
     let action: Action
     let index: Int
+    let elmId: ObjectId?
 }
 
 extension Array where Element == Edit {
