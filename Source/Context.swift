@@ -11,17 +11,17 @@ final class Context {
 
     struct KeyPathElement: Equatable {
         let key: Key
-        let objectId: String
+        let objectId: ObjectId?
     }
 
-    convenience init(cache: [String: [String: Any]], actorId: Actor) {
-        self.init(actorId: actorId, applyPatch: interpretPatch, updated: [String: [String: Any]](), cache: cache, ops: [])
+    convenience init(cache: [ObjectId: Object], actorId: Actor) {
+        self.init(actorId: actorId, applyPatch: interpretPatch, updated: [ObjectId: Object](), cache: cache, ops: [])
     }
 
     init(actorId: Actor,
-         applyPatch: @escaping (ObjectDiff, [String: Any]?, inout [String: [String: Any]]) -> [String: Any]?,
-         updated: [String: [String: Any]],
-         cache: [String: [String: Any]],
+         applyPatch: @escaping (ObjectDiff, Object?, inout [ObjectId: Object]) -> Object?,
+         updated: [ObjectId: Object],
+         cache: [ObjectId: Object],
          ops: [Op] = []
     ) {
         self.actorId = actorId
@@ -33,9 +33,9 @@ final class Context {
     }
 
     private let actorId: Actor
-    private let applyPatch: (ObjectDiff, [String: Any]?, inout [String: [String: Any]]) -> [String: Any]?
-    private(set) var updated: [String: [String: Any]]
-    private var cache: [String: [String: Any]]
+    private let applyPatch: (ObjectDiff, Object?, inout [ObjectId: Object]) -> Object?
+    private(set) var updated: [ObjectId: Object]
+    private var cache: [ObjectId: Object]
     private let dateFormatter: EncoderDateFormatter
 
     var idUpdated: Bool {
@@ -54,84 +54,35 @@ final class Context {
      * `{objectId, type, props}` if `value` is an object, or `{value, datatype}` if it is a
      * primitive value. For string, number, boolean, or null the datatype is omitted.
      */
-    func setValue<T>(objectId: String, key: Key?, value: T, insert: Bool) -> Diff {
+    func setValue(objectId: ObjectId, key: Key?, value: Object, insert: Bool) -> Diff {
         switch value {
-        case let number as NSNumber:
-            switch CFNumberGetType(number) {
-            case .intType, .sInt8Type, .sInt16Type, .sInt32Type, .sInt64Type:
-                let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .int(number.intValue))
-                ops.append(operation)
-                return .value(.int(number.intValue))
-            case .charType:
-                let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .bool(number.boolValue))
-                ops.append(operation)
-                return .value(.bool(number.boolValue))
-            case .floatType, .float32Type, .float64Type, .cgFloatType:
-                let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .double(number.doubleValue))
-                ops.append(operation)
-                return .value(.double(number.doubleValue))
-            default:
-                fatalError("Unsuported")
-            }
-        case let bool as Bool:
-            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .bool(bool))
-            ops.append(operation)
-            return .value(.bool(bool))
-        case  let value as Int:
-            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .int(value))
-            ops.append(operation)
-            return .value(.int(value))
-        case  let value as Double:
-            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .double(value))
-            ops.append(operation)
-            return .value(.double(value))
-        case let string as String:
-            if string.starts(with: "_am_date:"), let date = EncoderDateFormatter().date(from: string) {
-                let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .double(date.timeIntervalSince1970), datatype: .timestamp)
-                ops.append(operation)
-                return .value(.init(value: .double(date.timeIntervalSince1970), datatype: .timestamp))
+        case .primitive(let primitive):
+            let operation: Op
+            if case .null = primitive {
+                operation = Op(action: .del, obj: objectId, key: key!, insert: insert)
             } else {
-                let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .string(string))
-                ops.append(operation)
-                return .value(.string(string))
+                operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: primitive)
             }
-        case let uuid as UUID:
-            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .string(uuid.uuidString))
             ops.append(operation)
-            return .value(.string(uuid.uuidString))
-        case let character as Character:
-            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .string(String(character)))
+            return .value(primitive)
+        case .map(let map):
+            return .object(createNestedMap(obj: objectId, key: key, map: map, insert: insert))
+        case .list(let list):
+            return .object(createNestedList(obj: objectId, key: key, list: list, insert: insert))
+        case .text(let text):
+            return .object(createNestedText(obj: objectId, key: key, text: text, insert: insert))
+        case .table:
+            return .object(createNestedTable(obj: objectId, key: key, insert: insert))
+        case .date(let date):
+            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .number(date.timeIntervalSince1970), datatype: .timestamp)
             ops.append(operation)
-            return .value(.string(String(character)))
-        case let date as Date:
-            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .double(date.timeIntervalSince1970), datatype: .timestamp)
+            return .value(.init(value: .number(date.timeIntervalSince1970), datatype: .timestamp))
+        case .counter(let counter):
+            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .number(Double(counter.value)), datatype: .counter)
             ops.append(operation)
-            return .value(.init(value: .double(date.timeIntervalSince1970), datatype: .timestamp))
-        case let couter as Counter:
-            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .int(couter.value), datatype: .counter)
-            ops.append(operation)
-            return .value(.init(value: .int(couter.value), datatype: .counter))
-        case let object as [String: Any]:
-            return setValue(objectId: objectId, key: key, object: object, insert: insert)
-        case let array as [Any]:
-            return .object(createNestedObjects(obj: objectId, key: key, value: array, insert: insert))
-        case is Optional<Any>:
-            let operation = Op(action: .del, obj: objectId, key: key!, insert: insert)
-            ops.append(operation)
-            return .value(.null)
-        default:
-            fatalError()
+            return .value(.init(value: .number(Double(counter.value)), datatype: .counter))
         }
-    }
 
-    func setValue(objectId: String, key: Key?, object: [String: Any], insert: Bool) -> Diff {
-        if let counterValue = object[COUNTER_VALUE] as? Int {
-            let operation = Op(action: .set, obj: objectId, key: key!, insert: insert, value: .int(counterValue), datatype: .counter)
-            ops.append(operation)
-            return .value(.init(value: .int(counterValue), datatype: .counter))
-        } else {
-            return .object(createNestedObjects(obj: objectId, key: key, value: object, insert: insert))
-        }
     }
 
     /**
@@ -142,50 +93,79 @@ final class Context {
      * element. If `key` is null, the ID of the new object is used as key (this construction
      * is used by Automerge.Table).
      */
-    private func createNestedObjects(obj: String, key: Key?, value: Any, insert: Bool) -> ObjectDiff {
-        let child = UUID().uuidString
-        let key = key ?? .string(child)
-        switch value {
-        case let object as [String: Any]:
-            precondition(object[OBJECT_ID] == nil, "Cannot create a reference to an existing document object")
-            if object[ISTEXT] != nil, let elms = object[LIST_VALUES] as? [String]  {
-                let operation = Op(action: .makeText, obj: obj, key: key, insert: insert, child: child)
-                ops.append(operation)
-                let subpatch = ObjectDiff(objectId: child, type: .text, edits: [], props: [:])
-                insertListItems(subPatch: subpatch, index: 0, values: elms, newObject: true)
+    private func createNestedMap(obj: ObjectId, key: Key?, map: Map, insert: Bool) -> ObjectDiff {
+        let child = ObjectId()
+        let key = key ?? .string(child.objectId)
+        let operation = Op(action: .makeMap, obj: obj, key: key, insert: insert, child: child)
+        ops.append(operation)
 
-                return subpatch
-            }
-
-            if object[TABLE_VALUES] != nil {
-                let operation = Op(action: .makeTable, obj: obj, key: key, insert: insert, child: child)
-                ops.append(operation)
-                let subpatch = ObjectDiff(objectId: child, type: .table, props: [:])
-
-                return subpatch
-            }
-
-            let operation = Op(action: .makeMap, obj: obj, key: key, insert: insert, child: child)
-            ops.append(operation)
-
-            var props = Props()
-            for nested in object.keys.sorted() {
-                let valuePatch = setValue(objectId: child, key: .string(nested), value: object[nested], insert: false)
-                props[.string(nested)] = [actorId.actorId: valuePatch]
-            }
-
-            return ObjectDiff(objectId: child, type: .map, props: props)
-        case let array as Array<Any>:
-            let operation = Op(action: .makeList, obj: obj, key: key, insert: insert, child: child)
-            ops.append(operation)
-            let subpatch = ObjectDiff(objectId: child, type: .list, edits: [], props: [:])
-            insertListItems(subPatch: subpatch, index: 0, values: array, newObject: true)
-
-            return subpatch
-
-        default:
-            fatalError()
+        var props = Props()
+        for nested in map.mapValues.keys.sorted() {
+            let valuePatch = setValue(objectId: child, key: .string(nested), value: map[nested]!, insert: false)
+            props[.string(nested)] = [actorId.actorId: valuePatch]
         }
+
+        return ObjectDiff(objectId: child, type: .map, props: props)
+    }
+
+    /**
+     * Recursively creates Automerge versions of all the objects and nested objects in `value`,
+     * constructing a patch and operations that describe the object tree. The new object is
+     * assigned to the property `key` in the object with ID `obj`. If `insert` is true, a new
+     * list element is created at index `key`, and the new object is assigned to that list
+     * element. If `key` is null, the ID of the new object is used as key (this construction
+     * is used by Automerge.Table).
+     */
+    private func createNestedList(obj: ObjectId, key: Key?, list: List, insert: Bool) -> ObjectDiff {
+        let child = ObjectId()
+        let key = key ?? .string(child.objectId)
+
+        let operation = Op(action: .makeList, obj: obj, key: key, insert: insert, child: child)
+        ops.append(operation)
+        let subpatch = ObjectDiff(objectId: child, type: .list, edits: [], props: [:])
+        insertListItems(subPatch: subpatch, index: 0, values: list.listValues, newObject: true)
+
+        return subpatch
+    }
+
+    /**
+     * Recursively creates Automerge versions of all the objects and nested objects in `value`,
+     * constructing a patch and operations that describe the object tree. The new object is
+     * assigned to the property `key` in the object with ID `obj`. If `insert` is true, a new
+     * list element is created at index `key`, and the new object is assigned to that list
+     * element. If `key` is null, the ID of the new object is used as key (this construction
+     * is used by Automerge.Table).
+     */
+    private func createNestedText(obj: ObjectId, key: Key?, text: Text, insert: Bool) -> ObjectDiff {
+        let child = ObjectId()
+        let key = key ?? .string(child.objectId)
+
+        let elems: [Object] = text.content.map { .primitive(.string($0.value)) }
+        let operation = Op(action: .makeText, obj: obj, key: key, insert: insert, child: child)
+        ops.append(operation)
+        let subpatch = ObjectDiff(objectId: child, type: .text, edits: [], props: [:])
+        insertListItems(subPatch: subpatch, index: 0, values: elems, newObject: true)
+
+        return subpatch
+    }
+
+
+    /**
+     * Recursively creates Automerge versions of all the objects and nested objects in `value`,
+     * constructing a patch and operations that describe the object tree. The new object is
+     * assigned to the property `key` in the object with ID `obj`. If `insert` is true, a new
+     * list element is created at index `key`, and the new object is assigned to that list
+     * element. If `key` is null, the ID of the new object is used as key (this construction
+     * is used by Automerge.Table).
+     */
+    private func createNestedTable(obj: ObjectId, key: Key?, insert: Bool) -> ObjectDiff {
+        let child = ObjectId()
+        let key = key ?? .string(child.objectId)
+        let operation = Op(action: .makeTable, obj: obj, key: key, insert: insert, child: child)
+        ops.append(operation)
+        let subpatch = ObjectDiff(objectId: child, type: .table, props: [:])
+
+        return subpatch
     }
 
     /**
@@ -194,7 +174,7 @@ final class Context {
      * existing one. `subpatch` is the patch for the list object being modified. Mutates
      * `subpatch` to reflect the sequence of values.
      */
-    func insertListItems(subPatch: ObjectDiff, index: Int, values: [Any], newObject: Bool) {
+    func insertListItems(subPatch: ObjectDiff, index: Int, values: [Object], newObject: Bool) {
         let list = newObject ? [] : getList(objectId: subPatch.objectId)
         precondition(index >= 0 && index <= list.count, "List index \(index) is out of bounds for list of length \(list.count)")
 
@@ -209,17 +189,27 @@ final class Context {
      * Updates the list object at path `path`, deleting `deletions` list elements starting from
      * list index `start`, and inserting the list of new elements `insertions` at that position.
      */
-    func splice<T>(path: [KeyPathElement], start: Int, deletions: Int, insertions: [T]) {
-        let objectId = path.isEmpty ? ROOT_ID : path[path.count - 1].objectId
+    func splice(path: [KeyPathElement], start: Int, deletions: Int, insertions: [Object]) {
+        guard let objectId = path.isEmpty ? .root : path[path.count - 1].objectId else {
+            fatalError("objectId must exist")
+        }
+
+        let elements: [Any]
         let object = getObject(objectId: objectId)
-        let list = object[LIST_VALUES] as! [Any]
-        if (start < 0 || deletions < 0 || start > list.count - deletions) {
-            fatalError("\(deletions) deletions starting at index \(start) are out of bounds for list of length \(list.count)")
+        if case .list(let list) = object {
+            elements = list.listValues
+        } else if case .text(let text) = object {
+            elements = text.content
+        } else {
+            fatalError("Must be a list or text")
+        }
+        if (start < 0 || deletions < 0 || start > elements.count - deletions) {
+            fatalError("\(deletions) deletions starting at index \(start) are out of bounds for list of length \(elements.count)")
         }
         if deletions == 0 && insertions.count == 0 {
             return
         }
-        let patch = Patch(clock: [:], version: 0, canUndo: false, canRedo: false, diffs: ObjectDiff(objectId: ROOT_ID, type: .map))
+        let patch = Patch(clock: [:], version: 0, canUndo: false, canRedo: false, diffs: ObjectDiff(objectId: .root, type: .map))
         let subPatch = getSubpatch(patch: patch, path: path)
         if subPatch.edits == nil {
             subPatch.edits = []
@@ -233,76 +223,57 @@ final class Context {
         if insertions.count > 0 {
             insertListItems(subPatch: subPatch, index: start, values: insertions, newObject: false)
         }
-        cache[ROOT_ID] = applyPatch(patch.diffs, cache[ROOT_ID]!, &updated)
-        updated[ROOT_ID] = cache[ROOT_ID]
-
+        cache[.root] = applyPatch(patch.diffs, cache[.root]!, &updated)
+        updated[.root] = cache[.root]
     }
 
     /**
      * Updates the map object at path `path`, setting the property with name
      * `key` to `value`.
      */
-    func setMapKey<T>(path: [KeyPathElement], key: String, value: T) {
-        let objectId = path.isEmpty ? ROOT_ID : path[path.count - 1].objectId
-        let object = getObject(objectId: objectId)
-        if object[key] is Counter {
+    func setMapKey(path: [KeyPathElement], key: String, value: Object) {
+        guard let objectId = path.isEmpty ? .root : path[path.count - 1].objectId else {
+            fatalError("objectId must exist")
+        }
+        guard case .map(let map) = getObject(objectId: objectId) else {
+            fatalError("Must be Map")
+        }
+        if case .counter = map[key] {
             fatalError("Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.")
         }
         // If the assigned field value is the same as the existing value, and
         // the assignment does not resolve a conflict, do nothing
-        applyAt(path: path, callback: { subpatch in
-            let valuePatch = setValue(objectId: objectId, key: .string(key), value: value, insert: false)
-            subpatch.props?[.string(key)] = [actorId.actorId: valuePatch]
-        })
-    }
 
-    /**
-     * Updates the map object at path `path`, setting the property with name
-     * `key` to `value`.
-     */
-    func setMapKey<T: Equatable>(path: [KeyPathElement], key: String, value: T) {
-        let objectId = path.isEmpty ? ROOT_ID : path[path.count - 1].objectId
-        let object = getObject(objectId: objectId)
-        if object[key] is Counter {
-            fatalError("Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.")
-        }
-        // If the assigned field value is the same as the existing value, and
-        // the assignment does not resolve a conflict, do nothing
-        if (object[key] as? T) != value {
+        if map[key] != value {
             applyAt(path: path, callback: { subpatch in
                 let valuePatch = setValue(objectId: objectId, key: .string(key), value: value, insert: false)
                 subpatch.props?[.string(key)] = [actorId.actorId: valuePatch]
             })
-        } else if (object[CONFLICTS] as? [String: [Any]])?[key]?.count ?? 0 > 1 {
+        } else if map.conflicts[key]?.count ?? 0 > 1 {
             fatalError()
         }
-
     }
 
 
     /**
      * Takes a value and returns an object describing the value (in the format used by patches).
      */
-    private func getValueDescription(value: Any) -> Diff {
+    private func getValueDescription(value: Object) -> Diff {
         switch value {
-        case let int as Int:
-            return .value(.init(value: .int(int)))
-        case let double as Double:
-            return .value(.init(value: .double(double)))
-        case let date as Date:
-            return .value(.init(value: .double(date.timeIntervalSince1970), datatype: .timestamp))
-        case let counter as Counter:
-            return .value(.init(value: .int(counter.value), datatype: .counter))
-        case is NSNull:
-            return .value(.init(value: .null))
-        case let object as [String : Any]:
-            guard let objectId = object[OBJECT_ID] as? String else {
-                fatalError("Object \(value) has no objectId")
-            }
-            return .object(.init(objectId: objectId, type: getObjectType(objectId: objectId), edits: nil, props: nil))
-
-        default:
-            fatalError()
+        case .map(let map):
+            return .object(.init(objectId: map.objectId, type: .map))
+        case .list(let list):
+            return .object(.init(objectId: list.objectId, type: .list))
+        case .table(let table):
+            return .object(.init(objectId: table.objectId, type: .table))
+        case .primitive(let primitive):
+            return .value(primitive)
+        case .counter(let counter):
+            return .value(.init(value: .number(Double(counter.value)), datatype: .counter))
+        case .date(let date):
+            return .value(.init(value: .number(date.timeIntervalSince1970), datatype: .timestamp))
+        case .text(let text):
+            return .object(.init(objectId: text.objectId, type: .text))
         }
     }
 
@@ -310,34 +281,43 @@ final class Context {
      * Returns a string that is either 'map', 'table', 'list', or 'text', indicating
      * the type of the object with ID `objectId`.
      */
-    private func getObjectType(objectId: String) -> CollectionType {
-        if objectId == ROOT_ID {
+    private func getObjectType(objectId: ObjectId) -> CollectionType {
+        if objectId == .root {
             return .map
         }
         let object = getObject(objectId: objectId)
-        if object[LIST_VALUES] != nil {
-            return object[ISTEXT] == nil ? .list : .text
-        } else if object[TABLE_VALUES] != nil{
-            return .table
-        } else {
+        switch object {
+        case .list:
+            return .list
+        case .map:
             return .map
+        case .table:
+            return .table
+        case .text:
+            return .text
+        case .counter, .primitive, .date:
+            fatalError()
         }
     }
 
     /**
      * Returns an object (not proxied) from the cache or updated set, as appropriate.
      */
-    private func getList(objectId: String) -> [Any] {
-        guard let object = (updated[objectId] ?? cache[objectId]) else {
+    private func getList(objectId: ObjectId) -> [Any] {
+        let object = getObject(objectId: objectId)
+        if case .list(let list) = object {
+            return list.listValues
+        } else if case .text(let text) = object {
+            return text.content
+        } else {
             fatalError("Target object does not exist: \(objectId)")
         }
-        return object[LIST_VALUES] as! [Any]
     }
 
     /**
      * Returns an object (not proxied) from the cache or updated set, as appropriate.
      */
-    func getObject(objectId: String) -> [String: Any] {
+    func getObject(objectId: ObjectId) -> Object {
         let updatedObject = updated[objectId]
         let cachedObject = cache[objectId]
         guard let object = updatedObject ?? cachedObject else {
@@ -351,10 +331,11 @@ final class Context {
      * and then immediately applies the patch to the document.
      */
     func applyAt(path: [KeyPathElement], callback: (ObjectDiff) -> Void) {
-        let patch = Patch(clock: [:], version: 0, canUndo: false, canRedo: false, diffs: ObjectDiff(objectId: ROOT_ID, type: .map))
-        callback(getSubpatch(patch: patch, path: path))
-        cache[ROOT_ID] = applyPatch(patch.diffs, cache[ROOT_ID], &updated)
-        updated[ROOT_ID] = cache[ROOT_ID]
+        let patch = Patch(clock: [:], version: 0, canUndo: false, canRedo: false, diffs: ObjectDiff(objectId: .root, type: .map))
+        let subPatch = getSubpatch(patch: patch, path: path)
+        callback(subPatch)
+        cache[.root] = applyPatch(patch.diffs, cache[.root], &updated)
+        updated[.root] = cache[.root]
     }
 
     /**
@@ -363,7 +344,7 @@ final class Context {
      */
     func getSubpatch(patch: Patch, path: [KeyPathElement]) -> ObjectDiff {
         var subPatch = patch.diffs
-        var object: [String: Any] = getObject(objectId: ROOT_ID)
+        var object = getObject(objectId: .root)
         for pathElem in path {
             if subPatch.props == nil {
                 subPatch.props = [:]
@@ -378,8 +359,8 @@ final class Context {
                     nextOpId = opId
                 }
             }
-            guard let nextOpId2 = nextOpId, case .object(let objectDiff) = values[nextOpId2] else {
-                fatalError("Cannot find path object with objectId \(pathElem.objectId)")
+            guard let nextOpId2 = nextOpId, case .object(let objectDiff) = values[nextOpId2]  else {
+                fatalError("Cannot find path object with objectId \(pathElem)")
             }
             subPatch = objectDiff
             object = getPropertyValue(object: object, key: pathElem.key, opId: nextOpId2)
@@ -396,16 +377,16 @@ final class Context {
      * Returns the value at property `key` of object `object`. In the case of a conflict, returns
      * the value whose assignment operation has the ID `opId`.
      */
-    func getPropertyValue(object: [String: Any], key: Key, opId: String) -> [String: Any] {
-        if object[TABLE_VALUES] != nil {
-            guard case .string(let stringKey) = key,
-               let entries = object[TABLE_VALUES] as? [String: [String: Any]],
-               let value = entries[stringKey] else {
-                fatalError()
-            }
-            return value
-        } else {
-            return ((object[CONFLICTS] as! [Key: Any])[key] as! [String: Any])[opId] as! [String: Any]
+    func getPropertyValue(object: Object, key: Key, opId: String) -> Object {
+        switch (object, key) {
+        case (.table(let table), .string(let key)):
+            return table.entries[ObjectId(objectId: key)]!
+        case (.map(let map), .string(let key)):
+            return map.conflicts[key]![opId]!
+        case (.list(let list), .index(let index)):
+            return list.conflicts[index][opId]!
+        default:
+        fatalError()
         }
     }
 
@@ -414,25 +395,32 @@ final class Context {
      * property `key` of `object` (there might be multiple values in the case of a conflict), and
      * returns an object that maps operation IDs to descriptions of values.
      */
-    func getValuesDescriptions(path: [KeyPathElement], object: [String: Any], key: Key) -> [String: Diff] {
-        if object[TABLE_VALUES] != nil {
-            // Table objects don't have conflicts, since rows are identified by their unique objectId
-            if case .string(let stringKey) = key, let entries = object[TABLE_VALUES] as? [String: [String: Any]], let value = entries[stringKey] {
-                return [stringKey: getValueDescription(value: value)]
+    func getValuesDescriptions(path: [KeyPathElement], object: Object, key: Key) -> [String: Diff] {
+        switch (object, key) {
+        case (.table(let table), .string(let key)):
+            if let value = table.entries[ObjectId(objectId: key)]  {
+                return [key: getValueDescription(value: value)]
             } else {
                 return [:]
             }
-        } else {
-            guard let conflicts = (object[CONFLICTS] as?[Key: Any])?[key] else {
-                fatalError("No children at key \(key) of path \(path)")
-            }
-            let typedConflicts = conflicts as! [String: Any]
+        case (.map(let map), .string(let key)):
+            let conflict = map.conflicts[key]!
             var values = [String: Diff]()
-            for opId in typedConflicts.keys {
-                values[opId] = getValueDescription(value: typedConflicts[opId]!)
+            for opId in conflict.keys {
+                values[opId] = getValueDescription(value: conflict[opId]!)
             }
 
             return values
+        case (.list(let list), .index(let index)):
+            let conflict = list.conflicts[index]
+            var values = [String: Diff]()
+            for opId in conflict.keys {
+                values[opId] = getValueDescription(value: conflict[opId]!)
+            }
+
+            return values
+        default:
+            fatalError()
         }
     }
 
@@ -440,15 +428,20 @@ final class Context {
      * Updates the list object at path `path`, replacing the current value at
      * position `index` with the new value `value`.
      */
-    func setListIndex<T>(path: [KeyPathElement], index: Int, value: T) {
-        let objectId = path.isEmpty ? ROOT_ID : path[path.count - 1].objectId
-        let object = getObject(objectId: objectId)
-        let list = object[LIST_VALUES] as! [Any]
+    func setListIndex(path: [KeyPathElement], index: Int, value: Object) {
+        guard let objectId = path.isEmpty ? .root : path[path.count - 1].objectId else {
+            fatalError("objectId must exist")
+        }
+        guard case .list(let list) = getObject(objectId: objectId) else {
+            fatalError("Must be a list")
+        }
         if index == list.count {
             splice(path: path, start: index, deletions: 0, insertions: [value])
             return
         }
-        precondition(!(list[index] is Counter), "Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.")
+        if case .counter = list[index] {
+            fatalError("Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.")
+        }
         applyAt(path: path) { subpatch in
             let valuePatch = setValue(objectId: objectId, key: .index(index), value: value, insert: false)
             subpatch.props?[.index(index)] = [actorId.actorId: valuePatch]
@@ -460,13 +453,13 @@ final class Context {
      * Updates the table object at path `path`, adding a new entry `row`.
      * Returns the objectId of the new row.
      */
-    func addTableRow(path: [KeyPathElement], row: [String: Any]) -> String {
-        precondition(row[OBJECT_ID] == nil, "Cannot reuse an existing object as table row")
-        precondition(row["id"] == nil, "A table row must not have an id property; it is generated automatically")
+    func addTableRow(path: [KeyPathElement], row: Object) -> ObjectId {
+        precondition(row.objectId == ObjectId(objectId: "") || row.objectId == nil, "Cannot reuse an existing object as table row")
 
-        let valuePatch = setValue(objectId: path[path.count - 1].objectId, key: nil, value: row, insert: false)
+        let valuePatch = setValue(objectId: path[path.count - 1].objectId!, key: nil, value: row, insert: false)
+
         applyAt(path: path) { subpatch in
-            subpatch.props?[.string(valuePatch.objectId!)] = [valuePatch.objectId!: valuePatch]
+            subpatch.props?[.string(valuePatch.objectId!.objectId)] = [valuePatch.objectId!.objectId: valuePatch]
         }
 
         return valuePatch.objectId!
@@ -475,16 +468,15 @@ final class Context {
     /**
      * Updates the table object at path `path`, deleting the row with ID `rowId`.
      */
-    func deleteTableRow(path: [KeyPathElement], rowId: String) {
-        let objectId =  path[path.count - 1].objectId
-        let table = getObject(objectId: objectId)
-        guard let entries = table[TABLE_VALUES] as? [String: Any] else {
+    func deleteTableRow(path: [KeyPathElement], rowId: ObjectId) {
+        let objectId =  path[path.count - 1].objectId!
+        guard case .table(let table) = getObject(objectId: objectId) else {
             fatalError()
         }
-        if entries[rowId] != nil {
-            ops.append(Op(action: .del, obj: objectId, key: .string(rowId)))
+        if table.entries[rowId] != nil {
+            ops.append(Op(action: .del, obj: objectId, key: .string(rowId.objectId)))
             applyAt(path: path, callback: { subpatch in
-                subpatch.props?[.string(rowId)] = [:]
+                subpatch.props?[.string(rowId.objectId)] = [:]
             })
         }
     }
@@ -494,31 +486,31 @@ final class Context {
      * `key` in the object at path `path`.
      */
     func increment(path: [KeyPathElement], key: Key, delta: Int) {
-        let objectId = path.count == 0 ? ROOT_ID : path[path.count - 1].objectId
+        guard let objectId = path.isEmpty ? .root : path[path.count - 1].objectId else {
+            fatalError("objectId must exist")
+        }
         let object = getObject(objectId: objectId)
         let counterValue: Int
         switch key {
         case .string(let key):
-            if case .int(let value) = (object[key] as! [String: Primitive])[COUNTER_VALUE]! {
-                counterValue = value
-            } else if case .double(let value) = (object[key] as! [String: Primitive])[COUNTER_VALUE]! {
-                counterValue = Int(value)
-            }else {
+            if  case .map(let map) = object,
+                case .counter(let counter) = map[key] {
+                counterValue = counter.value
+            } else {
                 fatalError()
             }
         case .index(let index):
-            if let list = object[LIST_VALUES] as? [[String: Primitive]], case .int(let value) = list[index][COUNTER_VALUE]! {
-                counterValue = value
-            } else if let list = object[LIST_VALUES] as? [[String: Primitive]], case .double(let value) = list[index][COUNTER_VALUE]! {
-                counterValue = Int(value)
+            if case .list(let list) = object,
+               case .counter(let counter) = list.listValues[index] {
+                counterValue = counter.value
             } else {
                 fatalError()
             }
         }
         // TODO what if there is a conflicting value on the same key as the counter?
-        ops.append(Op(action: .inc, obj: objectId, key: key, value: .int(delta)))
+        ops.append(Op(action: .inc, obj: objectId, key: key, value: .number(Double(delta))))
         applyAt(path: path, callback: { subpatch in
-            subpatch.props?[key] = [actorId.actorId: .value(.init(value: .int(counterValue + delta), datatype: .counter))]
+            subpatch.props?[key] = [actorId.actorId: .value(.init(value: .number(Double(counterValue + delta)), datatype: .counter))]
         })
     }
 

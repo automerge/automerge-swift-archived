@@ -8,6 +8,7 @@
 import Foundation
 
 // see https://gist.github.com/ddddxxx/7ba69196b8551efcf4025e7001cefa26
+// and https://github.com/wickwirew/Runtime
 
 extension KeyPath {
 
@@ -18,28 +19,30 @@ extension KeyPath {
         let typePtr = unsafeBitCast(Root.self, to: UnsafeMutableRawPointer.self)
         let metadata = typePtr.assumingMemoryBound(to: StructMetadata.self)
         let kind = metadata.pointee._kind
-        if kind == 1 || kind == 0x200 {
-            let typeDescriptor = metadata.pointee.typeDescriptor
-            let numberOfFields = Int(typeDescriptor.pointee.numberOfFields)
-            let offsets = typeDescriptor.pointee
-                .offsetToTheFieldOffsetVector
-                .buffer(metadata: typePtr, count: numberOfFields)
-            guard let fieldIndex = offsets.firstIndex(of: Int32(offset)) else {
-                // composite keypath
-                // TODO: resolve nested type
-                return nil
-            }
-            return typeDescriptor.pointee
-                .fieldDescriptor.advanced().pointee
-                .fields.pointer().advanced(by: fieldIndex).pointee
-                .fieldName()
+        // for struct only
+        guard kind == 1 || kind == 0x200 else {
+            assertionFailure()
+            return nil
         }
-        
-        return nil
+        let typeDescriptor = metadata.pointee.typeDescriptor
+        let numberOfFields = Int(typeDescriptor.pointee.numberOfFields)
+        let offsets = typeDescriptor.pointee
+            .offsetToTheFieldOffsetVector
+            .buffer(metadata: typePtr, count: numberOfFields)
+        guard let fieldIndex = offsets.firstIndex(of: Int32(offset)) else {
+            // composite keypath
+            // TODO: resolve nested type
+            return nil
+        }
+        return typeDescriptor.pointee
+            .fieldDescriptor.advanced().pointee
+            .fields.pointer().advanced(by: fieldIndex).pointee
+            .fieldName()
     }
 }
 
 // MARK: - Layout
+
 private struct StructMetadata {
     var _kind: Int
     var typeDescriptor: UnsafeMutablePointer<StructTypeDescriptor>
@@ -77,6 +80,7 @@ private struct FieldDescriptor {
 }
 
 // MARK: - Pointers
+
 private struct Buffer<Element> {
 
     var element: Element

@@ -27,16 +27,14 @@ public struct Document<T: Codable> {
 
     private var backend: RSBackend
     private var state: State
-    private var root: [String: Any]
+    private var root: Map
+    private var cache: [ObjectId: Object]
 
     private init(actor: Actor, backend: RSBackend) {
         self.actor = actor
         self.backend = backend
-        self.root = [
-            OBJECT_ID: ROOT_ID,
-            CONFLICTS: [Key: [String: Any]]()
-        ]
-        self.root[CACHE] = [ROOT_ID: root]
+        self.root = Map(objectId: .root, mapValues: [:], conflicts: [:])
+        self.cache = [.root: .map(root)]
         self.state = State(seq: 0, version: 0, clock: [:], canUndo: false, canRedo: false)
     }
 
@@ -63,10 +61,6 @@ public struct Document<T: Codable> {
 
         doc.applyPatch(patch: patch)
         self = doc
-    }
-
-    private var cache: [String: [String: Any]] {
-       root[CACHE] as! [String: [String: Any]]
     }
 
     /**
@@ -135,11 +129,11 @@ public struct Document<T: Codable> {
      * change from the frontend.
      */
     private mutating func applyPatchToDoc(patch: Patch, fromBackend: Bool, context: Context?) {
-        var updated = [String: [String: Any]]()
-        var newRoot = interpretPatch(patch: patch.diffs, obj: root, updated: &updated)
-        let cache = newRoot?[CACHE]
-        newRoot?[CACHE] = context?.updated ?? cache
-        updated[ROOT_ID] = newRoot
+        var updated = [ObjectId: Object]()
+        let newRoot = interpretPatch(patch: patch.diffs, obj: .map(root), updated: &updated)
+        var cache = self.cache
+        cache = context?.updated ?? cache
+        updated[.root] = newRoot
 
         if fromBackend {
             if let clockValue = patch.clock[actor.actorId], clockValue > state.seq {
@@ -169,18 +163,23 @@ public struct Document<T: Codable> {
      * `state`, and returns a new immutable document root object based on `doc` that reflects
      * those updates.
      */
-    private mutating func updateRootObject(update: inout [String: [String: Any]]) {
-        var newDoc = update[ROOT_ID]
+    private mutating func updateRootObject(update: inout [ObjectId: Object]) {
+        var newDoc = update[.root]
         if newDoc == nil {
-            newDoc = cache[ROOT_ID]
-            update[ROOT_ID] = newDoc
+            newDoc = cache[.root]
+            update[.root] = newDoc
         }
         for objectId in cache.keys where update[objectId] == nil {
             update[objectId] = cache[objectId]
         }
-        newDoc?[CACHE] = update
+        self.cache = update
 
-        self.root = newDoc!
+        if case .map(let newRoot)? = newDoc {
+            self.root = newRoot
+        } else {
+            fatalError()
+        }
+
     }
 
     public func save() -> [UInt8] {

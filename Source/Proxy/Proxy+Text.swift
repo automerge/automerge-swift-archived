@@ -11,11 +11,14 @@ public extension Proxy where Wrapped == Text {
 
     func insert(_ character: String, at index: Int) {
         precondition(character.count == 1)
-        context.splice(path: path, start: index, deletions: 0, insertions: [["value": character]])
+        context.splice(path: path, start: index, deletions: 0, insertions: [.primitive(.string(character))])
     }
 
     func insert(contentsOf characters: [String], at index: Int) {
-        context.splice(path: path, start: index, deletions: 0, insertions: characters.map { ["value": $0] })
+        context.splice(path: path, start: index, deletions: 0, insertions: characters.map({ character in
+            precondition(character.count == 1)
+            return .primitive(.string(character))
+        }))
     }
 
     func delete(_ characterCount: Int, charactersAtIndex index: Int) {

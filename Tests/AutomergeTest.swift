@@ -206,7 +206,6 @@ class AutomergeTest: XCTestCase {
         }
         var s1 = Document(Scheme(nested: nil))
         s1.change { $0.nested.set(.init()) }
-        #warning("assert.strictEqual(OPID_PATTERN.test(Automerge.getObjectId(s1.nested)), true)")
         XCTAssertNotEqual(s1.rootProxy().nested?.objectId, "00000000-0000-0000-0000-000000000000")
         XCTAssertEqual(s1.content, Scheme(nested: .init()))
     }
