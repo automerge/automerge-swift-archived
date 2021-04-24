@@ -12,7 +12,7 @@ public final class Proxy<Wrapped: Codable> {
 
     init(
         context: Context,
-        objectId: String?,
+        objectId: ObjectId?,
         path: [Context.KeyPathElement],
         value: @escaping () -> Wrapped?
     ) {
@@ -24,7 +24,7 @@ public final class Proxy<Wrapped: Codable> {
 
     init(
         context: Context,
-        objectId: String?,
+        objectId: ObjectId?,
         path: [Context.KeyPathElement],
         value: @autoclosure @escaping () -> Wrapped?
     ) {
@@ -34,7 +34,7 @@ public final class Proxy<Wrapped: Codable> {
         self.valueResolver = value
     }
 
-    public let objectId: String?
+    public let objectId: ObjectId?
     let context: Context
     let path: [Context.KeyPathElement]
     private let valueResolver: () -> Wrapped?
@@ -43,53 +43,66 @@ public final class Proxy<Wrapped: Codable> {
         return valueResolver()!
     }
 
+    private var map: Map {
+        guard case .map(let map)? = objectId.map({ context.getObject(objectId: $0) }) else {
+           fatalError("Must be map")
+        }
+
+        return map
+    }
 
     public subscript<Y>(dynamicMember dynamicMember: KeyPath<Wrapped, Y>) -> Proxy<Y> {
         let fieldName = dynamicMember.fieldName!
-        let object = self.objectId.map { context.getObject(objectId: $0) }
-        let objectId = (object?[fieldName] as? [String: Any])?[OBJECT_ID] as? String
-        return Proxy<Y>(context: context, objectId: objectId, path: path + [.init(key: .string(fieldName), objectId: objectId ?? "")], value: self.valueResolver()?[keyPath: dynamicMember])
+
+
+        let objectId = map.mapValues[fieldName]?.objectId
+        return Proxy<Y>(
+            context: context,
+            objectId: objectId,
+            path: path + [.init(key: .string(fieldName), objectId: objectId)],
+            value: self.valueResolver()?[keyPath: dynamicMember]
+        )
     }
 
     public subscript<Y>(dynamicMember dynamicMember: KeyPath<Wrapped, Y?>) -> Proxy<Y>? {
         let fieldName = dynamicMember.fieldName!
-        let object = self.objectId.map { context.getObject(objectId: $0) }
-        let objectId = (object?[fieldName] as? [String: Any])?[OBJECT_ID] as? String
-        return Proxy<Y>(context: context, objectId: objectId, path: path + [.init(key: .string(fieldName), objectId: objectId ?? "")], value: self.valueResolver()?[keyPath: dynamicMember])
+        let objectId = map.mapValues[fieldName]?.objectId
+        return Proxy<Y>(
+            context: context,
+            objectId: objectId,
+            path: path + [.init(key: .string(fieldName), objectId: objectId)],
+            value: self.valueResolver()?[keyPath: dynamicMember]
+        )
     }
 
-    private func set<T: Codable>(rootObject: T) {
-        let dictionary = try! DictionaryEncoder().encode(rootObject) as [String: Any]
-        for key in dictionary.keys {
-            context.setMapKey(path: path, key: key, value: dictionary[key])
+    private func set(rootObject: Map) {
+        for (key, value) in rootObject.mapValues {
+            context.setMapKey(path: path, key: key, value: value)
         }
     }
 
-    private func set<T: Codable>(newValue: T) {
+    func set(newValue: Object) {
         guard let lastPathKey = path.last?.key else {
-            self.set(rootObject: newValue)
+            if case .map(let root) = newValue {
+                set(rootObject: root)
+            }
             return
         }
-        let encoded: Any = (try? DictionaryEncoder().encode(newValue)) ?? newValue
         switch lastPathKey {
         case .string(let key):
             let path = Array(self.path.dropLast())
-            context.setMapKey(path: path, key: key, value: encoded)
+            context.setMapKey(path: path, key: key, value: newValue)
         case .index(let index):
             let path = Array(self.path.dropLast())
-            context.setListIndex(path: path, index: index, value: encoded)
+            context.setListIndex(path: path, index: index, value: newValue)
         }
     }
 
     public func set(_ newValue: Wrapped) {
-        set(newValue: newValue)
+        let mapper = TypeToObject()
+        let object = try! mapper.map(newValue)
+
+        set(newValue: object)
     }
-}
-
-extension Proxy where Wrapped: RawRepresentable, Wrapped.RawValue: Codable {
-
-    public func set(_ newValue: Wrapped) {
-        set(newValue: newValue.rawValue)
-    }
-
+    
 }

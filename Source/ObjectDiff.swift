@@ -11,7 +11,7 @@ typealias Props = [Key: [String: Diff]]
 
 final class ObjectDiff: Equatable, Codable {
 
-    init(objectId: String,
+    init(objectId: ObjectId,
          type: CollectionType,
          edits: [Edit]? = nil,
          props: Props? = nil
@@ -22,7 +22,7 @@ final class ObjectDiff: Equatable, Codable {
         self.props = props
     }
 
-    let objectId: String
+    let objectId: ObjectId
     let type: CollectionType
     var edits: [Edit]?
     var props: Props?
@@ -36,7 +36,7 @@ final class ObjectDiff: Equatable, Codable {
 
     required init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
-        self.objectId = try values.decode(String.self, forKey: .objectId)
+        self.objectId = try values.decode(ObjectId.self, forKey: .objectId)
         self.type = try values.decode(CollectionType.self, forKey: .type)
         self.edits = try values.decodeIfPresent([Edit].self, forKey: .edits)
 
@@ -56,5 +56,5 @@ final class ObjectDiff: Equatable, Codable {
         self.props = props
     }
 
-    static let empty = ObjectDiff(objectId: "EMPTY", type: .map)
+    static let empty = ObjectDiff(objectId: ObjectId(objectId: "EMPRY"), type: .map)
 }

@@ -7,42 +7,50 @@
 
 import Foundation
 
-public struct Text: Codable, Equatable {
+public struct Text: Equatable {
+
+    struct Character: Codable, Equatable {
+        init(value: String, opId: String) {
+            self.value = value
+            self.opId = opId
+        }
+        let value: String
+        let opId: String
+    }
 
     public init() {
-        self.elms = []
+        self.content = []
+        self.objectId = ObjectId(objectId: "")
+        self.conflicts = []
     }
 
     public init(_ content: String) {
-        self.elms = [Character](content).map { String($0) }
+        self.content = [Swift.Character](content).map { Character(value: String($0), opId: "") }
+        self.objectId = ObjectId(objectId: "")
+        self.conflicts = []
     }
 
-    var elms: [String]
-    let isTextElement: Bool = true
-
-    enum CodingKeys: String, CodingKey {
-        case elms = "_am_list_values_"
-        case isTextElement = "_am_is_Text_Element_"
+    init(objectId: ObjectId, content: [Character], conflicts: [[String: Character]] = []) {
+        self.objectId = objectId
+        self.content = content
+        self.conflicts = conflicts
     }
 
-    public init(from decoder: Decoder) throws {
-        let contaier = try decoder.singleValueContainer()
-        let elems = try contaier.decode([[String: String]].self)
-
-        self.elms = elems.map({ $0["value"]! })
-    }
+    let objectId: ObjectId
+    var content: [Character]
+    var conflicts: [[String: Character]]
 
     public mutating func insert(_ character: String, at index: Int) {
         precondition(character.count == 1)
-        elms.insert(character, at: index)
+        content.insert(Character(value: character, opId: ""), at: index)
     }
 
     public mutating func insert(contentsOf characters: [String], at index: Int) {
-        elms.insert(contentsOf: characters, at: index)
+        content.insert(contentsOf: characters.map({ Character(value: $0, opId: "") }), at: index)
     }
 
     public mutating func delete(_ characterCount: Int, charactersAtIndex index: Int) {
-        elms.removeSubrange(index..<index + characterCount)
+        content.removeSubrange(index..<index + characterCount)
     }
 
     public mutating func delete(at index: Int) {
@@ -50,28 +58,46 @@ public struct Text: Codable, Equatable {
     }
 }
 
+extension Text: Codable {
+    enum CodingKeys: String, CodingKey {
+        case content = "_am_text_content_"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let contaier = try decoder.container(keyedBy: CodingKeys.self)
+        self.content = try contaier.decode([Character].self, forKey: .content)
+        self.objectId = ObjectId(objectId: "")
+        self.conflicts = []
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(content, forKey: .content)
+    }
+}
+
 extension Text: Collection {
     public func index(after i: Int) -> Int {
-        elms.index(after: i)
+        content.index(after: i)
     }
 
     public var startIndex: Int {
-        return elms.startIndex
+        return content.startIndex
     }
 
     public var endIndex: Int {
-        return elms.endIndex
+        return content.endIndex
     }
 
     public subscript(index: Int) -> String {
-        return elms[index]
+        return content[index].value
     }
 }
 
 extension Text: CustomStringConvertible {
     
     public var description: String {
-        return elms.joined()
+        return content.map({ $0.value }).joined()
     }
 
 }

@@ -14,14 +14,24 @@ extension Proxy {
             return nil
         }
         let object = context.getObject(objectId: objectId)
-        guard let conflicts = object[CONFLICTS] as? [Key: Any] else {
+        switch object {
+        case .primitive:
             return nil
+        case .map(let map):
+            guard let fieldName = dynamicMember.fieldName,
+                  let realConflicts = map.conflicts[fieldName],
+                  realConflicts.count > 1 else {
+                return nil
+            }
+            let encoder = JSONEncoder()
+            let decoder = JSONDecoder()
+
+            let json = try! encoder.encode(realConflicts)
+            return try! decoder.decode([String: Y].self, from: json).compactMapKeys({ Actor(actorId: $0) })
+        default:
+            fatalError()
         }
-        guard let fieldName = dynamicMember.fieldName, let realConflicts = conflicts[.string(fieldName)] as? [String: Any], realConflicts.count > 1 else {
-            return nil
-        }
-        let decoder = DictionaryDecoder()
-        return (try? decoder.decode([String: Y].self, from: realConflicts))?.compactMapKeys({ Actor(actorId: $0) })
+
     }
 
 }
@@ -32,12 +42,19 @@ extension Proxy where Wrapped: Collection, Wrapped.Index == Int, Wrapped.Element
         guard let objectId = objectId else {
             return nil
         }
-        let object = context.getObject(objectId: objectId)
-        guard let conflicts = object[CONFLICTS] as? [Key: Any], let realConflicts = conflicts[.index(index)] as? [String: Any], realConflicts.count > 1 else {
+        guard case .list(let list) = context.getObject(objectId: objectId) else {
+            fatalError()
+        }
+        let realConflicts = list.conflicts[index]
+        guard realConflicts.count > 1 else {
             return nil
         }
-        let decoder = DictionaryDecoder()
-        return (try? decoder.decode([String: Wrapped.Element].self, from: realConflicts))?.compactMapKeys({ Actor(actorId: $0) })
+
+        let encoder = JSONEncoder()
+        let decoder = JSONDecoder()
+
+        let json = try! encoder.encode(realConflicts)
+        return try! decoder.decode([String: Wrapped.Element].self, from: json).compactMapKeys({ Actor(actorId: $0) })
     }
 }
 

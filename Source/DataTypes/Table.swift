@@ -9,59 +9,54 @@ import Foundation
 
 public struct Table<RowValue: Codable>: Codable {
 
-    @dynamicMemberLookup
-    public struct Row<T: Codable>: Codable {
+    public struct Row<T: Codable> {
 
-        init(id: String, value: T, objectId: String) {
+        init(id: ObjectId, object: Object) {
             self.id = id
-            self.objectId = objectId
-            self.value = value
+            self.object = object
         }
 
-        public let objectId: String
-        public internal(set) var id: String! // Hacky
-        public let value: T
+        public let id: ObjectId
+        public var value: T {
+            let encoder = JSONEncoder()
+            let decoder = JSONDecoder()
 
-        enum CodingKeys: String, CodingKey {
-            case objectId = "_am_objectId_"
+            let json = try! encoder.encode(object)
+            return try! decoder.decode(T.self, from: json)
         }
-
-        public init(from decoder: Decoder) throws {
-            let singleKeyContainer = try decoder.singleValueContainer()
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-
-            self.objectId = try container.decode(String.self, forKey: .objectId)
-            self.value = try singleKeyContainer.decode(T.self)
-        }
-
-        public subscript<Y>(dynamicMember dynamicMember: KeyPath<T, Y>) -> Y {
-            return value[keyPath: dynamicMember]
-        }
+        private let object: Object
     }
 
-    public init() {
+    public init(entries: [String: RowValue] = [:]) {
         self.entries = [:]
+        self.objectId = ObjectId(objectId: "")
+    }
+
+    init(tableValues: [ObjectId: Object], objectId: ObjectId = ObjectId(objectId: "")) {
+        self.entries = tableValues
+        self.objectId = objectId
     }
 
     enum CodingKeys: String, CodingKey {
         case entries = "_am_tabel_values_"
+        case objectId
     }
 
-    let entries: [String: Row<RowValue>]
+    var entries: [ObjectId: Object]
+    let objectId: ObjectId
 
-    public func row(by id: String) -> Row<RowValue>? {
-        guard var row = entries[id] else {
+    public func row(by id: ObjectId) -> Row<RowValue>? {
+        guard let row = entries[id] else {
             return nil
         }
-        row.id = id
-        return row
+        return Row(id: id, object: row)
     }
 
     public var count: Int {
         return entries.count
     }
 
-    public var ids: Set<String> {
+    public var ids: Set<ObjectId> {
         return Set(entries.keys)
     }
 
@@ -74,6 +69,6 @@ extension Table: Equatable where RowValue: Equatable { }
 
 extension Table: Sequence {
     public func makeIterator() -> AnyIterator<Row<RowValue>> {
-        return AnyIterator(entries.values.makeIterator())
+        return AnyIterator(entries.map({ Row<RowValue>(id: $0.key, object: $0.value) }).makeIterator())
     }
 }

@@ -11,7 +11,7 @@ enum Diff: Equatable, Codable {
     case object(ObjectDiff)
     case value(ValueDiff)
 
-    var objectId: String? {
+    var objectId: ObjectId? {
         if case .object(let object) = self {
             return object.objectId
         }
@@ -49,10 +49,10 @@ enum Diff: Equatable, Codable {
     }
 }
 
-extension Diff: ExpressibleByIntegerLiteral {
+extension Diff: ExpressibleByFloatLiteral {
     
-    init(integerLiteral value: Int) {
-        self = .value(.int(value))
+    init(floatLiteral value: Float) {
+        self = .value(.number(Double(value)))
     }
 
 }

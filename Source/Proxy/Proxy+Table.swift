@@ -10,26 +10,31 @@ import Foundation
 public extension Proxy {
 
     @discardableResult
-    func add<Row: Codable>(_ row: Row) -> String where Wrapped == Table<Row>  {
-        guard let encoded = (try? DictionaryEncoder().encode(row)) else {
-            fatalError()
-        }
-        return context.addTableRow(path: path, row: encoded)
+    func add<Row: Codable>(_ row: Row) -> ObjectId where Wrapped == Table<Row>  {
+        let row: Object = try! TypeToObject().map(row)
+
+        return context.addTableRow(path: path, row: row)
     }
 
-    func row<Row: Codable>(by rowId: String) -> Proxy<Row>? where Wrapped == Table<Row> {
-        guard let container = get().row(by: rowId) else {
+    func row<Row: Codable>(by rowId: ObjectId) -> Proxy<Row>? where Wrapped == Table<Row> {
+        guard case .table(let table) = context.getObject(objectId: objectId!),
+              let row = table.entries[rowId],
+              let objectId = row.objectId else {
             return nil
         }
-        let objectId = container.objectId
-        return Proxy<Row>(context: context, objectId: objectId, path: path + [.init(key: .string(rowId), objectId: objectId)], value: container.value)
+
+        let encoder = JSONEncoder()
+        let decoder = JSONDecoder()
+
+        let json = try! encoder.encode(row)
+        return Proxy<Row>(context: context, objectId: objectId, path: path + [.init(key: .string(rowId.objectId), objectId: objectId)], value: try! decoder.decode(Row.self, from: json))
     }
 
     /**
      Removes the row with ID `id` from the table. Throws an exception if the row
      does not exist in the table.
     */
-    func removeRow(by rowId: String) {
+    func removeRow(by rowId: ObjectId) {
         context.deleteTableRow(path: path, rowId: rowId)
     }
 
