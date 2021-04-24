@@ -18,9 +18,8 @@ public struct Op: Equatable, Codable {
         action: OpAction,
         obj: ObjectId,
         key: Key? = nil,
-        elmId: ObjectId? = nil,
+        elemId: ObjectId? = nil,
         insert: Bool = false,
-        child: ObjectId? = nil,
         value: Primitive? = nil,
         datatype: DataType? = nil,
         pred: [ObjectId]?
@@ -28,8 +27,8 @@ public struct Op: Equatable, Codable {
         self.action = action
         self.obj = obj
         self.key = key
+        self.elemId = elemId
         self.insert = insert
-        self.child = child
         self.value = value
         self.datatype = datatype
         self.pred = pred
@@ -38,8 +37,8 @@ public struct Op: Equatable, Codable {
     public let action: OpAction
     public let obj: ObjectId
     public let key: Key?
+    public let elemId: ObjectId?
     public let insert: Bool
-    public let child: ObjectId?
     public let value: Primitive?
     public let datatype: DataType?
     public let pred: [ObjectId]?

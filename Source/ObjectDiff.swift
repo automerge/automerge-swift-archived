@@ -11,10 +11,11 @@ typealias Props = [Key: [ObjectId: Diff]]
 
 final class ObjectDiff: Equatable, Codable {
 
-    init(objectId: ObjectId,
-         type: CollectionType,
-         edits: [Edit]? = nil,
-         props: Props? = nil
+    init(
+        objectId: ObjectId,
+        type: CollectionType,
+        edits: [Edit]? = nil,
+        props: Props? = nil
     ) {
         self.objectId = objectId
         self.type = type
@@ -29,7 +30,7 @@ final class ObjectDiff: Equatable, Codable {
 
     static func ==(lhs: ObjectDiff, rhs: ObjectDiff) -> Bool {
         return lhs.objectId == rhs.objectId &&
-                lhs.type == rhs.type &&
+            lhs.type == rhs.type &&
             lhs.edits == rhs.edits &&
             lhs.props == rhs.props
     }
@@ -41,13 +42,14 @@ final class ObjectDiff: Equatable, Codable {
         self.edits = try values.decodeIfPresent([Edit].self, forKey: .edits)
 
         var props = Props()
-        let stringProps = try? values.decodeIfPresent([String: [ObjectId: Diff]].self, forKey: .props)
+        // Not sure why [String: [ObjectId: Diff]].self does not work here ???
+        let stringProps = try? values.decodeIfPresent([String: [String: Diff]].self, forKey: .props)
         if let keys = stringProps?.keys {
             for key in keys {
                 if let index = Int(key) {
-                     props[.index(index)] = stringProps![key]
+                    props[.index(index)] = stringProps![key]?.compactMapKeys({ ObjectId($0) })
                 } else {
-                    props[.string(key)] = stringProps![key]
+                    props[.string(key)] = stringProps![key]?.compactMapKeys({ ObjectId($0) })
                 }
 
             }
@@ -56,5 +58,5 @@ final class ObjectDiff: Equatable, Codable {
         self.props = props
     }
 
-    static let empty = ObjectDiff(objectId: ObjectId("EMPRY"), type: .map)
+    static let empty = ObjectDiff(objectId: ObjectId("_EMPTY"), type: .map)
 }
