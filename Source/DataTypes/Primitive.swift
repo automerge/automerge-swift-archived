@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum Primitive: Equatable, Codable, ExpressibleByStringLiteral, ExpressibleByFloatLiteral, ExpressibleByBooleanLiteral , ExpressibleByNilLiteral {
+public enum Primitive: Equatable, Codable {
 
     case string(String)
     case number(Double)
@@ -25,22 +25,6 @@ public enum Primitive: Equatable, Codable, ExpressibleByStringLiteral, Expressib
         case .null:
             return nil
         }
-    }
-
-    public init(stringLiteral value: StringLiteralType) {
-        self = .string(value)
-    }
-
-    public init(floatLiteral value: Float) {
-        self = .number(Double(value))
-    }
-
-    public init(booleanLiteral value: Bool) {
-        self = .bool(value)
-    }
-
-    public init(nilLiteral: Void) {
-        self = .null
     }
 
     public init(from decoder: Decoder) throws {
@@ -69,4 +53,24 @@ public enum Primitive: Equatable, Codable, ExpressibleByStringLiteral, Expressib
             return
         }
     }
+}
+
+extension Primitive: ExpressibleByStringLiteral, ExpressibleByFloatLiteral, ExpressibleByBooleanLiteral , ExpressibleByNilLiteral {
+
+    public init(stringLiteral value: StringLiteralType) {
+        self = .string(value)
+    }
+
+    public init(floatLiteral value: Float) {
+        self = .number(Double(value))
+    }
+
+    public init(booleanLiteral value: Bool) {
+        self = .bool(value)
+    }
+
+    public init(nilLiteral: Void) {
+        self = .null
+    }
+
 }

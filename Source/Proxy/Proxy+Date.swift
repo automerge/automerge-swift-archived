@@ -20,6 +20,8 @@ extension Proxy where Wrapped == Date? {
     public func set(_ newValue: Wrapped) {
         if let newValue = newValue {
             set(newValue: .date(newValue))
+        } else {
+            set(newValue: .primitive(.null))
         }
     }
 

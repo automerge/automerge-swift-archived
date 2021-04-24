@@ -31,7 +31,7 @@ public final class UnsafeProxy {
     let path: [Context.KeyPathElement]
 
     public subscript(dynamicMember dynamicMember: String) -> UnsafeProxy {
-        guard case .map(let map)? = self.objectId.map({ context.getObject(objectId: $0) }) else {
+        guard case .map(let map)? = objectId.map({ context.getObject(objectId: $0) }) else {
             fatalError()
         }
         let objectId = map.mapValues[dynamicMember]?.objectId
@@ -68,7 +68,7 @@ public final class UnsafeProxy {
 
     public subscript(index: Int) -> UnsafeProxy {
         get {
-            guard case .list(let list)? = self.objectId.map({ context.getObject(objectId: $0) }) else {
+            guard case .list(let list)? = objectId.map({ context.getObject(objectId: $0) }) else {
                 fatalError()
             }
             if index >= list.listValues.count {
