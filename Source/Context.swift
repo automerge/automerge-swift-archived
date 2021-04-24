@@ -230,6 +230,9 @@ final class Context {
         if case .list(let list)? = list {
             return list.elemIds[index]
         }
+        if case .text(let text)? = list {
+            return text.elemIds[index]
+        }
 
 
         fatalError()
@@ -324,6 +327,8 @@ final class Context {
             }
         case (.list(let list), .index(let index)):
             return list.conflicts[index].keys.sorted()
+        case (.text(let text), .index(let index)):
+            return text.content[index].pred
         default:
             fatalError()
         }
@@ -616,17 +621,16 @@ final class Context {
                 case .counter(let counter) = map[key] {
                 counterValue = counter.value
             } else {
-                fatalError()
+                fatalError("Only counter values can be incremented")
             }
         case .index(let index):
             if case .list(let list) = object,
                case .counter(let counter) = list.listValues[index] {
                 counterValue = counter.value
             } else {
-                fatalError()
+                fatalError("Only counter values can be incremented")
             }
         }
-
 
         let opId = nextOpId()
         let pred = getPred(object: object, key: key)
@@ -634,10 +638,10 @@ final class Context {
 
         if case .list = object, case .index(let index) = key {
             let elemId = getElmId(list: object, index: index, insert: false)
-            ops.append(Op(action: .inc, obj: objectId, key: .string(elemId.objectId), insert: false, value: .number(Double(delta)), pred: pred))
+            ops.append(Op(action: .inc, obj: objectId, elemId: elemId, insert: false, value: .number(Double(delta)), pred: pred))
         } else if  case .text = object, case .index(let index) = key {
             let elemId = getElmId(list: object, index: index, insert: false)
-            ops.append(Op(action: .inc, obj: objectId, key: .string(elemId.objectId), insert: false, value: .number(Double(delta)), pred: pred))
+            ops.append(Op(action: .inc, obj: objectId, elemId: elemId, insert: false, value: .number(Double(delta)), pred: pred))
         } else {
             ops.append(Op(action: .inc, obj: objectId, key: key, insert: false, value: .number(Double(delta)), pred: pred))
         }

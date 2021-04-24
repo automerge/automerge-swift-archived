@@ -9,14 +9,14 @@ import Foundation
 
 public extension Proxy where Wrapped == Counter {
 
-    func increment(_ value: Int = 1) {
+    func increment(_ delta: Int = 1) {
         var path = self.path
         let pathComponent = path.popLast()
-        context.increment(path: path, key: pathComponent!.key, delta: value)
+        context.increment(path: path, key: pathComponent!.key, delta: delta)
     }
 
-    func decrement(_ value: Int = -1) {
-       increment(value)
+    func decrement(_ delta: Int = -1) {
+       increment(delta)
     }
 
 }
