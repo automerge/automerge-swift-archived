@@ -48,7 +48,7 @@ public struct ObjectId: Equatable, Hashable, Codable, ExpressibleByStringLiteral
 extension ObjectId: Comparable {
 
     public static func < (lhs: ObjectId, rhs: ObjectId) -> Bool {
-        lhs.objectId < rhs.objectId
+        return lhs.objectId < rhs.objectId
     }
 
 }

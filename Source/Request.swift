@@ -9,11 +9,6 @@ import Foundation
 
 public struct Request: Equatable, Codable {
 
-    enum RequestType: String, Codable {
-        case change
-    }
-
-    let requestType: RequestType
     let startOp: Int
     let deps: [ObjectId]
     let message: String

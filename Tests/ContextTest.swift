@@ -349,27 +349,6 @@ class ContextTest: XCTestCase {
         ))
     }
 
-//    it('should create nested lists', () => {
-//          context.setMapKey([], 'birds', ['sparrow', 'goldfinch'])
-//          assert(applyPatch.calledOnce)
-//          const objectId = applyPatch.firstCall.args[0].props.birds[`1@${context.actorId}`].objectId
-//          assert.deepStrictEqual(applyPatch.firstCall.args[0], {objectId: '_root', type: 'map', props: {
-//            birds: {[`1@${context.actorId}`]: {objectId, type: 'list', props: {
-//              0: {[`2@${context.actorId}`]: {value: 'sparrow'}},
-//              1: {[`3@${context.actorId}`]: {value: 'goldfinch'}}
-//            }, edits: [
-//              {action: 'insert', index: 0, elemId: `2@${context.actorId}`},
-//              {action: 'insert', index: 1, elemId: `3@${context.actorId}`}
-//            ]}}
-//          }})
-//          assert.deepStrictEqual(context.ops, [
-//            {obj: '_root', action: 'makeList', key: 'birds', insert: false, pred: []},
-//            {obj: objectId, action: 'set', elemId: '_head', insert: true, value: 'sparrow', pred: []},
-//            {obj: objectId, action: 'set', elemId: `2@${context.actorId}`, insert: true, value: 'goldfinch', pred: []}
-//          ])
-//        })
-
-
     // should create nested Text objects
     func testContextSetMapKey9() {
         //Given
