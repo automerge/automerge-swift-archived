@@ -73,7 +73,7 @@ final class Context {
                 operation = Op(action: .del, obj: objectId, key: key, insert: insert, pred: pred)
             } else {
                 if let elmId = elmId {
-                    operation = Op(action: .set, obj: objectId, elmId: elmId, insert: insert, value: primitive, pred: pred)
+                    operation = Op(action: .set, obj: objectId, elemId: elmId, insert: insert, value: primitive, pred: pred)
                 } else {
                     operation = Op(action: .set, obj: objectId, key: key, insert: insert, value: primitive, pred: pred)
                 }
@@ -85,7 +85,7 @@ final class Context {
         case .list(let list):
             return .object(createNestedList(obj: objectId, key: key, list: list, insert: insert, pred: pred, elemId: elmId))
         case .text(let text):
-            return .object(createNestedText(obj: objectId, key: key, text: text, insert: insert, pred: pred))
+            return .object(createNestedText(obj: objectId, key: key, text: text, insert: insert, pred: pred, elemId: elmId))
         case .table:
             return .object(createNestedTable(obj: objectId, key: key, insert: insert, pred: pred, elemId: elmId))
         case .date(let date):
@@ -111,7 +111,7 @@ final class Context {
     private func createNestedMap(obj: ObjectId, key: Key?, map: Map, insert: Bool, pred: [ObjectId]?, elmId: ObjectId?) -> ObjectDiff {
         let objectId = nextOpId()
         if let elmId = elmId {
-            ops.append(Op(action: .makeMap, obj: obj, elmId: elmId, insert: insert, pred: pred))
+            ops.append(Op(action: .makeMap, obj: obj, elemId: elmId, insert: insert, pred: pred))
         } else {
             ops.append(Op(action: .makeMap, obj: obj, key: key, insert: insert, pred: pred))
         }
@@ -138,7 +138,7 @@ final class Context {
     private func createNestedList(obj: ObjectId, key: Key?, list: List, insert: Bool, pred: [ObjectId]?, elemId: ObjectId?) -> ObjectDiff {
         let objectId = nextOpId()
         if let elemId = elemId {
-            let operation = Op(action: .makeList, obj: obj, elmId: elemId, insert: insert, pred: pred)
+            let operation = Op(action: .makeList, obj: obj, elemId: elemId, insert: insert, pred: pred)
             ops.append(operation)
         } else {
             let operation = Op(action: .makeList, obj: obj, key: key, insert: insert, pred: pred)
@@ -159,19 +159,20 @@ final class Context {
      * element. If `key` is null, the ID of the new object is used as key (this construction
      * is used by Automerge.Table).
      */
-    private func createNestedText(obj: ObjectId, key: Key?, text: Text, insert: Bool, pred: [ObjectId]?) -> ObjectDiff {
-        let child = ObjectId()
-        let key = key ?? .string(child.objectId)
-
+    private func createNestedText(obj: ObjectId, key: Key?, text: Text, insert: Bool, pred: [ObjectId]?, elemId: ObjectId?) -> ObjectDiff {
+        let objectId = nextOpId()
+        if let elemId = elemId {
+            ops.append(Op(action: .makeText, obj: obj, elemId: elemId, insert: insert, pred: pred))
+        } else {
+            ops.append(Op(action: .makeText, obj: obj, key: key, insert: insert, pred: pred))
+        }
         let elems: [Object] = text.content.map { .primitive(.string($0.value)) }
-        let operation = Op(action: .makeText, obj: obj, key: key, insert: insert, child: child, pred: pred)
-        ops.append(operation)
-        let subpatch = ObjectDiff(objectId: child, type: .text, edits: [], props: [:])
+
+        let subpatch = ObjectDiff(objectId: objectId, type: .text, edits: [], props: [:])
         insertListItems(subPatch: subpatch, index: 0, values: elems, newObject: true)
 
         return subpatch
     }
-
 
     /**
      * Recursively creates Automerge versions of all the objects and nested objects in `value`,
@@ -184,7 +185,7 @@ final class Context {
     private func createNestedTable(obj: ObjectId, key: Key?, insert: Bool, pred: [ObjectId]?, elemId: ObjectId?) -> ObjectDiff {
         let objectId = nextOpId()
         if let elemId = elemId {
-            ops.append(Op(action: .makeTable, obj: obj, elmId: elemId, insert: insert, pred: pred))
+            ops.append(Op(action: .makeTable, obj: obj, elemId: elemId, insert: insert, pred: pred))
         } else {
             ops.append(Op(action: .makeTable, obj: obj, key: key, insert: insert, pred: pred))
         }
@@ -207,18 +208,18 @@ final class Context {
         let list = newObject ? [] : getList(objectId: subPatch.objectId)
         precondition(index >= 0 && index <= list.count, "List index \(index) is out of bounds for list of length \(list.count)")
 
-        var elmId = getElmId(list: getObject(objectId: subPatch.objectId), index: index, insert: true)
+        var elmId = getElmId(list: getSaveObject(objectId: subPatch.objectId), index: index, insert: true)
         values.enumerated().forEach { offset, element in
             let nextElmId = nextOpId()
             let valuePatch = setValue(objectId: subPatch.objectId, key: .index(index + offset), value: element, insert: true, pred: [], elmId: elmId)
             elmId = nextElmId
 
-            subPatch.edits?.append(Edit(action: .insert, index: index + offset, elmId: elmId))
+            subPatch.edits?.append(Edit(action: .insert, index: index + offset, elemId: elmId))
             subPatch.props?[.index(index + offset)] = [elmId: valuePatch]
         }
     }
 
-    func getElmId(list: Object, index: Int, insert: Bool = false) -> ObjectId {
+    func getElmId(list: Object?, index: Int, insert: Bool = false) -> ObjectId {
         var index = index
         if insert {
             if (index == 0) {
@@ -226,7 +227,7 @@ final class Context {
             }
             index -= 1
         }
-        if case .list(let list) = list {
+        if case .list(let list)? = list {
             return list.elemIds[index]
         }
 
@@ -262,8 +263,8 @@ final class Context {
         if deletions == 0 && insertions.count == 0 {
             return
         }
-        let patch = Patch(clock: [:], version: 0, canUndo: false, canRedo: false, diffs: ObjectDiff(objectId: .root, type: .map))
-        let subPatch = getSubpatch(patch: patch, path: path)
+        let diff = ObjectDiff(objectId: .root, type: .map)
+        let subPatch = getSubpatch(diff: diff, path: path)
         if subPatch.edits == nil {
             subPatch.edits = []
         }
@@ -272,14 +273,14 @@ final class Context {
                 #warning("Detect counter deletion and throw error ")
                 let elmId = getElmId(list: object, index: start + i)
                 let pred = getPred(object: object, key: .index(start + i))
-                ops.append(Op(action: .del, obj: objectId, elmId: elmId, insert: false, pred: pred))
-                subPatch.edits?.append(Edit(action: .remove, index: start, elmId: nil))
+                ops.append(Op(action: .del, obj: objectId, elemId: elmId, insert: false, pred: pred))
+                subPatch.edits?.append(Edit(action: .remove, index: start, elemId: nil))
             })
         }
         if insertions.count > 0 {
             insertListItems(subPatch: subPatch, index: start, values: insertions, newObject: false)
         }
-        cache[.root] = applyPatch(patch.diffs, cache[.root]!, &updated)
+        cache[.root] = applyPatch(diff, cache[.root]!, &updated)
         updated[.root] = cache[.root]
     }
 
@@ -430,14 +431,24 @@ final class Context {
     }
 
     /**
+     * Returns an object (not proxied) from the cache or updated set, as appropriate.
+     */
+    func getSaveObject(objectId: ObjectId) -> Object? {
+        let updatedObject = updated[objectId]
+        let cachedObject = cache[objectId]
+
+        return updatedObject ?? cachedObject
+    }
+
+    /**
      * Constructs a new patch, calls `callback` with the subpatch at the location `path`,
      * and then immediately applies the patch to the document.
      */
     func applyAt(path: [KeyPathElement], callback: (ObjectDiff) -> Void) {
-        let patch = Patch(clock: [:], version: 0, canUndo: false, canRedo: false, diffs: ObjectDiff(objectId: .root, type: .map))
-        let subPatch = getSubpatch(patch: patch, path: path)
+        let diff = ObjectDiff(objectId: .root, type: .map)
+        let subPatch = getSubpatch(diff: diff, path: path)
         callback(subPatch)
-        cache[.root] = applyPatch(patch.diffs, cache[.root], &updated)
+        cache[.root] = applyPatch(diff, cache[.root], &updated)
         updated[.root] = cache[.root]
     }
 
@@ -445,8 +456,8 @@ final class Context {
      * Recurses along `path` into the patch object `patch`, creating nodes along the way as needed
      * by mutating the patch object. Returns the subpatch at the given path.
      */
-    func getSubpatch(patch: Patch, path: [KeyPathElement]) -> ObjectDiff {
-        var subPatch = patch.diffs
+    func getSubpatch(diff: ObjectDiff, path: [KeyPathElement]) -> ObjectDiff {
+        var subPatch = diff
         var object = getObject(objectId: .root)
         for pathElem in path {
             if subPatch.props == nil {

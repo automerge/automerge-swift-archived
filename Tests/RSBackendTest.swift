@@ -28,15 +28,15 @@ final class RSBackendTest: XCTestCase {
         let backend = RSBackend()
         let request = Request(
             requestType: .change,
+            startOp: 1,
+            deps: [],
             message: "Test",
             time: Date(),
             actor: "111111",
             seq: 1,
-            version: 0,
             ops: [
                 Op(action: .set, obj: .root, key: "bird", value: .string("magpie"), pred: [])
-            ],
-            undoable: false)
+            ])
         _ = backend.applyLocalChange(request: request)
     }
 

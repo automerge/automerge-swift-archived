@@ -14,7 +14,7 @@ struct List: Equatable, Collection, Codable {
     var conflicts: [[ObjectId: Object]]
     var elemIds: [ObjectId]
 
-    init(objectId: ObjectId, listValues: [Object] = [], conflicts: [[ObjectId: Object]] = [], elemIds: [ObjectId] = []) {
+    init(objectId: ObjectId = "", listValues: [Object] = [], conflicts: [[ObjectId: Object]] = [], elemIds: [ObjectId] = []) {
         self.objectId = objectId
         self.listValues = listValues
         self.conflicts = conflicts
@@ -51,5 +51,15 @@ struct List: Equatable, Collection, Codable {
     // Method that returns the next index when iterating
     func index(after i: Int) -> Int {
         return listValues.index(after: i)
+    }
+}
+
+extension List: ExpressibleByArrayLiteral {
+
+    init(arrayLiteral elements: Object...) {
+        self.objectId = ""
+        self.listValues = elements
+        self.conflicts = []
+        self.elemIds = []
     }
 }

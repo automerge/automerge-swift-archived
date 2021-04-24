@@ -318,14 +318,14 @@ class ContextTest: XCTestCase {
             maxOp: 0
         )
         // WHEN
-        context.setMapKey(path: [], key: "birds", value: .list(List(objectId: "", listValues: ["sparrow", "goldfinch"], conflicts: [])))
+        context.setMapKey(path: [], key: "birds", value: .list(["sparrow", "goldfinch"]))
 
         // Then
         let objectId = applyPatch.value!.props!["birds"]!["1@\(actor)"]!.objectId!
         XCTAssertEqual(context.ops, [
             Op(action: .makeList, obj: .root, key: "birds", insert: false, pred: []),
-            Op(action: .set, obj: objectId, elmId: .head, insert: true, value: "sparrow", pred: []),
-            Op(action: .set, obj: objectId, elmId: "2@\(actor)", insert: true, value: "goldfinch", pred: [])
+            Op(action: .set, obj: objectId, elemId: .head, insert: true, value: "sparrow", pred: []),
+            Op(action: .set, obj: objectId, elemId: "2@\(actor)", insert: true, value: "goldfinch", pred: [])
         ])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, ObjectDiff(
@@ -337,8 +337,8 @@ class ContextTest: XCTestCase {
                                             objectId: objectId,
                                             type: .list,
                                             edits: [
-                                                Edit(action: .insert, index: 0, elmId: "2@\(actor)"),
-                                                Edit(action: .insert, index: 1, elmId: "3@\(actor)")
+                                                Edit(action: .insert, index: 0, elemId: "2@\(actor)"),
+                                                Edit(action: .insert, index: 1, elemId: "3@\(actor)")
                                             ],
                                             props: [
                                                 0: ["2@\(actor)": "sparrow"],
@@ -348,6 +348,26 @@ class ContextTest: XCTestCase {
             ]
         ))
     }
+
+//    it('should create nested lists', () => {
+//          context.setMapKey([], 'birds', ['sparrow', 'goldfinch'])
+//          assert(applyPatch.calledOnce)
+//          const objectId = applyPatch.firstCall.args[0].props.birds[`1@${context.actorId}`].objectId
+//          assert.deepStrictEqual(applyPatch.firstCall.args[0], {objectId: '_root', type: 'map', props: {
+//            birds: {[`1@${context.actorId}`]: {objectId, type: 'list', props: {
+//              0: {[`2@${context.actorId}`]: {value: 'sparrow'}},
+//              1: {[`3@${context.actorId}`]: {value: 'goldfinch'}}
+//            }, edits: [
+//              {action: 'insert', index: 0, elemId: `2@${context.actorId}`},
+//              {action: 'insert', index: 1, elemId: `3@${context.actorId}`}
+//            ]}}
+//          }})
+//          assert.deepStrictEqual(context.ops, [
+//            {obj: '_root', action: 'makeList', key: 'birds', insert: false, pred: []},
+//            {obj: objectId, action: 'set', elemId: '_head', insert: true, value: 'sparrow', pred: []},
+//            {obj: objectId, action: 'set', elemId: `2@${context.actorId}`, insert: true, value: 'goldfinch', pred: []}
+//          ])
+//        })
 
 
     // should create nested Text objects
@@ -368,9 +388,9 @@ class ContextTest: XCTestCase {
         //THEN
         let objectId = applyPatch.value!.props!["text"]!["1@\(actor)"]!.objectId!
         XCTAssertEqual(context.ops, [
-            Op(action: .makeText, obj: .root, key: "text", child: objectId, pred: []),
-            Op(action: .set, obj: objectId, elmId: .head, insert: true, value: "h", pred: []),
-            Op(action: .set, obj: objectId, elmId: "2@\(actor)", insert: true, value: "i", pred: [])
+            Op(action: .makeText, obj: .root, key: "text", pred: []),
+            Op(action: .set, obj: objectId, elemId: .head, insert: true, value: "h", pred: []),
+            Op(action: .set, obj: objectId, elemId: "2@\(actor)", insert: true, value: "i", pred: [])
         ])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, ObjectDiff(
@@ -382,8 +402,8 @@ class ContextTest: XCTestCase {
                                             objectId: objectId,
                                             type: .text,
                                             edits: [
-                                                Edit(action: .insert, index: 0, elmId: "2@\(actor)"),
-                                                Edit(action: .insert, index: 1, elmId: "3@\(actor)")],
+                                                Edit(action: .insert, index: 0, elemId: "2@\(actor)"),
+                                                Edit(action: .insert, index: 1, elemId: "3@\(actor)")],
                                             props: [
                                                 0: ["2@\(actor)": "h"],
                                                 1: ["3@\(actor)": "i"]
@@ -655,7 +675,7 @@ class ContextTest: XCTestCase {
 
         // Then
         XCTAssertEqual(context.ops, [
-            Op(action: .set, obj: listId, elmId: "1@xxx", insert: false, value: "starling", pred: ["1@xxx"])
+            Op(action: .set, obj: listId, elemId: "1@xxx", insert: false, value: "starling", pred: ["1@xxx"])
         ])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, ObjectDiff(
@@ -708,7 +728,7 @@ class ContextTest: XCTestCase {
         // Then
         let nestedId = applyPatch.value!.props!["birds"]!["1@actor1"]!.props![1]!["1@\(actor)"]!.objectId!
         XCTAssertEqual(context.ops, [
-            Op(action: .makeMap, obj: listId, elmId: "2@xxx", insert: false, pred: ["2@xxx"]),
+            Op(action: .makeMap, obj: listId, elemId: "2@xxx", insert: false, pred: ["2@xxx"]),
             Op(action: .set, obj: nestedId, key: "english", insert: false, value: "goldfinch", pred: []),
             Op(action: .set, obj: nestedId, key: "latin", insert: false, value: "carduelis", pred: [])
         ])
@@ -767,7 +787,7 @@ class ContextTest: XCTestCase {
             // Then
             let nestedId = applyPatch.value!.props!["birds"]!["1@actor1"]!.props![2]!["1@\(actor)"]!.objectId!
             XCTAssertEqual(context.ops, [
-                Op(action: .makeMap, obj: listId, elmId: "2@xxx", insert: true, pred: []),
+                Op(action: .makeMap, obj: listId, elemId: "2@xxx", insert: true, pred: []),
                 Op(action: .set, obj: nestedId, key: "english", insert: false, value: "goldfinch", pred: []),
                 Op(action: .set, obj: nestedId, key: "latin", insert: false, value: "carduelis", pred: [])
             ])
@@ -780,7 +800,7 @@ class ContextTest: XCTestCase {
                     "birds": [
                         "1@actor1": .object(.init(objectId: listId,
                                                 type: .list,
-                                                edits: [Edit(action: .insert, index: 2, elmId: "1@\(actor)")],
+                                                edits: [Edit(action: .insert, index: 2, elemId: "1@\(actor)")],
                                                 props: [
                                                     2: ["1@\(actor)": .object(.init(
                                                                                 objectId: nestedId,
@@ -827,8 +847,8 @@ class ContextTest: XCTestCase {
 
             // Then
             XCTAssertEqual(context.ops, [
-                Op(action: .del, obj: listId, elmId: "1@xxx", insert: false, pred: ["1@xxx"]),
-                Op(action: .del, obj: listId, elmId: "2@xxx", insert: false, pred: ["2@xxx"])
+                Op(action: .del, obj: listId, elemId: "1@xxx", insert: false, pred: ["1@xxx"]),
+                Op(action: .del, obj: listId, elemId: "2@xxx", insert: false, pred: ["2@xxx"])
             ])
 
             XCTAssertEqual(applyPatch.callCount, 1)
@@ -841,8 +861,8 @@ class ContextTest: XCTestCase {
                             .init(objectId: listId,
                                   type: .list,
                                   edits: [
-                                    Edit(action: .remove, index: 0, elmId: nil),
-                                    Edit(action: .remove, index: 0, elmId: nil)
+                                    Edit(action: .remove, index: 0, elemId: nil),
+                                    Edit(action: .remove, index: 0, elemId: nil)
                                 ],
                                   props: [:]
                             ))
@@ -884,9 +904,9 @@ class ContextTest: XCTestCase {
 
             // Then
             XCTAssertEqual(context.ops, [
-                Op(action: .del, obj: listId, elmId: "1@xxx", insert: false, pred: ["1@xxx"]),
-                Op(action: .set, obj: listId, elmId: .head, insert: true, value: "starling", pred: []),
-                Op(action: .set, obj: listId, elmId: "2@\(actor)", insert: true, value: "goldfinch", pred: []),
+                Op(action: .del, obj: listId, elemId: "1@xxx", insert: false, pred: ["1@xxx"]),
+                Op(action: .set, obj: listId, elemId: .head, insert: true, value: "starling", pred: []),
+                Op(action: .set, obj: listId, elemId: "2@\(actor)", insert: true, value: "goldfinch", pred: []),
             ])
 
             XCTAssertEqual(applyPatch.callCount, 1)
@@ -899,9 +919,9 @@ class ContextTest: XCTestCase {
                             .init(objectId: listId,
                                   type: .list,
                                   edits: [
-                                    Edit(action: .remove, index: 0, elmId: nil),
-                                    Edit(action: .insert, index: 0, elmId: "2@\(actor)"),
-                                    Edit(action: .insert, index: 1, elmId: "3@\(actor)")
+                                    Edit(action: .remove, index: 0, elemId: nil),
+                                    Edit(action: .insert, index: 0, elemId: "2@\(actor)"),
+                                    Edit(action: .insert, index: 1, elemId: "3@\(actor)")
                                 ],
                                   props: [
                                     0: ["2@\(actor)": "starling"],

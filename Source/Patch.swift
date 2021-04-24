@@ -9,22 +9,27 @@ import Foundation
 
 public final class Patch: Codable {
 
-    init(actor: Actor? = nil, seq: Int? = nil, clock: Clock, version: Int, canUndo: Bool, canRedo: Bool, diffs: ObjectDiff) {
+    init(
+        actor: Actor? = nil,
+        seq: Int? = nil,
+        clock: Clock,
+        deps: [ObjectId],
+        maxOp: Int,
+        diffs: ObjectDiff
+    ) {
         self.actor = actor
         self.seq = seq
         self.clock = clock
-        self.version = version
-        self.canUndo = canUndo
-        self.canRedo = canRedo
+        self.deps = deps
+        self.maxOp = maxOp
         self.diffs = diffs
     }
 
     let actor: Actor?
     let seq: Int?
     let clock: Clock
-    let version: Int
-    let canUndo: Bool
-    let canRedo: Bool
+    let deps: [ObjectId]
+    let maxOp: Int
     let diffs: ObjectDiff
 
     public init(from decoder: Decoder) throws {
@@ -32,9 +37,8 @@ public final class Patch: Codable {
         self.actor = try container.decodeIfPresent(Actor.self, forKey: .actor)
         self.seq = try container.decodeIfPresent(Int.self, forKey: .seq)
         self.clock = try container.decode(Clock.self, forKey: .clock)
-        self.version = try container.decode(Int.self, forKey: .version)
-        self.canUndo = try container.decode(Bool.self, forKey: .canUndo)
-        self.canRedo = try container.decode(Bool.self, forKey: .canRedo)
+        self.deps = try container.decode([ObjectId].self, forKey: .deps)
+        self.maxOp = try container.decode(Int.self, forKey: .maxOp)
 
         self.diffs = (try? container.decode(ObjectDiff.self, forKey: .diffs)) ?? .empty
     }

@@ -11,17 +11,15 @@ public struct Request: Equatable, Codable {
 
     enum RequestType: String, Codable {
         case change
-        case redo
-        case undo
     }
 
     let requestType: RequestType
+    let startOp: Int
+    let deps: [ObjectId]
     let message: String
     let time: Date
     let actor: Actor
     let seq: Int
-    let version: Int
     let ops: [Op]
-    let undoable: Bool
 
 }

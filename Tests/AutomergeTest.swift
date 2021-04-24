@@ -941,456 +941,456 @@ class AutomergeTest: XCTestCase {
         XCTAssertEqual(s2.content.list, ["one", "two", "three", "four"])
     }
 
-    // should allow undo if there have been local changes
-    func testUndo1() {
-        struct Scheme: Codable, Equatable {
-            var hello: String?
-        }
-
-        var s1 = Document(Scheme(hello: nil))
-        XCTAssertFalse(s1.canUndo)
-        s1.change { $0.hello?.set("world") }
-        XCTAssertTrue(s1.canUndo)
-        let s2 = Document<Scheme>(changes: s1.allChanges())
-        XCTAssertFalse(s2.canUndo)
-    }
-
-    // should allow undo if there have been local changes
-    func testUndo2() {
-        struct Scheme: Codable, Equatable {
-            var hello: String?
-        }
-
-        var s1 = Document(Scheme(hello: nil))
-        s1.change { $0.hello?.set("world") }
-        XCTAssertEqual(s1.content, Scheme(hello: "world"))
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(hello: nil))
-    }
-
-    // should undo a field update by reverting to the previous value
-    func testUndo3() {
-        struct Scheme: Codable, Equatable {
-            var value: Int
-        }
-
-        var s1 = Document(Scheme(value: 3))
-        s1.change { $0.value.set(4) }
-        XCTAssertEqual(s1.content, Scheme(value: 4))
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(value: 3))
-    }
-
-    // should allow undoing multiple changes
-    func testUndo4() {
-        struct Scheme: Codable, Equatable {
-            var value: Int?
-        }
-
-        var s1 = Document(Scheme(value: nil))
-        s1.change { $0.value.set(1) }
-        s1.change { $0.value.set(2) }
-        s1.change { $0.value.set(3) }
-        XCTAssertEqual(s1.content, Scheme(value: 3))
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(value: 2))
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(value: 1))
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(value: nil))
-        XCTAssertFalse(s1.canUndo)
-    }
-
-    // should undo only local changes
-    func testUndo5() {
-        struct Scheme: Codable, Equatable {
-            var s1: String?
-            var s2: String?
-        }
-
-        var s1 = Document(Scheme(s1: "s1.old", s2: nil))
-        s1.change { $0.s1.set("s1.new") }
-        var s2 = Document<Scheme>(changes: s1.allChanges())
-        s2.change { $0.s2?.set("s2") }
-
-        s1.merge(s2)
-        XCTAssertEqual(s1.content, Scheme(s1: "s1.new", s2: "s2"))
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(s1: "s1.old", s2: "s2"))
-    }
-
-    // should apply undos by growing the history
-    func testUndo6() {
-        struct Scheme: Codable, Equatable {
-            var value: Int
-        }
-
-        var s1 = Document(Scheme(value: 1))
-        s1.change(message: "set 2") { $0.value.set(2) }
-        var s2 = Document<Scheme>(changes: s1.allChanges())
-        s1.undo(message: "undo!")
-        let seqs = History(document: s1).map { $0.change.seq }
-        XCTAssertEqual(seqs, [1, 2, 3])
-        let messages = History(document: s1).map { $0.change.message }
-        XCTAssertEqual(messages, ["Initialization", "set 2", "undo!"])
-        s2.merge(s1)
-        XCTAssertEqual(s2.content, Scheme(value: 1))
-        XCTAssertEqual(s1.content, Scheme(value: 1))
-    }
-
-    // should ignore other actors' updates to an undo-reverted field
-    func testUndo7() {
-        struct Scheme: Codable, Equatable {
-            var value: Int
-        }
-
-        var s1 = Document(Scheme(value: 1))
-        s1.change { $0.value.set(2) }
-        var s2 = Document<Scheme>(changes: s1.allChanges())
-        s2.change { $0.value.set(3) }
-        s1.merge(s2)
-        XCTAssertEqual(s1.content, Scheme(value: 3))
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(value: 1))
-    }
-
-    // should undo object creation by removing the link
-    func testUndo8() {
-        struct Scheme: Codable, Equatable {
-            struct Settings: Codable, Equatable {
-                let background: String
-                let text: String
-            }
-            var settings: Settings?
-        }
-
-        var s1 = Document(Scheme(settings: nil))
-        s1.change { $0.settings.set(.init(background: "white", text: "black")) }
-        XCTAssertEqual(s1.content, Scheme(settings: .init(background: "white", text: "black")))
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(settings: nil))
-    }
-
-    // should undo primitive field deletion by setting the old value
-    func testUndo9() {
-        struct Scheme: Codable, Equatable {
-            var k1: String?
-            var k2: String?
-        }
-
-        var s1 = Document(Scheme(k1: "v1", k2: "v2"))
-        s1.change { $0.k2.set(nil) }
-        XCTAssertEqual(s1.content, Scheme(k1: "v1", k2: nil))
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(k1: "v1", k2: "v2"))
-    }
-
-    // should undo link deletion by linking the old value
-    func testUndo10() {
-        struct Scheme: Codable, Equatable {
-            var fish: [String]?
-            var birds: [String]?
-        }
-
-        var s1 = Document(Scheme(fish: ["trout", "sea bass"], birds: nil))
-        s1.change { $0.birds.set(["heron", "magpie"]) }
-
-        var s2 = s1
-        s2.change { $0.fish.set(nil) }
-        XCTAssertEqual(s2.content, Scheme(fish: nil, birds: ["heron", "magpie"]))
-        s2.undo()
-        XCTAssertEqual(s2.content, Scheme(fish: ["trout", "sea bass"], birds: ["heron", "magpie"]))
-    }
-
-    // should undo list insertion by removing the new element
-    func testUndo11() {
-        struct Scheme: Codable, Equatable {
-            var list: [String]
-        }
-
-        var s1 = Document(Scheme(list: ["A", "B", "C"]))
-        s1.change { $0.list.append("D") }
-        XCTAssertEqual(s1.content, Scheme(list: ["A", "B", "C", "D"]))
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(list: ["A", "B", "C"]))
-    }
-
-    // should undo list element deletion by re-assigning the old value
-    func testUndo12() {
-        struct Scheme: Codable, Equatable {
-            var list: [String]
-        }
-
-        var s1 = Document(Scheme(list: ["A", "B", "C"]))
-        s1.change { $0.list.remove(at: 1) }
-        XCTAssertEqual(s1.content, Scheme(list: ["A", "C"]))
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(list: ["A", "B", "C"]))
-    }
-
-    // should undo counter increments
-    func testUndo13() {
-        struct Scheme: Codable, Equatable {
-            var counter: Counter
-        }
-
-        var s1 = Document(Scheme(counter: 0))
-        s1.change { $0.counter.increment() }
-        XCTAssertEqual(s1.content, Scheme(counter: 1))
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(counter: 0))
-    }
-
-    // should allow redo if the last change was an undo
-    func testRedo1() {
-        struct Scheme: Codable, Equatable {
-            var birds: [String]
-        }
-        var s1 = Document(Scheme(birds: ["peregrine falcon"]))
-        s1.change { $0.birds.append("magpie") }
-        XCTAssertFalse(s1.canRedo)
-        s1.undo()
-        XCTAssertTrue(s1.canRedo)
-        s1.redo()
-        XCTAssertFalse(s1.canRedo)
-    }
-
-    // should allow several undos to be matched by several redos
-    func testRedo2() {
-        struct Scheme: Codable, Equatable {
-            var birds: [String]
-        }
-        var s1 = Document(Scheme(birds: []))
-        s1.change { $0.birds.append("peregrine falcon") }
-        s1.change { $0.birds.append("sparrowhawk") }
-        XCTAssertEqual(s1.content, Scheme(birds: ["peregrine falcon", "sparrowhawk"]))
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(birds: ["peregrine falcon"]))
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(birds: []))
-        s1.redo()
-        XCTAssertEqual(s1.content, Scheme(birds: ["peregrine falcon"]))
-        s1.redo()
-        XCTAssertEqual(s1.content, Scheme(birds: ["peregrine falcon", "sparrowhawk"]))
-    }
-
-    // should allow several undos to be matched by several redos
-    func testRedo3() {
-        struct Scheme: Codable, Equatable {
-            var sparrows: Int?
-            var skylarks: Int?
-        }
-        var s1 = Document<Scheme>(Scheme(sparrows: nil, skylarks: nil))
-        s1.change { $0.sparrows?.set(1) }
-        s1.change { $0.skylarks?.set(1) }
-        s1.change { $0.sparrows?.set(2) }
-        s1.change { $0.skylarks.set(nil) }
-        let states: [Scheme] = [.init(sparrows: nil, skylarks: nil), .init(sparrows: 1, skylarks: nil), .init(sparrows: 1, skylarks: 1), .init(sparrows: 2, skylarks: 1), .init(sparrows: 2, skylarks: nil)]
-        for _ in (0..<3) {
-            for undo in (0...(states.count - 2)).reversed() {
-                s1.undo()
-                XCTAssertEqual(s1.content, states[undo])
-            }
-            for redo in 1..<states.count {
-                s1.redo()
-                XCTAssertEqual(s1.content, states[redo])
-            }
-        }
-    }
-
-    // should undo/redo an initial field assignment
-    func testRedo4() {
-        struct Scheme: Codable, Equatable {
-            var hello: String?
-        }
-        var s1 = Document(Scheme(hello: nil))
-        s1.change { $0.hello?.set("world") }
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(hello: nil))
-        s1.redo()
-        XCTAssertEqual(s1.content, Scheme(hello: "world"))
-    }
-
-    // should undo/redo a field update
-    func testRedo5() {
-        struct Scheme: Codable, Equatable {
-            var value: Int
-        }
-
-        var s1 = Document(Scheme(value: 3))
-        s1.change { $0.value.set(4) }
-        XCTAssertEqual(s1.content, Scheme(value: 4))
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(value: 3))
-        s1.redo()
-        XCTAssertEqual(s1.content, Scheme(value: 4))
-    }
-
-    // should undo/redo a field deletion
-    func testRedo6() {
-        struct Scheme: Codable, Equatable {
-            var value: Int?
-        }
-
-        var s1 = Document(Scheme(value: 123))
-        s1.change { $0.value.set(nil) }
-        XCTAssertEqual(s1.content, Scheme(value: nil))
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(value: 123))
-        s1.redo()
-        XCTAssertEqual(s1.content, Scheme(value: nil))
-    }
-
-    // should undo/redo object creation and linking
-    func testRedo7() {
-        struct Scheme: Codable, Equatable {
-            struct Settings: Codable, Equatable {
-                let background: String
-                let text: String
-            }
-            var settings: Settings?
-        }
-
-        var s1 = Document(Scheme(settings: nil))
-        s1.change { $0.settings.set(.init(background: "white", text: "black")) }
-        XCTAssertEqual(s1.content, Scheme(settings: .init(background: "white", text: "black")))
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(settings: nil))
-        s1.redo()
-        XCTAssertEqual(s1.content, Scheme(settings: .init(background: "white", text: "black")))
-    }
-
-    // should undo/redo link deletion
-    func testRedo8() {
-        struct Scheme: Codable, Equatable {
-            var fish: [String]?
-            var birds: [String]?
-        }
-
-        var s1 = Document(Scheme(fish: ["trout", "sea bass"], birds: nil))
-        s1.change { $0.birds.set(["heron", "magpie"]) }
-        s1.change { $0.fish.set(nil) }
-        XCTAssertEqual(s1.content, Scheme(fish: nil, birds: ["heron", "magpie"]))
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(fish: ["trout", "sea bass"], birds: ["heron", "magpie"]))
-        s1.redo()
-        XCTAssertEqual(s1.content, Scheme(fish: nil, birds: ["heron", "magpie"]))
-    }
-
-    // should undo/redo a list element insertion
-    func testRedo9() {
-        struct Scheme: Codable, Equatable {
-            var list: [String]
-        }
-
-        var s1 = Document(Scheme(list: ["A", "B", "C"]))
-        s1.change { $0.list.append("D") }
-        XCTAssertEqual(s1.content, Scheme(list: ["A", "B", "C", "D"]))
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(list: ["A", "B", "C"]))
-        s1.redo()
-        XCTAssertEqual(s1.content, Scheme(list: ["A", "B", "C", "D"]))
-    }
-
-    // should undo/redo a list element deletion
-    func testRedo10() {
-        struct Scheme: Codable, Equatable {
-            var list: [String]
-        }
-
-        var s1 = Document(Scheme(list: ["A", "B", "C"]))
-        s1.change { $0.list.remove(at: 1) }
-        XCTAssertEqual(s1.content, Scheme(list: ["A", "C"]))
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(list: ["A", "B", "C"]))
-        s1.redo()
-        XCTAssertEqual(s1.content, Scheme(list: ["A", "C"]))
-    }
-
-    // should undo/redo counter increments
-    func testRedo11() {
-        struct Scheme: Codable, Equatable {
-            var counter: Counter
-        }
-
-        var s1 = Document(Scheme(counter: 0))
-        s1.change { $0.counter.increment() }
-        XCTAssertEqual(s1.content, Scheme(counter: 1))
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(counter: 0))
-        s1.redo()
-        XCTAssertEqual(s1.content, Scheme(counter: 1))
-    }
-
-    // should redo assignments by other actors that precede the undo
-    func testRedo12() {
-        struct Scheme: Codable, Equatable {
-            var value: Int
-        }
-
-        var s1 = Document(Scheme(value: 1))
-        s1.change({ $0.value.set(2) })
-        var s2 = Document<Scheme>(changes: s1.allChanges())
-        s2.change({ $0.value.set(3) })
-        s1.merge(s2)
-        s1.undo()
-        XCTAssertEqual(s1.content, Scheme(value: 1))
-        s1.redo()
-        XCTAssertEqual(s1.content, Scheme(value: 3))
-    }
-
-    // should overwrite assignments by other actors that follow the undo
-    func testRedo13() {
-        struct Scheme: Codable, Equatable {
-            var value: Int
-        }
-
-        var s1 = Document(Scheme(value: 1))
-        s1.change({ $0.value.set(2) })
-        s1.undo()
-        var s2 = Document<Scheme>(changes: s1.allChanges())
-        s2.change({ $0.value.set(3) })
-        s1.merge(s2)
-        XCTAssertEqual(s1.content, Scheme(value: 3))
-        s1.redo()
-        XCTAssertEqual(s1.content, Scheme(value: 2))
-    }
-
-    // should merge with concurrent changes to other fields
-    func testRedo14() {
-        struct Scheme: Codable, Equatable {
-            var trout: Int?
-            var salmon: Int?
-        }
-
-        var s1 = Document(Scheme(trout: 2, salmon: nil))
-        s1.change({ $0.trout.set(3) })
-        s1.undo()
-        var s2 = Document<Scheme>(changes: s1.allChanges())
-        s2.change({ $0.salmon.set(1) })
-        s1.merge(s2)
-        XCTAssertEqual(s1.content, Scheme(trout: 2, salmon: 1))
-        s1.redo()
-        XCTAssertEqual(s1.content, Scheme(trout: 3, salmon: 1))
-    }
-
-    // should apply redos by growing the history
-    func testRedo15() {
-        struct Scheme: Codable, Equatable {
-            var value: Int
-        }
-
-        var s1 = Document(Scheme(value: 1))
-        s1.change(message: "set 2") { $0.value.set(2) }
-        s1.undo(message: "undo")
-        s1.redo(message: "redo!")
-        let history = History(document: s1)
-        let seqs = history.map { $0.change.seq }
-        XCTAssertEqual(seqs, [1, 2, 3, 4])
-        let messages = history.map { $0.change.message }
-        XCTAssertEqual(messages, ["Initialization", "set 2", "undo", "redo!"])
-        XCTAssertEqual(history.count, 4)
-    }
+//    // should allow undo if there have been local changes
+//    func testUndo1() {
+//        struct Scheme: Codable, Equatable {
+//            var hello: String?
+//        }
+//
+//        var s1 = Document(Scheme(hello: nil))
+//        XCTAssertFalse(s1.canUndo)
+//        s1.change { $0.hello?.set("world") }
+//        XCTAssertTrue(s1.canUndo)
+//        let s2 = Document<Scheme>(changes: s1.allChanges())
+//        XCTAssertFalse(s2.canUndo)
+//    }
+//
+//    // should allow undo if there have been local changes
+//    func testUndo2() {
+//        struct Scheme: Codable, Equatable {
+//            var hello: String?
+//        }
+//
+//        var s1 = Document(Scheme(hello: nil))
+//        s1.change { $0.hello?.set("world") }
+//        XCTAssertEqual(s1.content, Scheme(hello: "world"))
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(hello: nil))
+//    }
+//
+//    // should undo a field update by reverting to the previous value
+//    func testUndo3() {
+//        struct Scheme: Codable, Equatable {
+//            var value: Int
+//        }
+//
+//        var s1 = Document(Scheme(value: 3))
+//        s1.change { $0.value.set(4) }
+//        XCTAssertEqual(s1.content, Scheme(value: 4))
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(value: 3))
+//    }
+//
+//    // should allow undoing multiple changes
+//    func testUndo4() {
+//        struct Scheme: Codable, Equatable {
+//            var value: Int?
+//        }
+//
+//        var s1 = Document(Scheme(value: nil))
+//        s1.change { $0.value.set(1) }
+//        s1.change { $0.value.set(2) }
+//        s1.change { $0.value.set(3) }
+//        XCTAssertEqual(s1.content, Scheme(value: 3))
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(value: 2))
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(value: 1))
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(value: nil))
+//        XCTAssertFalse(s1.canUndo)
+//    }
+//
+//    // should undo only local changes
+//    func testUndo5() {
+//        struct Scheme: Codable, Equatable {
+//            var s1: String?
+//            var s2: String?
+//        }
+//
+//        var s1 = Document(Scheme(s1: "s1.old", s2: nil))
+//        s1.change { $0.s1.set("s1.new") }
+//        var s2 = Document<Scheme>(changes: s1.allChanges())
+//        s2.change { $0.s2?.set("s2") }
+//
+//        s1.merge(s2)
+//        XCTAssertEqual(s1.content, Scheme(s1: "s1.new", s2: "s2"))
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(s1: "s1.old", s2: "s2"))
+//    }
+//
+//    // should apply undos by growing the history
+//    func testUndo6() {
+//        struct Scheme: Codable, Equatable {
+//            var value: Int
+//        }
+//
+//        var s1 = Document(Scheme(value: 1))
+//        s1.change(message: "set 2") { $0.value.set(2) }
+//        var s2 = Document<Scheme>(changes: s1.allChanges())
+//        s1.undo(message: "undo!")
+//        let seqs = History(document: s1).map { $0.change.seq }
+//        XCTAssertEqual(seqs, [1, 2, 3])
+//        let messages = History(document: s1).map { $0.change.message }
+//        XCTAssertEqual(messages, ["Initialization", "set 2", "undo!"])
+//        s2.merge(s1)
+//        XCTAssertEqual(s2.content, Scheme(value: 1))
+//        XCTAssertEqual(s1.content, Scheme(value: 1))
+//    }
+//
+//    // should ignore other actors' updates to an undo-reverted field
+//    func testUndo7() {
+//        struct Scheme: Codable, Equatable {
+//            var value: Int
+//        }
+//
+//        var s1 = Document(Scheme(value: 1))
+//        s1.change { $0.value.set(2) }
+//        var s2 = Document<Scheme>(changes: s1.allChanges())
+//        s2.change { $0.value.set(3) }
+//        s1.merge(s2)
+//        XCTAssertEqual(s1.content, Scheme(value: 3))
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(value: 1))
+//    }
+//
+//    // should undo object creation by removing the link
+//    func testUndo8() {
+//        struct Scheme: Codable, Equatable {
+//            struct Settings: Codable, Equatable {
+//                let background: String
+//                let text: String
+//            }
+//            var settings: Settings?
+//        }
+//
+//        var s1 = Document(Scheme(settings: nil))
+//        s1.change { $0.settings.set(.init(background: "white", text: "black")) }
+//        XCTAssertEqual(s1.content, Scheme(settings: .init(background: "white", text: "black")))
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(settings: nil))
+//    }
+//
+//    // should undo primitive field deletion by setting the old value
+//    func testUndo9() {
+//        struct Scheme: Codable, Equatable {
+//            var k1: String?
+//            var k2: String?
+//        }
+//
+//        var s1 = Document(Scheme(k1: "v1", k2: "v2"))
+//        s1.change { $0.k2.set(nil) }
+//        XCTAssertEqual(s1.content, Scheme(k1: "v1", k2: nil))
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(k1: "v1", k2: "v2"))
+//    }
+//
+//    // should undo link deletion by linking the old value
+//    func testUndo10() {
+//        struct Scheme: Codable, Equatable {
+//            var fish: [String]?
+//            var birds: [String]?
+//        }
+//
+//        var s1 = Document(Scheme(fish: ["trout", "sea bass"], birds: nil))
+//        s1.change { $0.birds.set(["heron", "magpie"]) }
+//
+//        var s2 = s1
+//        s2.change { $0.fish.set(nil) }
+//        XCTAssertEqual(s2.content, Scheme(fish: nil, birds: ["heron", "magpie"]))
+//        s2.undo()
+//        XCTAssertEqual(s2.content, Scheme(fish: ["trout", "sea bass"], birds: ["heron", "magpie"]))
+//    }
+//
+//    // should undo list insertion by removing the new element
+//    func testUndo11() {
+//        struct Scheme: Codable, Equatable {
+//            var list: [String]
+//        }
+//
+//        var s1 = Document(Scheme(list: ["A", "B", "C"]))
+//        s1.change { $0.list.append("D") }
+//        XCTAssertEqual(s1.content, Scheme(list: ["A", "B", "C", "D"]))
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(list: ["A", "B", "C"]))
+//    }
+//
+//    // should undo list element deletion by re-assigning the old value
+//    func testUndo12() {
+//        struct Scheme: Codable, Equatable {
+//            var list: [String]
+//        }
+//
+//        var s1 = Document(Scheme(list: ["A", "B", "C"]))
+//        s1.change { $0.list.remove(at: 1) }
+//        XCTAssertEqual(s1.content, Scheme(list: ["A", "C"]))
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(list: ["A", "B", "C"]))
+//    }
+//
+//    // should undo counter increments
+//    func testUndo13() {
+//        struct Scheme: Codable, Equatable {
+//            var counter: Counter
+//        }
+//
+//        var s1 = Document(Scheme(counter: 0))
+//        s1.change { $0.counter.increment() }
+//        XCTAssertEqual(s1.content, Scheme(counter: 1))
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(counter: 0))
+//    }
+//
+//    // should allow redo if the last change was an undo
+//    func testRedo1() {
+//        struct Scheme: Codable, Equatable {
+//            var birds: [String]
+//        }
+//        var s1 = Document(Scheme(birds: ["peregrine falcon"]))
+//        s1.change { $0.birds.append("magpie") }
+//        XCTAssertFalse(s1.canRedo)
+//        s1.undo()
+//        XCTAssertTrue(s1.canRedo)
+//        s1.redo()
+//        XCTAssertFalse(s1.canRedo)
+//    }
+//
+//    // should allow several undos to be matched by several redos
+//    func testRedo2() {
+//        struct Scheme: Codable, Equatable {
+//            var birds: [String]
+//        }
+//        var s1 = Document(Scheme(birds: []))
+//        s1.change { $0.birds.append("peregrine falcon") }
+//        s1.change { $0.birds.append("sparrowhawk") }
+//        XCTAssertEqual(s1.content, Scheme(birds: ["peregrine falcon", "sparrowhawk"]))
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(birds: ["peregrine falcon"]))
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(birds: []))
+//        s1.redo()
+//        XCTAssertEqual(s1.content, Scheme(birds: ["peregrine falcon"]))
+//        s1.redo()
+//        XCTAssertEqual(s1.content, Scheme(birds: ["peregrine falcon", "sparrowhawk"]))
+//    }
+//
+//    // should allow several undos to be matched by several redos
+//    func testRedo3() {
+//        struct Scheme: Codable, Equatable {
+//            var sparrows: Int?
+//            var skylarks: Int?
+//        }
+//        var s1 = Document<Scheme>(Scheme(sparrows: nil, skylarks: nil))
+//        s1.change { $0.sparrows?.set(1) }
+//        s1.change { $0.skylarks?.set(1) }
+//        s1.change { $0.sparrows?.set(2) }
+//        s1.change { $0.skylarks.set(nil) }
+//        let states: [Scheme] = [.init(sparrows: nil, skylarks: nil), .init(sparrows: 1, skylarks: nil), .init(sparrows: 1, skylarks: 1), .init(sparrows: 2, skylarks: 1), .init(sparrows: 2, skylarks: nil)]
+//        for _ in (0..<3) {
+//            for undo in (0...(states.count - 2)).reversed() {
+//                s1.undo()
+//                XCTAssertEqual(s1.content, states[undo])
+//            }
+//            for redo in 1..<states.count {
+//                s1.redo()
+//                XCTAssertEqual(s1.content, states[redo])
+//            }
+//        }
+//    }
+//
+//    // should undo/redo an initial field assignment
+//    func testRedo4() {
+//        struct Scheme: Codable, Equatable {
+//            var hello: String?
+//        }
+//        var s1 = Document(Scheme(hello: nil))
+//        s1.change { $0.hello?.set("world") }
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(hello: nil))
+//        s1.redo()
+//        XCTAssertEqual(s1.content, Scheme(hello: "world"))
+//    }
+//
+//    // should undo/redo a field update
+//    func testRedo5() {
+//        struct Scheme: Codable, Equatable {
+//            var value: Int
+//        }
+//
+//        var s1 = Document(Scheme(value: 3))
+//        s1.change { $0.value.set(4) }
+//        XCTAssertEqual(s1.content, Scheme(value: 4))
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(value: 3))
+//        s1.redo()
+//        XCTAssertEqual(s1.content, Scheme(value: 4))
+//    }
+//
+//    // should undo/redo a field deletion
+//    func testRedo6() {
+//        struct Scheme: Codable, Equatable {
+//            var value: Int?
+//        }
+//
+//        var s1 = Document(Scheme(value: 123))
+//        s1.change { $0.value.set(nil) }
+//        XCTAssertEqual(s1.content, Scheme(value: nil))
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(value: 123))
+//        s1.redo()
+//        XCTAssertEqual(s1.content, Scheme(value: nil))
+//    }
+//
+//    // should undo/redo object creation and linking
+//    func testRedo7() {
+//        struct Scheme: Codable, Equatable {
+//            struct Settings: Codable, Equatable {
+//                let background: String
+//                let text: String
+//            }
+//            var settings: Settings?
+//        }
+//
+//        var s1 = Document(Scheme(settings: nil))
+//        s1.change { $0.settings.set(.init(background: "white", text: "black")) }
+//        XCTAssertEqual(s1.content, Scheme(settings: .init(background: "white", text: "black")))
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(settings: nil))
+//        s1.redo()
+//        XCTAssertEqual(s1.content, Scheme(settings: .init(background: "white", text: "black")))
+//    }
+//
+//    // should undo/redo link deletion
+//    func testRedo8() {
+//        struct Scheme: Codable, Equatable {
+//            var fish: [String]?
+//            var birds: [String]?
+//        }
+//
+//        var s1 = Document(Scheme(fish: ["trout", "sea bass"], birds: nil))
+//        s1.change { $0.birds.set(["heron", "magpie"]) }
+//        s1.change { $0.fish.set(nil) }
+//        XCTAssertEqual(s1.content, Scheme(fish: nil, birds: ["heron", "magpie"]))
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(fish: ["trout", "sea bass"], birds: ["heron", "magpie"]))
+//        s1.redo()
+//        XCTAssertEqual(s1.content, Scheme(fish: nil, birds: ["heron", "magpie"]))
+//    }
+//
+//    // should undo/redo a list element insertion
+//    func testRedo9() {
+//        struct Scheme: Codable, Equatable {
+//            var list: [String]
+//        }
+//
+//        var s1 = Document(Scheme(list: ["A", "B", "C"]))
+//        s1.change { $0.list.append("D") }
+//        XCTAssertEqual(s1.content, Scheme(list: ["A", "B", "C", "D"]))
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(list: ["A", "B", "C"]))
+//        s1.redo()
+//        XCTAssertEqual(s1.content, Scheme(list: ["A", "B", "C", "D"]))
+//    }
+//
+//    // should undo/redo a list element deletion
+//    func testRedo10() {
+//        struct Scheme: Codable, Equatable {
+//            var list: [String]
+//        }
+//
+//        var s1 = Document(Scheme(list: ["A", "B", "C"]))
+//        s1.change { $0.list.remove(at: 1) }
+//        XCTAssertEqual(s1.content, Scheme(list: ["A", "C"]))
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(list: ["A", "B", "C"]))
+//        s1.redo()
+//        XCTAssertEqual(s1.content, Scheme(list: ["A", "C"]))
+//    }
+//
+//    // should undo/redo counter increments
+//    func testRedo11() {
+//        struct Scheme: Codable, Equatable {
+//            var counter: Counter
+//        }
+//
+//        var s1 = Document(Scheme(counter: 0))
+//        s1.change { $0.counter.increment() }
+//        XCTAssertEqual(s1.content, Scheme(counter: 1))
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(counter: 0))
+//        s1.redo()
+//        XCTAssertEqual(s1.content, Scheme(counter: 1))
+//    }
+//
+//    // should redo assignments by other actors that precede the undo
+//    func testRedo12() {
+//        struct Scheme: Codable, Equatable {
+//            var value: Int
+//        }
+//
+//        var s1 = Document(Scheme(value: 1))
+//        s1.change({ $0.value.set(2) })
+//        var s2 = Document<Scheme>(changes: s1.allChanges())
+//        s2.change({ $0.value.set(3) })
+//        s1.merge(s2)
+//        s1.undo()
+//        XCTAssertEqual(s1.content, Scheme(value: 1))
+//        s1.redo()
+//        XCTAssertEqual(s1.content, Scheme(value: 3))
+//    }
+//
+//    // should overwrite assignments by other actors that follow the undo
+//    func testRedo13() {
+//        struct Scheme: Codable, Equatable {
+//            var value: Int
+//        }
+//
+//        var s1 = Document(Scheme(value: 1))
+//        s1.change({ $0.value.set(2) })
+//        s1.undo()
+//        var s2 = Document<Scheme>(changes: s1.allChanges())
+//        s2.change({ $0.value.set(3) })
+//        s1.merge(s2)
+//        XCTAssertEqual(s1.content, Scheme(value: 3))
+//        s1.redo()
+//        XCTAssertEqual(s1.content, Scheme(value: 2))
+//    }
+//
+//    // should merge with concurrent changes to other fields
+//    func testRedo14() {
+//        struct Scheme: Codable, Equatable {
+//            var trout: Int?
+//            var salmon: Int?
+//        }
+//
+//        var s1 = Document(Scheme(trout: 2, salmon: nil))
+//        s1.change({ $0.trout.set(3) })
+//        s1.undo()
+//        var s2 = Document<Scheme>(changes: s1.allChanges())
+//        s2.change({ $0.salmon.set(1) })
+//        s1.merge(s2)
+//        XCTAssertEqual(s1.content, Scheme(trout: 2, salmon: 1))
+//        s1.redo()
+//        XCTAssertEqual(s1.content, Scheme(trout: 3, salmon: 1))
+//    }
+//
+//    // should apply redos by growing the history
+//    func testRedo15() {
+//        struct Scheme: Codable, Equatable {
+//            var value: Int
+//        }
+//
+//        var s1 = Document(Scheme(value: 1))
+//        s1.change(message: "set 2") { $0.value.set(2) }
+//        s1.undo(message: "undo")
+//        s1.redo(message: "redo!")
+//        let history = History(document: s1)
+//        let seqs = history.map { $0.change.seq }
+//        XCTAssertEqual(seqs, [1, 2, 3, 4])
+//        let messages = history.map { $0.change.message }
+//        XCTAssertEqual(messages, ["Initialization", "set 2", "undo", "redo!"])
+//        XCTAssertEqual(history.count, 4)
+//    }
 
     // should save and restore an empty document
     func testSaveAndLoading1() {

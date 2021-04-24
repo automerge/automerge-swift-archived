@@ -12,7 +12,7 @@ public struct Document<T: Codable> {
     private struct State {
         var seq: Int
         var maxOp: Int
-        var version: Int
+        var deps: [ObjectId]
         var clock: Clock
         var canUndo: Bool
         var canRedo: Bool
@@ -36,12 +36,12 @@ public struct Document<T: Codable> {
         self.backend = backend
         self.root = Map(objectId: .root, mapValues: [:], conflicts: [:])
         self.cache = [.root: .map(root)]
-        self.state = State(seq: 0, maxOp: 0, version: 0, clock: [:], canUndo: false, canRedo: false)
+        self.state = State(seq: 0, maxOp: 0, deps: [], clock: [:], canUndo: false, canRedo: false)
     }
 
     public init(_ initialState: T, actor: Actor = Actor()) {
         var newDocument = Document<T>(actor: actor, backend: RSBackend())
-        newDocument.change(message: "Initialization", undoable: false, { doc in
+        newDocument.change(message: "Initialization", { doc in
             doc.set(initialState)
         })
         self = newDocument
@@ -78,11 +78,11 @@ public struct Document<T: Codable> {
      * changed, returns the original `doc` and a `null` change request.
      */
     @discardableResult
-    public mutating func change(message: String = "", undoable: Bool = true, _ execute: (Proxy<T>) -> Void) -> Request? {
+    public mutating func change(message: String = "", _ execute: (Proxy<T>) -> Void) -> Request? {
         let context = Context(cache: cache, actorId: actor, maxOp: state.maxOp)
         execute(.rootProxy(context: context))
         if context.idUpdated {
-            return makeChange(requestType: .change, context: context, message: message, undoable: undoable)
+            return makeChange(context: context, message: message)
         } else {
             return nil
         }
@@ -98,21 +98,20 @@ public struct Document<T: Codable> {
      * string describing the change.
      */
     private mutating func makeChange(
-        requestType: Request.RequestType,
         context: Context?,
-        message: String,
-        undoable: Bool
+        message: String
     ) -> Request?
     {
         state.seq += 1
-        let request = Request(requestType: requestType,
-                              message: message,
-                              time: Date(),
-                              actor: actor,
-                              seq: state.seq,
-                              version: state.version,
-                              ops: context?.ops ?? [],
-                              undoable: undoable
+        let request = Request(
+            requestType: .change,
+            startOp: state.maxOp + 1,
+            deps: state.deps,
+            message: message,
+            time: Date(),
+            actor: actor,
+            seq: state.seq,
+            ops: context?.ops ?? []
         )
 
         let(newBackend, patch) = backend.applyLocalChange(request: request)
@@ -141,9 +140,8 @@ public struct Document<T: Codable> {
                 state.seq = clockValue
             }
             state.clock = patch.clock
-            state.version = patch.version
-            state.canUndo = patch.canUndo
-            state.canRedo = patch.canRedo
+            state.deps = patch.deps
+            state.maxOp = max(state.maxOp, patch.maxOp)
         }
 
         updateRootObject(update: &updated)
@@ -221,42 +219,6 @@ public struct Document<T: Codable> {
     public mutating func merge(_ remoteDocument: Document<T>) {
         precondition(actor != remoteDocument.actor, "Cannot merge an actor with itself")
         apply(changes: remoteDocument.allChanges())
-    }
-
-    /**
-     Creates a request to perform an undo on the document `doc`, returning a
-     two-element array `[doc, request]` where `doc` is the updated document, and
-     `request` needs to be sent to the backend. `options` is an object as
-     described in the documentation for the `change` function; it may contain a
-     `message` property with an optional change description to attach to the undo.
-     Note that the undo does not take effect immediately: only after the request
-     is sent to the backend, and the backend responds with a patch, does the
-     user-visible document update actually happen.
-     */
-    @discardableResult
-    public mutating func undo(message: String = "", undoable: Bool = true) -> Request? {
-        if !canUndo {
-            return nil
-        }
-        return makeChange(requestType: .undo, context: nil, message: message, undoable: undoable)
-    }
-
-    /**
-     * Creates a request to perform a redo of a prior undo on the document ,
-     * returning a two-element array `[doc, request]` where `doc` is the updated
-     * document, and `request` needs to be sent to the backend. `options` is an
-     * object as described in the documentation for the `change` function; it may
-     * contain a `message` property with an optional change description to attach
-     * to the redo. Note that the redo does not take effect immediately: only
-     * after the request is sent to the backend, and the backend responds with a
-     * patch, does the user-visible document update actually happen.
-     */
-    @discardableResult
-    public mutating func redo(message: String = "", undoable: Bool = true) -> Request? {
-        if !canRedo {
-            return nil
-        }
-        return makeChange(requestType: .redo, context: nil, message: message, undoable: undoable)
     }
 
     public func getMissingsDeps() -> [String] {
