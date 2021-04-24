@@ -10,12 +10,14 @@ import Foundation
 public struct Text: Equatable {
 
     struct Character: Codable, Equatable {
-        init(value: String, opId: ObjectId) {
+        init(value: String, pred: [ObjectId], elmId: ObjectId) {
             self.value = value
-            self.opId = opId
+            self.pred = pred
+            self.elmId = elmId
         }
         let value: String
-        let opId: ObjectId
+        let pred: [ObjectId]
+        let elmId: ObjectId
     }
 
     public init() {
@@ -25,7 +27,7 @@ public struct Text: Equatable {
     }
 
     public init(_ content: String) {
-        self.content = [Swift.Character](content).map { Character(value: String($0), opId: "") }
+        self.content = [Swift.Character](content).map { Character(value: String($0), pred: [], elmId: "") }
         self.objectId = ObjectId("")
         self.conflicts = []
     }
@@ -39,14 +41,17 @@ public struct Text: Equatable {
     let objectId: ObjectId
     var content: [Character]
     var conflicts: [[String: Character]]
+    var elemIds: [ObjectId] {
+        return content.map { $0.elmId }
+    }
 
     public mutating func insert(_ character: String, at index: Int) {
         precondition(character.count == 1)
-        content.insert(Character(value: character, opId: ""), at: index)
+        content.insert(Character(value: character, pred: [], elmId: ""), at: index)
     }
 
     public mutating func insert(contentsOf characters: [String], at index: Int) {
-        content.insert(contentsOf: characters.map({ Character(value: $0, opId: "") }), at: index)
+        content.insert(contentsOf: characters.map({ Character(value: $0, pred: [], elmId: "") }), at: index)
     }
 
     public mutating func delete(_ characterCount: Int, charactersAtIndex index: Int) {

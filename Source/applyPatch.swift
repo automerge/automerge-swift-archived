@@ -88,17 +88,19 @@ func updateText(patch: ObjectDiff, text: Text?, updated: inout [ObjectId: Object
     } else {
         elems = []
     }
-    patch.edits?.iterate(insertCallback: { (index, insertions) in
-        let blanks: [Text.Character] = Array(repeating: Text.Character(value: "", opId: ""), count: insertions)
-        elems.insert(contentsOf: blanks, at: index)
+    patch.edits?.iterate(insertCallback: { (index, newElems) in
+        let blanks: [Text.Character] = newElems.map({ Text.Character(value: "", pred: [], elmId: $0) })
+        elems.replaceSubrange(index..<index, with: blanks)
     }, removeCallback: { (index, deletions) in
         elems.removeSubrange(index..<index + deletions)
     })
     let keys = patch.props?.keys.indicies
     keys?.forEach { index in
-        let opId = patch.props![.index(index)]!.keys.sorted(by: lamportCompare)[0]
+        let pred = patch.props![.index(index)]!.keys
+        let opId = pred.sorted(by: lamportCompare)[0]
+
         if case .primitive(.string(let character)) = getValue(patch: patch.props![.index(index)]![opId]!, object: nil, updated: &updated) {
-            elems[index] = Text.Character(value: character, opId: opId)
+            elems[index] = Text.Character(value: character, pred: Array(pred), elmId: elems[index].elmId)
         } else {
             fatalError()
         }
@@ -117,20 +119,21 @@ func updateText(patch: ObjectDiff, text: Text?, updated: inout [ObjectId: Object
 func updateList(patch: ObjectDiff, list: List?, updated: inout [ObjectId: Object]) -> List {
     let objectId = patch.objectId
     var list = list ?? List(objectId: objectId, listValues: [])
-    var listValues = list.listValues
     var conflicts: [[ObjectId: Object]?] = list.conflicts
     patch.edits?.iterate(
-        insertCallback: { index, insertions in
-            let blanksValues = Array<Object>(repeating: .primitive(1.0), count: insertions)
-            listValues.replaceSubrange(index..<index, with: blanksValues)
-            let blanksConflicts = Array<[ObjectId : Object]?>(repeating: nil, count: insertions)
+        insertCallback: { index, newElems in
+            let blanksValues = Array<Object>(repeating: .primitive(1.0), count: newElems.count)
+            list.listValues.replaceSubrange(index..<index, with: blanksValues)
+            let blanksConflicts = Array<[ObjectId : Object]?>(repeating: nil, count: newElems.count)
             conflicts.replaceSubrange(index..<index, with: blanksConflicts)
+            list.elemIds.replaceSubrange(index..<index, with: newElems)
         },
         removeCallback: { index, deletions in
-            listValues.removeSubrange(index..<index + deletions)
-            conflicts.removeSubrange(index..<index + deletions)
+            let range = index..<index + deletions
+            list.listValues.removeSubrange(range)
+            conflicts.removeSubrange(range)
+            list.elemIds.removeSubrange(range)
         })
-    list.listValues = listValues
     applyProperties(props: patch.props, list: &list, conflicts: &conflicts, updated: &updated)
     list.conflicts = conflicts.compactMap({ $0 })
     updated[objectId] = .list(list)
@@ -181,7 +184,7 @@ func applyProperties(
         for opId in opIds {
             let subPatch = props[.index(index)]![opId]
             let object = conflicts[index]?[opId]
-            values[opId] = getValue(patch: subPatch!, object: object ?? nil, updated: &updated)
+            values[opId] = getValue(patch: subPatch!, object: object, updated: &updated)
         }
         var listValues = list.listValues
         if listValues.count > index {

@@ -26,7 +26,8 @@ extension Proxy {
             let encoder = JSONEncoder()
             let decoder = JSONDecoder()
 
-            let json = try! encoder.encode(realConflicts)
+            // Whey is .compactMapKeys({ $0.objectId })) needed here?
+            let json = try! encoder.encode(realConflicts.compactMapKeys({ $0.objectId }))
             return try! decoder.decode([String: Y].self, from: json).compactMapKeys({ Actor(actorId: $0) })
         default:
             fatalError()
@@ -53,7 +54,8 @@ extension Proxy where Wrapped: Collection, Wrapped.Index == Int, Wrapped.Element
         let encoder = JSONEncoder()
         let decoder = JSONDecoder()
 
-        let json = try! encoder.encode(realConflicts)
+        // Whey is .compactMapKeys({ $0.objectId })) needed here?
+        let json = try! encoder.encode(realConflicts.compactMapKeys({ $0.objectId }))
         return try! decoder.decode([String: Wrapped.Element].self, from: json).compactMapKeys({ Actor(actorId: $0) })
     }
 }

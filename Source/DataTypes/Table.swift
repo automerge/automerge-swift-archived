@@ -27,6 +27,12 @@ public struct Table<RowValue: Codable>: Codable {
         private let object: Object
     }
 
+    public init () {
+        self.entries = [:]
+        self.objectId = ""
+        self.opIds = []
+    }
+
     init(tableValues: [ObjectId: Object], objectId: ObjectId = ObjectId(""), opIds: [ObjectId] = []) {
         self.entries = tableValues
         self.objectId = objectId
