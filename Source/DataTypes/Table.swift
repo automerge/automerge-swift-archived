@@ -73,6 +73,6 @@ extension Table: Equatable where RowValue: Equatable { }
 
 extension Table: Sequence {
     public func makeIterator() -> AnyIterator<Row<RowValue>> {
-        return AnyIterator(entries.keys.map({ Row<RowValue>(id: $0, object: entries[$0]!) }).makeIterator())
+        return AnyIterator(entries.map({ Row<RowValue>(id: $0.key, object: $0.value) }).makeIterator())
     }
 }

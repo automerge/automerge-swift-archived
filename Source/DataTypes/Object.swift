@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum Object: Equatable, ExpressibleByStringLiteral, ExpressibleByFloatLiteral, ExpressibleByArrayLiteral, Codable {
+enum Object: Equatable, Codable {
 
     case text(Text)
     case map(Map)
@@ -34,14 +34,6 @@ enum Object: Equatable, ExpressibleByStringLiteral, ExpressibleByFloatLiteral, E
 
     init(arrayLiteral elements: Object...) {
         self = .list(List(objectId: ObjectId(""), listValues: elements))
-    }
-
-    public init(floatLiteral value: Float) {
-        self = .primitive(.number(Double(value)))
-    }
-
-    init(stringLiteral value: StringLiteralType) {
-        self = .primitive(.string(value))
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -85,5 +77,24 @@ enum Object: Equatable, ExpressibleByStringLiteral, ExpressibleByFloatLiteral, E
         }
     }
 
+}
 
+
+extension Object: ExpressibleByStringLiteral, ExpressibleByFloatLiteral, ExpressibleByIntegerLiteral, ExpressibleByArrayLiteral, ExpressibleByDictionaryLiteral {
+
+    init(stringLiteral value: StringLiteralType) {
+        self = .primitive(.string(value))
+    }
+
+    init(floatLiteral value: Float) {
+        self = .primitive(.number(Double(value)))
+    }
+
+    init(integerLiteral value: IntegerLiteralType) {
+        self = .primitive(.number(Double(value)))
+    }
+
+    init(dictionaryLiteral elements: (String, Object)...) {
+        self = .map(Map(mapValues: Dictionary(uniqueKeysWithValues: elements)))
+    }
 }

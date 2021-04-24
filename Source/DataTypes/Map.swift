@@ -35,3 +35,11 @@ struct Map: Equatable, Codable {
         self.conflicts = [:]
     }
 }
+
+extension Map: ExpressibleByDictionaryLiteral {
+
+    init(dictionaryLiteral elements: (String, Object)...) {
+        self = Map(mapValues: Dictionary(uniqueKeysWithValues: elements))
+    }
+
+}
