@@ -332,16 +332,6 @@ final class Context {
         default:
             fatalError()
         }
-        fatalError()
-//      if (object instanceof Table) {
-//        return [object.opIds[key]]
-//      } else if (object instanceof Text) {
-//        return object.elems[key].pred
-//      } else if (object[CONFLICTS]) {
-//        return object[CONFLICTS][key] ? Object.keys(object[CONFLICTS][key]) : []
-//      } else {
-//        return []
-//      }
     }
 
 

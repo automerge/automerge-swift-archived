@@ -104,7 +104,6 @@ public struct Document<T: Codable> {
     {
         state.seq += 1
         let request = Request(
-            requestType: .change,
             startOp: state.maxOp + 1,
             deps: state.deps,
             message: message,

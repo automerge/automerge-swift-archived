@@ -97,7 +97,7 @@ func updateText(patch: ObjectDiff, text: Text?, updated: inout [ObjectId: Object
     let keys = patch.props?.keys.indicies
     keys?.forEach { index in
         let pred = patch.props![.index(index)]!.keys
-        let opId = pred.sorted(by: lamportCompare)[0]
+        let opId = pred.sorted(by: lamportCompare).reversed()[0]
 
         if case .primitive(.string(let character)) = getValue(patch: patch.props![.index(index)]![opId]!, object: nil, updated: &updated) {
             elems[index] = Text.Character(value: character, pred: Array(pred), elmId: elems[index].elmId)
@@ -180,7 +180,7 @@ func applyProperties(
     }
     for index in props.keys.indicies {
         var values = [ObjectId: Object]()
-        let opIds = props[.index(index)]?.keys.sorted(by: lamportCompare) ?? []
+        let opIds = props[.index(index)]?.keys.sorted(by: lamportCompare).reversed() ?? []
         for opId in opIds {
             let subPatch = props[.index(index)]![opId]
             let object = conflicts[index]?[opId]
@@ -223,11 +223,11 @@ func applyProperties(
     }
     for key in props.keys.strings {
         var values = [ObjectId: Object]()
-        let opIds = props[.string(key)]?.keys.sorted(by: lamportCompare) ?? []
+        let opIds = props[.string(key)]?.keys.sorted(by: lamportCompare).reversed() ?? []
         for opId in opIds {
             let subPatch = props[.string(key)]![opId]
             let object = map.conflicts[key]?[opId]
-            values[opId] = getValue(patch: subPatch!, object: object ?? nil, updated: &updated)
+            values[opId] = getValue(patch: subPatch!, object: object, updated: &updated)
         }
         if opIds.count == 0 {
             map.mapValues[key] = nil
@@ -242,13 +242,13 @@ func applyProperties(
  * Compares two strings, interpreted as Lamport timestamps of the form
  * 'counter@actorId'. Returns 1 if ts1 is greater, or -1 if ts2 is greater.
  */
-func  lamportCompare(ts1: ObjectId, ts2: ObjectId) -> Bool {
+func lamportCompare(ts1: ObjectId, ts2: ObjectId) -> Bool {
     let time1 = ts1.parseOpId() ?? (counter: 0, actorId: ts1.objectId)
     let time2 = ts2.parseOpId() ?? (counter: 0, actorId: ts2.objectId)
     if time1.counter == time2.counter {
-        return time1.actorId > time2.actorId
+        return time1.actorId < time2.actorId
     }
-    return time1.counter > time2.counter
+    return time1.counter < time2.counter
 }
 
 /**
