@@ -43,15 +43,19 @@ public final class Proxy<Wrapped: Codable> {
         return valueResolver()!
     }
 
+    private var map: Map {
+        guard case .map(let map)? = objectId.map({ context.getObject(objectId: $0) }) else {
+           fatalError("Must be map")
+        }
+
+        return map
+    }
 
     public subscript<Y>(dynamicMember dynamicMember: KeyPath<Wrapped, Y>) -> Proxy<Y> {
         let fieldName = dynamicMember.fieldName!
-        var map: Map?
-        if self.objectId != ObjectId(objectId: ""), case .map(let map2)? = self.objectId.map({ context.getObject(objectId: $0) })  {
-            map = map2
-        }
 
-        let objectId = map?.mapValues[fieldName]?.objectId
+
+        let objectId = map.mapValues[fieldName]?.objectId
         return Proxy<Y>(
             context: context,
             objectId: objectId,
@@ -62,9 +66,6 @@ public final class Proxy<Wrapped: Codable> {
 
     public subscript<Y>(dynamicMember dynamicMember: KeyPath<Wrapped, Y?>) -> Proxy<Y>? {
         let fieldName = dynamicMember.fieldName!
-        guard case .map(let map)? = self.objectId.map({ context.getObject(objectId: $0) }) else {
-            fatalError()
-        }
         let objectId = map.mapValues[fieldName]?.objectId
         return Proxy<Y>(
             context: context,
@@ -83,7 +84,7 @@ public final class Proxy<Wrapped: Codable> {
     func set(newValue: Object) {
         guard let lastPathKey = path.last?.key else {
             if case .map(let root) = newValue {
-                self.set(rootObject: root)
+                set(rootObject: root)
             }
             return
         }

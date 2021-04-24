@@ -17,9 +17,6 @@ extension Proxy: Collection, Sequence where Wrapped: Collection, Wrapped.Element
 
     public subscript(position: Int) -> Proxy<Wrapped.Element> {
         get {
-            guard case .list(let list)? = self.objectId.map({ context.getObject(objectId: $0) }) else {
-                fatalError()
-            }
             let objectId = list.listValues[position].objectId
             return Proxy<Wrapped.Element>(
                 context: context,
@@ -35,11 +32,12 @@ extension Proxy: Collection, Sequence where Wrapped: Collection, Wrapped.Element
         return self.get().index(after: i)
     }
 
-    private var elements: [Object] {
-        guard case .list(let list)? = self.objectId.map({ context.getObject(objectId: $0) }) else {
-            fatalError()
+    fileprivate var list: List {
+        guard case .list(let list) = objectId.map({ context.getObject(objectId: $0) }) else {
+            fatalError("Must contain list")
         }
-        return list.listValues
+
+        return list
     }
 
 }
@@ -48,9 +46,6 @@ extension Proxy: MutableCollection where Wrapped: MutableCollection, Wrapped.Ele
 
     public subscript(position: Int) -> Proxy<Wrapped.Element> {
         get {
-            guard case .list(let list)? = self.objectId.map({ context.getObject(objectId: $0) }) else {
-                fatalError()
-            }
             let objectId = list.listValues[position].objectId
             return Proxy<Wrapped.Element>(
                 context: context,
