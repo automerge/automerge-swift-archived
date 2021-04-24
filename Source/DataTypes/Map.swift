@@ -9,7 +9,7 @@ import Foundation
 
 struct Map: Equatable, Codable {
 
-    init(objectId: ObjectId, mapValues: [String: Object] = [:], conflicts: [String: [String: Object]] = [:]) {
+    init(objectId: ObjectId = "", mapValues: [String: Object] = [:], conflicts: [String: [String: Object]] = [:]) {
         self.objectId = objectId
         self.mapValues = mapValues
         self.conflicts = conflicts
@@ -34,4 +34,12 @@ struct Map: Equatable, Codable {
         self.objectId = ObjectId(objectId: "")
         self.conflicts = [:]
     }
+}
+
+extension Map: ExpressibleByDictionaryLiteral {
+
+    init(dictionaryLiteral elements: (String, Object)...) {
+        self = Map(mapValues: Dictionary(uniqueKeysWithValues: elements))
+    }
+
 }
