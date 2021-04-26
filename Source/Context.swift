@@ -125,9 +125,9 @@ final class Context {
 
 
         var props = Props()
-        for nestedKey in map.mapValues.keys.sorted() {
+        for (nestedKey, value) in map {
             let opId = nextOpId()
-            let valuePatch = setValue(objectId: objectId, key: .string(nestedKey), value: map[nestedKey]!, insert: false, pred: [], elmId: nil)
+            let valuePatch = setValue(objectId: objectId, key: .string(nestedKey), value: value, insert: false, pred: [], elmId: nil)
             props[.string(nestedKey)] = [opId: valuePatch]
         }
 
@@ -153,7 +153,7 @@ final class Context {
         }
 
         let subpatch = ObjectDiff(objectId: objectId, type: .list, edits: [], props: [:])
-        insertListItems(subPatch: subpatch, index: 0, values: list.listValues, newObject: true)
+        insertListItems(subPatch: subpatch, index: 0, values: list, newObject: true)
 
         return subpatch
     }
@@ -211,7 +211,7 @@ final class Context {
      * existing one. `subpatch` is the patch for the list object being modified. Mutates
      * `subpatch` to reflect the sequence of values.
      */
-    func insertListItems(subPatch: ObjectDiff, index: Int, values: [Object], newObject: Bool) {
+    func insertListItems<C: Collection>(subPatch: ObjectDiff, index: Int, values: C, newObject: Bool) where C.Element == Object {
         let list = newObject ? [] : getList(objectId: subPatch.objectId)
         precondition(index >= 0 && index <= list.count, "List index \(index) is out of bounds for list of length \(list.count)")
 
@@ -261,7 +261,7 @@ final class Context {
         let elements: [Any]
         let object = getObject(objectId: objectId)
         if case .list(let list) = object {
-            elements = list.listValues
+            elements = Array(list)
         } else if case .text(let text) = object {
             elements = text.content
         } else {
@@ -299,6 +299,10 @@ final class Context {
      * `key` to `value`.
      */
     func setMapKey(path: [KeyPathElement], key: String, value: Object) {
+        if case .primitive(.null) = value {
+            deleteMapKey(path: path, key: key)
+            return
+        }
         guard let objectId = path.isEmpty ? .root : path[path.count - 1].objectId else {
             fatalError("objectId must exist")
         }
@@ -352,7 +356,7 @@ final class Context {
             fatalError("Must be Map")
         }
 
-        if map.mapValues[key] != nil {
+        if map[key] != nil {
             let pred = getPred(object: object, key: .string(key))
             ops.append(Op(action: .del, obj: objectId, key: .string(key), insert: false, pred: pred))
             applyAt(path: path, callback: { subpatch in
@@ -412,7 +416,7 @@ final class Context {
     private func getList(objectId: ObjectId) -> [Any] {
         let object = getObject(objectId: objectId)
         if case .list(let list) = object {
-            return list.listValues
+            return Array(list)
         } else if case .text(let text) = object {
             return text.content
         } else {
@@ -559,7 +563,7 @@ final class Context {
         if case .counter = list[index] {
             fatalError("Cannot overwrite a Counter object; use .increment() or .decrement() to change its value.")
         }
-        if list.listValues[index] != value || list.conflicts[index].keys.count > 1 {
+        if list[index] != value || list.conflicts[index].keys.count > 1 {
             applyAt(path: path) { subpatch in
                 let pred = getPred(object: object, key: .index(index))
                 let opId = nextOpId()
@@ -622,7 +626,7 @@ final class Context {
             }
         case .index(let index):
             if case .list(let list) = object,
-               case .counter(let counter) = list.listValues[index] {
+               case .counter(let counter) = list[index] {
                 counterValue = counter.value
             } else {
                 fatalError("Only counter values can be incremented")

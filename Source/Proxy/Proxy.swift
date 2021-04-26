@@ -54,7 +54,7 @@ public final class Proxy<Wrapped: Codable> {
     public subscript<Y>(dynamicMember dynamicMember: KeyPath<Wrapped, Y>) -> Proxy<Y> {
         let fieldName = dynamicMember.fieldName!
 
-        let objectId = map.mapValues[fieldName]?.objectId
+        let objectId = map[fieldName]?.objectId
         return Proxy<Y>(
             context: context,
             objectId: objectId,
@@ -65,7 +65,7 @@ public final class Proxy<Wrapped: Codable> {
 
     public subscript<Y>(dynamicMember dynamicMember: KeyPath<Wrapped, Y?>) -> Proxy<Y>? {
         let fieldName = dynamicMember.fieldName!
-        let objectId = map.mapValues[fieldName]?.objectId
+        let objectId = map[fieldName]?.objectId
         return Proxy<Y>(
             context: context,
             objectId: objectId,
@@ -75,7 +75,7 @@ public final class Proxy<Wrapped: Codable> {
     }
 
     private func set(rootObject: Map) {
-        for (key, value) in rootObject.mapValues {
+        for (key, value) in rootObject {
             context.setMapKey(path: path, key: key, value: value)
         }
     }

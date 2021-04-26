@@ -17,7 +17,7 @@ extension Proxy: Collection, Sequence where Wrapped: Collection, Wrapped.Element
 
     public subscript(position: Int) -> Proxy<Wrapped.Element> {
         get {
-            let objectId = list.listValues[position].objectId
+            let objectId = list[position].objectId
             return Proxy<Wrapped.Element>(
                 context: context,
                 objectId: objectId,
@@ -46,7 +46,7 @@ extension Proxy: MutableCollection where Wrapped: MutableCollection, Wrapped.Ele
 
     public subscript(position: Int) -> Proxy<Wrapped.Element> {
         get {
-            let objectId = list.listValues[position].objectId
+            let objectId = list[position].objectId
             return Proxy<Wrapped.Element>(
                 context: context,
                 objectId: objectId,
