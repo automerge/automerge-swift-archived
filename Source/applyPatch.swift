@@ -123,14 +123,14 @@ func updateList(patch: ObjectDiff, list: List?, updated: inout [ObjectId: Object
     patch.edits?.iterate(
         insertCallback: { index, newElems in
             let blanksValues = Array<Object>(repeating: .primitive(1.0), count: newElems.count)
-            list.listValues.replaceSubrange(index..<index, with: blanksValues)
+            list.replaceSubrange(index..<index, with: blanksValues)
             let blanksConflicts = Array<[ObjectId : Object]?>(repeating: nil, count: newElems.count)
             conflicts.replaceSubrange(index..<index, with: blanksConflicts)
             list.elemIds.replaceSubrange(index..<index, with: newElems)
         },
         removeCallback: { index, deletions in
             let range = index..<index + deletions
-            list.listValues.removeSubrange(range)
+            list.removeSubrange(range)
             conflicts.removeSubrange(range)
             list.elemIds.removeSubrange(range)
         })
@@ -186,15 +186,13 @@ func applyProperties(
             let object = conflicts[index]?[opId]
             values[opId] = getValue(patch: subPatch!, object: object, updated: &updated)
         }
-        var listValues = list.listValues
-        if listValues.count > index {
-            listValues[index] = values[opIds[0]]!
-        } else if index == listValues.count {
-            listValues.append(values[opIds[0]]!)
+        if list.count > index {
+            list[index] = values[opIds[0]]!
+        } else if index == list.count {
+            list.append(values[opIds[0]]!)
         } else {
             fatalError()
         }
-        list.listValues = listValues
         conflicts[index] = values
     }
 }
@@ -230,10 +228,10 @@ func applyProperties(
             values[opId] = getValue(patch: subPatch!, object: object, updated: &updated)
         }
         if opIds.count == 0 {
-            map.mapValues[key] = nil
+            map[key] = nil
             map.conflicts[key] = nil
         } else {
-            map.mapValues[key] = values[opIds[0]]
+            map[key] = values[opIds[0]]
             map.conflicts[key] = values
         }
     }

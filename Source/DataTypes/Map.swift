@@ -16,11 +16,16 @@ struct Map: Equatable, Codable {
     }
 
     let objectId: ObjectId
-    var mapValues: [String: Object]
+    private var mapValues: [String: Object]
     var conflicts: [String: [ObjectId: Object]]
 
     subscript(_ key: String) -> Object? {
-        return mapValues[key]
+        get {
+            return mapValues[key]
+        }
+        set {
+            mapValues[key] = newValue
+        }
     }
 
     func encode(to encoder: Encoder) throws {
@@ -33,6 +38,12 @@ struct Map: Equatable, Codable {
         self.mapValues = try container.decode([String: Object].self)
         self.objectId = ObjectId("")
         self.conflicts = [:]
+    }
+}
+
+extension Map: Sequence {
+    public func makeIterator() -> AnyIterator<(key: String, value: Object)> {
+        return AnyIterator(mapValues.sorted(by: { $0.key < $1.key }).makeIterator())
     }
 }
 

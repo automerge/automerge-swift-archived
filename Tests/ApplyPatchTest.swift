@@ -24,7 +24,7 @@ final class ApplyPatchTest: XCTestCase {
             return
         }
 
-        XCTAssertEqual(newMap.mapValues["key1"], .primitive("value1"))
+        XCTAssertEqual(newMap["key1"], .primitive("value1"))
         XCTAssertEqual(newMap.objectId, "00000000-0000-0000-0000-000000000000")
         XCTAssertEqual(newMap.conflicts, [
             "key1": ["f788794f7f0f48fbb44289b2a06d4d5b": .primitive("value1")]
