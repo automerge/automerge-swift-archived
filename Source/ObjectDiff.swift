@@ -7,8 +7,6 @@
 
 import Foundation
 
-typealias Props = [Key: [ObjectId: Diff]]
-
 final class ObjectDiff: Equatable, Codable {
 
     init(
@@ -47,9 +45,9 @@ final class ObjectDiff: Equatable, Codable {
         if let keys = stringProps?.keys {
             for key in keys {
                 if let index = Int(key) {
-                    props[.index(index)] = stringProps![key]?.compactMapKeys({ ObjectId($0) })
+                    props[index] = stringProps![key]?.compactMapKeys({ ObjectId($0) })
                 } else {
-                    props[.string(key)] = stringProps![key]?.compactMapKeys({ ObjectId($0) })
+                    props[key] = stringProps![key]?.compactMapKeys({ ObjectId($0) })
                 }
 
             }

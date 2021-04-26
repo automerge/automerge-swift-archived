@@ -18,7 +18,7 @@ public extension Proxy {
 
     func row<Row: Codable>(by rowId: ObjectId) -> Proxy<Row>? where Wrapped == Table<Row> {
         guard case .table(let table) = context.getObject(objectId: objectId!),
-              let row = table.entries[rowId],
+              let row = table[rowId],
               let objectId = row.objectId else {
             return nil
         }
