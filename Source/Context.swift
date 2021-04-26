@@ -128,7 +128,7 @@ final class Context {
         for (nestedKey, value) in map {
             let opId = nextOpId()
             let valuePatch = setValue(objectId: objectId, key: .string(nestedKey), value: value, insert: false, pred: [], elmId: nil)
-            props[.string(nestedKey)] = [opId: valuePatch]
+            props[nestedKey] = [opId: valuePatch]
         }
 
         return ObjectDiff(objectId: objectId, type: .map, props: props)
@@ -222,7 +222,7 @@ final class Context {
             elmId = nextElmId
 
             subPatch.edits?.append(Edit(action: .insert, index: index + offset, elemId: elmId))
-            subPatch.props?[.index(index + offset)] = [elmId: valuePatch]
+            subPatch.props?[index + offset] = [elmId: valuePatch]
         }
     }
 
@@ -321,7 +321,7 @@ final class Context {
                 let pred = getPred(object: object, key: .string(key))
                 let opId = nextOpId()
                 let valuePatch = setValue(objectId: objectId, key: .string(key), value: value, insert: false, pred: pred, elmId: nil)
-                subpatch.props?[.string(key)] = [opId: valuePatch]
+                subpatch.props?[key] = [opId: valuePatch]
             })
         } else if map.conflicts[key]?.count ?? 0 > 1 {
             fatalError()
@@ -360,7 +360,7 @@ final class Context {
             let pred = getPred(object: object, key: .string(key))
             ops.append(Op(action: .del, obj: objectId, key: .string(key), insert: false, pred: pred))
             applyAt(path: path, callback: { subpatch in
-                subpatch.props?[.string(key)] = [:]
+                subpatch.props?[key] = [:]
             })
         }
       }
@@ -500,7 +500,7 @@ final class Context {
     func getPropertyValue(object: Object, key: Key, opId: ObjectId) -> Object {
         switch (object, key) {
         case (.table(let table), .string(let key)):
-            return table.entries[ObjectId(key)]!
+            return table[ObjectId(key)]!
         case (.map(let map), .string(let key)):
             return map.conflicts[key]![opId]!
         case (.list(let list), .index(let index)):
@@ -518,7 +518,7 @@ final class Context {
     func getValuesDescriptions(path: [KeyPathElement], object: Object, key: Key) -> [ObjectId: Diff] {
         switch (object, key) {
         case (.table(let table), .string(let key)):
-            if let value = table.entries[ObjectId(key)]  {
+            if let value = table[ObjectId(key)]  {
                 return [ObjectId(key): getValueDescription(value: value)]
             } else {
                 return [:]
@@ -568,7 +568,7 @@ final class Context {
                 let pred = getPred(object: object, key: .index(index))
                 let opId = nextOpId()
                 let valuePatch = setValue(objectId: objectId, key: .index(index), value: value, insert: false, pred: pred, elmId: getElmId(list: object, index: index))
-                subpatch.props?[.index(index)] = [opId: valuePatch]
+                subpatch.props?[index] = [opId: valuePatch]
             }
         }
     }
@@ -584,7 +584,7 @@ final class Context {
         let valuePatch = setValue(objectId: path[path.count - 1].objectId!, key: .string(id.objectId), value: row, insert: false, pred: [], elmId: nil)
 
         applyAt(path: path) { subpatch in
-            subpatch.props?[.string(id.objectId)] = [valuePatch.objectId!: valuePatch]
+            subpatch.props?[id.objectId] = [valuePatch.objectId!: valuePatch]
         }
 
         return id
@@ -598,10 +598,10 @@ final class Context {
         guard case .table(let table) = getObject(objectId: objectId) else {
             fatalError()
         }
-        if table.entries[rowId] != nil {
+        if table[rowId] != nil {
             ops.append(Op(action: .del, obj: objectId, key: .string(rowId.objectId), pred: [pred]))
             applyAt(path: path, callback: { subpatch in
-                subpatch.props?[.string(rowId.objectId)] = [:]
+                subpatch.props?[rowId.objectId] = [:]
             })
         }
     }

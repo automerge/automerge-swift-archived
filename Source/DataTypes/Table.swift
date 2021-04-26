@@ -45,7 +45,7 @@ public struct Table<RowValue: Codable>: Codable {
         case opIds
     }
 
-    var entries: [ObjectId: Object]
+    private var entries: [ObjectId: Object]
     let objectId: ObjectId
     let opIds: [ObjectId]
 
@@ -64,6 +64,14 @@ public struct Table<RowValue: Codable>: Codable {
         return Set(entries.keys)
     }
 
+    subscript(_ objectId: ObjectId) -> Object? {
+        get {
+            return entries[objectId]
+        }
+        set {
+            entries[objectId] = newValue
+        }
+    }
 
 }
 
