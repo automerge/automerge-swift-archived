@@ -34,7 +34,6 @@ public final class RSBackend {
     init(automerge: OpaquePointer) {
         self.automerge = automerge
         self.encoder = JSONEncoder()
-        self.encoder.outputFormatting = .prettyPrinted
         self.decoder = JSONDecoder()
         encoder.dateEncodingStrategy = .custom({ (date, encoder) throws in
             var container = encoder.singleValueContainer()

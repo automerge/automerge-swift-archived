@@ -89,12 +89,19 @@ final class Context {
         case .table:
             return .object(createNestedTable(obj: objectId, key: key, insert: insert, pred: pred, elemId: elmId))
         case .date(let date):
-            let operation = Op(action: .set, obj: objectId, key: key, insert: insert, value: .number(date.timeIntervalSince1970), datatype: .timestamp, pred: pred)
-            ops.append(operation)
+            if let elmId = elmId {
+                ops.append(Op(action: .set, obj: objectId, elemId: elmId, insert: insert, value: .number(date.timeIntervalSince1970), datatype: .timestamp, pred: pred))
+            } else {
+                ops.append(Op(action: .set, obj: objectId, key: key, insert: insert, value: .number(date.timeIntervalSince1970), datatype: .timestamp, pred: pred))
+            }
             return .value(.init(value: .number(date.timeIntervalSince1970), datatype: .timestamp))
         case .counter(let counter):
-            let operation = Op(action: .set, obj: objectId, key: key, insert: insert, value: .number(Double(counter.value)), datatype: .counter, pred: pred)
-            ops.append(operation)
+            if let elmId = elmId {
+                ops.append(Op(action: .set, obj: objectId, elemId: elmId, insert: insert, value: .number(Double(counter.value)), datatype: .counter, pred: pred))
+            } else {
+                ops.append(Op(action: .set, obj: objectId, key: key, insert: insert, value: .number(Double(counter.value)), datatype: .counter, pred: pred))
+            }
+
             return .value(.init(value: .number(Double(counter.value)), datatype: .counter))
         }
 
