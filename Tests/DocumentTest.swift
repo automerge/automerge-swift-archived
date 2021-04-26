@@ -135,6 +135,7 @@ class DocumentTest: XCTestCase {
                         ops: [
                             Op(action: .del, obj: .root, key: "magpies", insert: false, value: nil, pred: ["1@\(actor)"])
                         ]))
+        XCTAssertEqual(req?.ops[0].pred, ["1@\(actor)"])
     }
 
         // should create lists
@@ -265,49 +266,48 @@ class DocumentTest: XCTestCase {
                         ]))
     }
 
-        // should handle counters inside lists
-        func testCounters2() throws {
-            throw XCTSkip()
-            struct Schema: Codable, Equatable {
-                var counts: [Counter]?
-            }
-
-            var doc1 = Document(Schema())
-            let req1 = doc1.change {
-                $0.counts?.set([1])
-                XCTAssertEqual($0.counts?.get(), [1])
-            }
-            var doc2 = doc1
-            let req2 = doc2.change {
-                $0.counts?[0].increment(2)
-                XCTAssertEqual($0.counts?.get(), [3])
-            }
-            let actor = doc2.actor
-            let counts = doc2.rootProxy().counts?.objectId
-            XCTAssertEqual(doc1.content, Schema(counts: [1]))
-            XCTAssertEqual(doc2.content, Schema(counts: [3]))
-            XCTAssertEqual(req1, Request(
-                            startOp: 1,
-                            deps: [],
-                            message: "",
-                            time: req1!.time,
-                            actor: actor,
-                            seq: 1,
-                            ops: [
-                Op(action: .makeList, obj: .root, key: "counts", insert: false, pred: []),
-                Op(action: .set, obj: counts!, key: 0, insert: true, value: 1.0, datatype: .counter, pred: [])
-            ]))
-            XCTAssertEqual(req2, Request(
-                            startOp: 2,
-                            deps: [],
-                            message: "",
-                            time: req2!.time,
-                            actor: actor,
-                            seq: 2,
-                            ops: [
-                                Op(action: .inc, obj: counts!, elemId: "2@\(actor)", value: 2.0, pred: [])
-                            ]))
+    // should handle counters inside lists
+    func testCounters2() {
+        struct Schema: Codable, Equatable {
+            var counts: [Counter]?
         }
+
+        var doc1 = Document(Schema())
+        let req1 = doc1.change {
+            $0.counts?.set([1])
+            XCTAssertEqual($0.counts?.get(), [1])
+        }
+        var doc2 = doc1
+        let req2 = doc2.change {
+            $0.counts?[0].increment(2)
+            XCTAssertEqual($0.counts?.get(), [3])
+        }
+        let actor = doc2.actor
+        let counts = doc2.rootProxy().counts?.objectId
+        XCTAssertEqual(doc1.content, Schema(counts: [1]))
+        XCTAssertEqual(doc2.content, Schema(counts: [3]))
+        XCTAssertEqual(req1, Request(
+                        startOp: 1,
+                        deps: [],
+                        message: "",
+                        time: req1!.time,
+                        actor: actor,
+                        seq: 1,
+                        ops: [
+                            Op(action: .makeList, obj: .root, key: "counts", insert: false, pred: []),
+                            Op(action: .set, obj: counts!, elemId: .head, insert: true, value: 1.0, datatype: .counter, pred: [])
+                        ]))
+        XCTAssertEqual(req2, Request(
+                        startOp: 3,
+                        deps: [],
+                        message: "",
+                        time: req2!.time,
+                        actor: actor,
+                        seq: 2,
+                        ops: [
+                            Op(action: .inc, obj: counts!, elemId: "2@\(actor)", insert: false, value: 2.0, pred: ["2@\(actor)"])
+                        ]))
+    }
 
 
 //        // should use version and sequence number from the backend

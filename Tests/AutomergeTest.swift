@@ -137,9 +137,7 @@ class AutomergeTest: XCTestCase {
     }
 
     // should support Date objects in lists
-    func testSerialUseChanges6() throws {
-        try XCTSkipIf(true)
-        #warning("Fix this")
+    func testSerialUseChanges6() {
         struct Scheme: Codable, Equatable { var list: [Date]? }
         let now = Date(timeIntervalSince1970: 0)
         var s1 = Document(Scheme(list: nil))
