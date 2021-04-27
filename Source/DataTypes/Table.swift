@@ -30,10 +30,10 @@ public struct Table<RowValue: Codable>: Codable {
     public init () {
         self.entries = [:]
         self.objectId = ""
-        self.opIds = []
+        self.opIds = [:]
     }
 
-    init(tableValues: [ObjectId: Object], objectId: ObjectId = ObjectId(""), opIds: [ObjectId] = []) {
+    init(tableValues: [ObjectId: Object], objectId: ObjectId = ObjectId(""), opIds: [ObjectId: ObjectId] = [:]) {
         self.entries = tableValues
         self.objectId = objectId
         self.opIds = opIds
@@ -47,7 +47,7 @@ public struct Table<RowValue: Codable>: Codable {
 
     private var entries: [ObjectId: Object]
     let objectId: ObjectId
-    let opIds: [ObjectId]
+    var opIds: [ObjectId: ObjectId]
 
     public func row(by id: ObjectId) -> Row<RowValue>? {
         guard let row = entries[id] else {

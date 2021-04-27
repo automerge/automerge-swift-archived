@@ -14,19 +14,6 @@ public enum Primitive: Equatable, Codable {
     case bool(Bool)
     case null
 
-    var value: Any? {
-        switch self {
-        case .string(let stringValue):
-            return stringValue
-        case .number(let number):
-            return number
-        case .bool(let boolValue):
-            return boolValue
-        case .null:
-            return nil
-        }
-    }
-
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let string = try? container.decode(String.self) {

@@ -915,7 +915,7 @@ class ContextTest: XCTestCase {
         // should add a table row
         func testTableManipulation1() {
             let tableId = ObjectId()
-            let table: Object = .table(Table(tableValues: [:], objectId: tableId, opIds: []))
+            let table: Object = .table(Table(tableValues: [:], objectId: tableId, opIds: [:]))
             let actor = Actor()
             let context = Context(
                 actorId: actor,
