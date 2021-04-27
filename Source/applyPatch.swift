@@ -63,8 +63,8 @@ func updateTable(patch: ObjectDiff, table: Table<Map>?, updated: inout [ObjectId
             table[key] = nil
         } else if opIds.count == 1 {
             let subpatch = patch.props![key.objectId]![opIds[0]]
-            let row = getValue(patch: subpatch!, object: table[key], updated: &updated)
-            table[key] = row
+            table[key] = getValue(patch: subpatch!, object: table[key], updated: &updated)
+            table.opIds[key] = opIds[0]
         }
     })
     updated[objectId] = .table(table)
