@@ -12,8 +12,8 @@ extension Proxy: Collection, Sequence where Wrapped: Collection, Wrapped.Element
     public typealias Index = Int
     public typealias Element = Proxy<Wrapped.Element>
     
-    public var startIndex: Index { self.get().startIndex }
-    public var endIndex: Index { self.get().endIndex }
+    public var startIndex: Index { list.startIndex }
+    public var endIndex: Index { list.endIndex }
 
     public subscript(position: Int) -> Proxy<Wrapped.Element> {
         get {
@@ -29,7 +29,7 @@ extension Proxy: Collection, Sequence where Wrapped: Collection, Wrapped.Element
 
     // Method that returns the next index when iterating
     public func index(after i: Index) -> Index {
-        return self.get().index(after: i)
+        return list.index(after: i)
     }
 
     fileprivate var list: List {
