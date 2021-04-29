@@ -23,11 +23,11 @@ public extension Proxy {
             return nil
         }
 
-        let encoder = JSONEncoder()
-        let decoder = JSONDecoder()
-
-        let json = try! encoder.encode(row)
-        return Proxy<Row>(context: context, objectId: objectId, path: path + [.init(key: .string(rowId.objectId), objectId: objectId)], value: try! decoder.decode(Row.self, from: json))
+        return Proxy<Row>(
+            context: context,
+            objectId: objectId,
+            path: path + [.init(key: .string(rowId.objectId), objectId: objectId)],
+            value: try! ObjectToTypeTransformer().map(row))
     }
 
     /**

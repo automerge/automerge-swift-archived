@@ -39,6 +39,9 @@ public final class Proxy<Wrapped: Codable> {
     let path: [Context.KeyPathElement]
     private let valueResolver: () -> Wrapped?
 
+    lazy var objectToType = ObjectToTypeTransformer()
+    lazy var typeToObject = ObjectToTypeTransformer()
+
     public func get() -> Wrapped {
         return valueResolver()!
     }
