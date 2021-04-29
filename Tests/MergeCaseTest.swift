@@ -60,17 +60,22 @@ class MergeCaseTest: XCTestCase {
         let tint = Tint(red: 0.04607658198660225, green: 0.49460581464647846, blue: 0.02326815748005262, opacity: 1.0)
         let z = 1
 
-        var model = Document(AMBoard(id: id, cards: []))
+        var firstModel = Document(AMBoard(id: id, cards: []))
         let newCard = AMCard(center: center, translation: .zero, size: size, z: z, tint: tint)
-        model.change { (proxy) in
+        firstModel.change { (proxy) in
             proxy.cards.append(newCard)
         }
 
-        XCTAssertEqual(model.content.cards.count, 1)
+        XCTAssertEqual(firstModel.content.cards.count, 1)
 
-        var otherModel = Document(AMBoard(id: id, cards: []))
-        otherModel.apply(changes: model.allChanges())
+        var secondModel = Document(AMBoard(id: id, cards: []))
+        secondModel.apply(changes: firstModel.allChanges())
 
-        XCTAssertEqual(otherModel.content.cards.count, 1)
+        XCTAssertEqual(secondModel.content.cards.count, 1)
+
+        var thirdModel = Document(AMBoard(id: id, cards: []))
+        thirdModel.merge(firstModel)
+
+        XCTAssertEqual(thirdModel.content.cards.count, 1)
     }
 }
