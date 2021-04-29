@@ -68,14 +68,23 @@ class MergeCaseTest: XCTestCase {
 
         XCTAssertEqual(firstModel.content.cards.count, 1)
 
-        var secondModel = Document(AMBoard(id: id, cards: []))
-        secondModel.apply(changes: firstModel.allChanges())
+        // Test apply(changes:), try two different empty documents. Sometimes only one of the empty documents will fail
+        var applyModel1 = Document(AMBoard(id: id, cards: []))
+        applyModel1.apply(changes: firstModel.allChanges())
+        XCTAssertEqual(applyModel1.content.cards.count, 1)
 
-        XCTAssertEqual(secondModel.content.cards.count, 1)
+        var applyModel2 = Document(AMBoard(id: id, cards: []))
+        applyModel2.apply(changes: firstModel.allChanges())
+        XCTAssertEqual(applyModel2.content.cards.count, 1)
 
-        var thirdModel = Document(AMBoard(id: id, cards: []))
-        thirdModel.merge(firstModel)
 
-        XCTAssertEqual(thirdModel.content.cards.count, 1)
+        // Test .merge() with two different empty documents. Sometimes only one of these will fail, sometimes both, sometimes neither.
+        var mergeModel1 = Document(AMBoard(id: id, cards: []))
+        mergeModel1.merge(firstModel)
+        XCTAssertEqual(mergeModel1.content.cards.count, 1)
+
+        var mergeModel2 = Document(AMBoard(id: id, cards: []))
+        mergeModel2.merge(firstModel)
+        XCTAssertEqual(mergeModel2.content.cards.count, 1)
     }
 }
