@@ -224,6 +224,10 @@ public struct Document<T: Codable> {
         return backend.getMissingDeps()
     }
 
+    public func getHeads() -> [String] {
+        return backend.getHeads()
+    }
+
 }
 
 
