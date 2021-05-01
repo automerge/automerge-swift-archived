@@ -1544,6 +1544,16 @@ class AutomergeTest: XCTestCase {
         XCTAssertEqual(s3.getMissingsDeps(), [])
     }
 
+    // should report missing dependencies
+    func testGetHeads1() {
+        struct Scheme: Codable, Equatable {
+            var birds: [String]
+        }
+        let s1 = Document(Scheme(birds: ["Chaffinch"]))
+        let heads = s1.getHeads()
+        XCTAssertEqual(heads, [])
+    }
+
 }
 
 

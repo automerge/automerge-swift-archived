@@ -97,10 +97,10 @@ public final class RSBackend {
 
     public func getChanges() -> [[UInt8]] {
         var resut = [[UInt8]]()
-        var len = automerge_get_changes(automerge, 0, nil);
-        while (len > 0) {
-            var data = Array<UInt8>(repeating: 0, count: len)
-            len = automerge_read_binary(automerge, &data)
+        var length = automerge_get_changes(automerge, 0, nil);
+        while (length > 0) {
+            var data = Array<UInt8>(repeating: 0, count: length)
+            length = automerge_read_binary(automerge, &data)
             resut.append(data)
         }
 
@@ -113,5 +113,24 @@ public final class RSBackend {
         automerge_read_json(automerge, &buffer)
         let newString = String(cString: buffer)
         return try! decoder.decode([String].self, from: newString.data(using: .utf8)!)
+    }
+
+    public func getHeads() -> [String] {
+        var length = automerge_get_heads(automerge)
+        var resut = [[UInt8]]()
+        while (length > 0) {
+            var data = Array<UInt8>(repeating: 0, count: length)
+
+            length = automerge_read_binary(automerge, &data)
+
+            resut.append(data)
+        }
+        let heads = resut.map({ String(cString: $0) })
+        
+        fatalError()
+//        var buffer = Array<Int8>(repeating: 0, count: length)
+//        automerge_read_json(automerge, &buffer)
+//        let newString = String(cString: buffer)
+//        return try! decoder.decode([String].self, from: newString.data(using: .utf8)!)
     }
 }
