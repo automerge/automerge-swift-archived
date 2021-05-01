@@ -77,6 +77,29 @@ public final class Proxy<Wrapped: Codable> {
         )
     }
 
+    public subscript<Y>(keyPath: KeyPath<Wrapped, Y>, fieldName: String) -> Proxy<Y> {
+        #if DEBUG
+        precondition(keyPath.fieldName == fieldName)
+        #endif
+        let objectId = map[fieldName]?.objectId
+        return Proxy<Y>(
+            context: context,
+            objectId: objectId,
+            path: path + [.init(key: .string(fieldName), objectId: objectId)],
+            value: self.valueResolver()?[keyPath: keyPath]
+        )
+    }
+
+    public subscript<Y>(_ keyPath: KeyPath<Wrapped, Y?>, _ fieldName: String) -> Proxy<Y>? {
+        let objectId = map[fieldName]?.objectId
+        return Proxy<Y>(
+            context: context,
+            objectId: objectId,
+            path: path + [.init(key: .string(fieldName), objectId: objectId)],
+            value: self.valueResolver()?[keyPath: keyPath]
+        )
+    }
+
     private func set(rootObject: Map) {
         for (key, value) in rootObject {
             context.setMapKey(path: path, key: key, value: value)

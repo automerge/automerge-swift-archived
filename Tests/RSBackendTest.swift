@@ -107,6 +107,41 @@ final class RSBackendTest: XCTestCase {
         }
     }
 
+    func testInsertPerformanceUseAlternateProxy3() throws {
+        struct TravelList: Codable, Equatable {
+            var trips: [Trip]
+            let categories: [Category]
+
+            static var initialScheme: TravelList = TravelList(trips: [], categories: [Category(id: "bar", customName: nil)])
+        }
+
+        struct Trip: Codable, Equatable {
+            public let name: String
+            public var optional: String?
+
+            init(name: String, optional: String? = nil) {
+                self.name = name
+                self.optional = optional
+            }
+        }
+        struct Category: Codable, Equatable {
+            let id: String
+            let customName: String?
+        }
+
+
+        measure() {
+            var automerge = Document(TravelList.initialScheme)
+            let trip = Trip(name: "Italien 2019")
+            for _ in 0...100  {
+                automerge.change {
+                    $0[\.trips, "trips"].append(trip)
+                }
+            }
+            XCTAssertEqual(automerge.content.trips.count, 101)
+        }
+    }
+
     func testLoadPerformance() throws {
         struct Object: Codable, Equatable {
             let name: String
