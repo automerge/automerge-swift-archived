@@ -40,12 +40,12 @@ class AutomergeTest: XCTestCase {
         XCTAssertEqual(document.actor, actor)
     }
 
-    // should not enable undo after init
-    func testInit5() {
-        struct Scheme: Codable, Equatable {}
-        let document = Document(Scheme())
-        XCTAssertFalse(document.canUndo)
-    }
+//    // should not enable undo after init
+//    func testInit5() {
+//        struct Scheme: Codable, Equatable {}
+//        let document = Document(Scheme())
+//        XCTAssertFalse(document.canUndo)
+//    }
 
     // should not mutate objects
     func testSerialUse1() {
