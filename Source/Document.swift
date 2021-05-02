@@ -14,8 +14,6 @@ public struct Document<T: Codable> {
         var maxOp: Int
         var deps: [ObjectId]
         var clock: Clock
-        var canUndo: Bool
-        var canRedo: Bool
     }
 
     /// Returns the Automerge actor ID of the given document.
@@ -36,7 +34,7 @@ public struct Document<T: Codable> {
         self.backend = backend
         self.root = Map(objectId: .root, mapValues: [:], conflicts: [:])
         self.cache = [.root: .map(root)]
-        self.state = State(seq: 0, maxOp: 0, deps: [], clock: [:], canUndo: false, canRedo: false)
+        self.state = State(seq: 0, maxOp: 0, deps: [], clock: [:])
     }
 
     public init(_ initialState: T, actor: Actor = Actor()) {
@@ -175,27 +173,10 @@ public struct Document<T: Codable> {
         } else {
             fatalError()
         }
-
     }
 
     public func save() -> [UInt8] {
         return backend.save()
-    }
-
-    /**
-     * Returns `true` if undo is currently possible on the document `doc` (because
-     * there is a local change that has not already been undone); `false` if not.
-     */
-    public var canUndo: Bool {
-        return state.canUndo
-    }
-
-    /**
-     * Returns `true` if redo is currently possible on the document (because
-     * a prior action was an undo that has not already been redone); `false` if not.
-     */
-    public var canRedo: Bool {
-        return state.canRedo
     }
 
     public func rootProxy() -> Proxy<T> {
