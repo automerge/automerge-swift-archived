@@ -263,7 +263,7 @@ class ContextTest: XCTestCase {
         let actor = Actor()
         let objectId = ObjectId()
         let child: Object = .map(Map(objectId: objectId))
-        let dateValue = Date()
+        let dateValue = Date(timeIntervalSince1970: 123456789)
         let context = Context(
             actorId: actor,
             applyPatch: applyPatch.observerDiff,
@@ -295,7 +295,7 @@ class ContextTest: XCTestCase {
             edits: nil,
             props: [
                 "values": [
-                    "1@actor1": .value(.init(value: .number(dateValue.timeIntervalSince1970), datatype: .timestamp)),
+                    "1@actor1": .value(ValueDiff(date: dateValue)),
                     "1@actor2": .value(.init(value: 0.0, datatype: .counter)),
                     "1@actor3": 42.0,
                     "1@actor4": .value(.init(value: .null)),
@@ -443,8 +443,9 @@ class ContextTest: XCTestCase {
         context.setMapKey(path: [], key: "now", value: .date(now))
 
         //Then
+        let lessResoutionMiliseconds = Double(Int(now.timeIntervalSince1970 * 1000))
         XCTAssertEqual(context.ops, [
-            Op(action: .set, obj: .root, key: "now", value: .number(now.timeIntervalSince1970), datatype: .timestamp, pred: [])
+            Op(action: .set, obj: .root, key: "now", value: .number(lessResoutionMiliseconds), datatype: .timestamp, pred: [])
         ])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, ObjectDiff(
@@ -452,7 +453,7 @@ class ContextTest: XCTestCase {
             type: .map,
             props: [
                 "now": [
-                    "1@\(actor)": .value(.init(value: .number(now.timeIntervalSince1970), datatype: .timestamp))
+                    "1@\(actor)": .value(.init(value: .number(lessResoutionMiliseconds), datatype: .timestamp))
                 ]
             ]
         )
