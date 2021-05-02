@@ -167,9 +167,7 @@ public struct Document<T: Codable> {
             newDoc = cache[.root]
             update[.root] = newDoc
         }
-        for objectId in cache.keys where update[objectId] == nil {
-            update[objectId] = cache[objectId]
-        }
+        update.merge(cache, uniquingKeysWith: { old, new in return old })
         self.cache = update
 
         if case .map(let newRoot)? = newDoc {

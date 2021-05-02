@@ -259,17 +259,17 @@ final class Context {
             fatalError("objectId must exist")
         }
 
-        let elements: [Any]
+        let numberOfElements: Int
         let object = getObject(objectId: objectId)
         if case .list(let list) = object {
-            elements = Array(list)
+            numberOfElements = list.count
         } else if case .text(let text) = object {
-            elements = text.content
+            numberOfElements = text.content.count
         } else {
             fatalError("Must be a list or text")
         }
-        if (start < 0 || deletions < 0 || start > elements.count - deletions) {
-            fatalError("\(deletions) deletions starting at index \(start) are out of bounds for list of length \(elements.count)")
+        if (start < 0 || deletions < 0 || start > numberOfElements - deletions) {
+            fatalError("\(deletions) deletions starting at index \(start) are out of bounds for list of length \(numberOfElements)")
         }
         if deletions == 0 && insertions.count == 0 {
             return
