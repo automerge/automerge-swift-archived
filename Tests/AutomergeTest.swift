@@ -510,7 +510,6 @@ class AutomergeTest: XCTestCase {
 
     func testSerialUseCounter2() throws {
         throw XCTSkip("Fix this once #347 is resolved")
-        #warning("Fix this once #347 is resolved")
         // https://github.com/automerge/automerge/pull/347
         struct Scheme: Codable, Equatable {
             var counter: Counter?
