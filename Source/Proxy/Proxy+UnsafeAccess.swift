@@ -87,5 +87,10 @@ public final class UnsafeProxy {
         }
     }
 
+    func `as`<T: Codable>(_ type: T.Type) -> Proxy<T> {
+        let transformer = ObjectToTypeTransformer()
+        return Proxy<T>(context: context, objectId: objectId, path: path, value: self.objectId.map { try! transformer.map(self.context.getObject(objectId: $0)) } )
+    }
+
 }
 
