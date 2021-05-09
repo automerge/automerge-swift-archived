@@ -32,6 +32,10 @@ enum Object: Equatable, Codable {
         }
     }
 
+    var isPrimitive: Bool {
+        return objectId == nil
+    }
+
     init(arrayLiteral elements: Object...) {
         self = .list(List(objectId: ObjectId(""), listValues: elements))
     }

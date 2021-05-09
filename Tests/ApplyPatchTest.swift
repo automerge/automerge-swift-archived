@@ -12,24 +12,24 @@ import XCTest
 final class ApplyPatchTest: XCTestCase {
 
     // Set map key
-    func testApplyPatch1() {
-        // GIVEN
-        let patch = ObjectDiff(objectId: "00000000-0000-0000-0000-000000000000", type: .map, props: ["key1": ["f788794f7f0f48fbb44289b2a06d4d5b": "value1"]])
-        let obj: Object = .map(Map(objectId: "00000000-0000-0000-0000-000000000000", mapValues: [:], conflicts: [:]))
-        var updated = [ObjectId: Object]()
-
-        // WHEN
-        guard case .map(let newMap)? = interpretPatch(patch: patch, obj: obj, updated: &updated) else {
-            XCTFail()
-            return
-        }
-
-        XCTAssertEqual(newMap["key1"], .primitive("value1"))
-        XCTAssertEqual(newMap.objectId, "00000000-0000-0000-0000-000000000000")
-        XCTAssertEqual(newMap.conflicts, [
-            "key1": ["f788794f7f0f48fbb44289b2a06d4d5b": .primitive("value1")]
-        ])
-    }
+//    func testApplyPatch1() {
+//        // GIVEN
+//        let patch = ObjectDiff(objectId: "00000000-0000-0000-0000-000000000000", type: .map, props: ["key1": ["f788794f7f0f48fbb44289b2a06d4d5b": "value1"]])
+//        let obj: Object = .map(Map(objectId: "00000000-0000-0000-0000-000000000000", mapValues: [:], conflicts: [:]))
+//        var updated = [ObjectId: Object]()
+//
+//        // WHEN
+//        guard case .map(let newMap)? = interpretPatch(patch: patch, obj: obj, updated: &updated) else {
+//            XCTFail()
+//            return
+//        }
+//
+//        XCTAssertEqual(newMap["key1"], .primitive("value1"))
+//        XCTAssertEqual(newMap.objectId, "00000000-0000-0000-0000-000000000000")
+//        XCTAssertEqual(newMap.conflicts, [
+//            "key1": ["f788794f7f0f48fbb44289b2a06d4d5b": .primitive("value1")]
+//        ])
+//    }
 
 //    // Set map list
 //    func testApplyPatch2() {
