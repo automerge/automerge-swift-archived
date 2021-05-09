@@ -15,7 +15,7 @@ public final class Patch: Codable {
         clock: Clock,
         deps: [ObjectId],
         maxOp: Int,
-        diffs: ObjectDiff
+        diffs: MapDiff
     ) {
         self.actor = actor
         self.seq = seq
@@ -30,7 +30,7 @@ public final class Patch: Codable {
     let clock: Clock
     let deps: [ObjectId]
     let maxOp: Int
-    let diffs: ObjectDiff
+    let diffs: MapDiff
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -40,7 +40,7 @@ public final class Patch: Codable {
         self.deps = try container.decode([ObjectId].self, forKey: .deps)
         self.maxOp = try container.decode(Int.self, forKey: .maxOp)
 
-        self.diffs = (try? container.decode(ObjectDiff.self, forKey: .diffs)) ?? .empty
+        self.diffs = (try? container.decode(MapDiff.self, forKey: .diffs)) ?? .empty
     }
 
 }

@@ -12,8 +12,8 @@ import Foundation
  * Clones a writable copy of `obj` and places it in `updated` (indexed by
  * objectId), if that has not already been done. Returns the updated object.
  */
-func interpretPatch(patch: ObjectDiff, obj: Object?, updated: inout [ObjectId: Object]) -> Object? {
-    if patch.props != nil && patch.edits != nil && patch == .empty && updated[patch.objectId] != nil {
+func interpretPatch(patch: MapDiff, obj: Object?, updated: inout [ObjectId: Object]) -> Object? {
+    if updated[patch.objectId] != nil {
         return obj
     }
     switch (patch.type, obj) {
@@ -23,18 +23,28 @@ func interpretPatch(patch: ObjectDiff, obj: Object?, updated: inout [ObjectId: O
     case (.map, .none):
         let newMap = updateMap(patch: patch, map: nil, updated: &updated)
         return .map(newMap)
-    case (.list, .list(let list)):
-        let newList = updateList(patch: patch, list: list, updated: &updated)
-        return .list(newList)
-    case (.list, .none):
-        let newList = updateList(patch: patch, list: nil, updated: &updated)
-        return .list(newList)
     case (.table, .table(let table)):
         let newTable = updateTable(patch: patch, table: table, updated: &updated)
         return .table(newTable)
     case (.table, .none):
         let newTable = updateTable(patch: patch, table: nil, updated: &updated)
         return .table(newTable)
+    default:
+        fatalError()
+    }
+}
+
+func interpretPatch(patch: ListDiff, obj: Object?, updated: inout [ObjectId: Object]) -> Object? {
+    if !patch.edits.isEmpty && updated[patch.objectId] != nil {
+        return obj
+    }
+    switch (patch.type, obj) {
+    case (.list, .list(let list)):
+        let newList = updateList(patch: patch, list: list, updated: &updated)
+        return .list(newList)
+    case (.list, .none):
+        let newList = updateList(patch: patch, list: nil, updated: &updated)
+        return .list(newList)
     case (.text, .text(let text)):
         let newText = updateText(patch: patch, text: text, updated: &updated)
         return .text(newText)
@@ -43,7 +53,6 @@ func interpretPatch(patch: ObjectDiff, obj: Object?, updated: inout [ObjectId: O
         return .text(newText)
     default:
         fatalError()
-
     }
 }
 
@@ -52,17 +61,17 @@ func interpretPatch(patch: ObjectDiff, obj: Object?, updated: inout [ObjectId: O
  * `patch`, or creates a new object if `obj` is undefined. Mutates `updated`
  * to map the objectId to the new object, and returns the new object.
  */
-func updateTable(patch: ObjectDiff, table: Table<Map>?, updated: inout [ObjectId: Object]) -> Table<Map> {
+func updateTable(patch: MapDiff, table: Table<Map>?, updated: inout [ObjectId: Object]) -> Table<Map> {
     let objectId = patch.objectId
     var table = table ?? Table<Map>(tableValues: [:], objectId: objectId)
 
-    patch.props?.keys.strings.forEach({ key in
+    patch.props.keys.strings.forEach({ key in
         let key = ObjectId(key)
-        let opIds = Array(patch.props![key.objectId]!.keys)
+        let opIds = Array(patch.props[key.objectId]!.keys)
         if opIds.isEmpty {
             table[key] = nil
         } else if opIds.count == 1 {
-            let subpatch = patch.props![key.objectId]![opIds[0]]
+            let subpatch = patch.props[key.objectId]![opIds[0]]
             table[key] = getValue(patch: subpatch!, object: table[key], updated: &updated)
             table.opIds[key] = opIds[0]
         }
@@ -77,37 +86,38 @@ func updateTable(patch: ObjectDiff, table: Table<Map>?, updated: inout [ObjectId
  * `patch`, or creates a new object if `obj` is undefined. Mutates `updated`
  * to map the objectId to the new object, and returns the new object.
  */
-func updateText(patch: ObjectDiff, text: Text?, updated: inout [ObjectId: Object]) -> Text {
-    let objectId = patch.objectId
-    var elems: [Text.Character]
-    if case .text(let text) = updated[objectId] {
-        elems = text.content
-    } else if let text = text {
-        elems = text.content
-    } else {
-        elems = []
-    }
-    patch.edits?.iterate(insertCallback: { (index, newElems) in
-        let blanks: [Text.Character] = newElems.map({ Text.Character(value: "", pred: [], elmId: $0) })
-        elems.replaceSubrange(index..<index, with: blanks)
-    }, removeCallback: { (index, deletions) in
-        elems.removeSubrange(index..<index + deletions)
-    })
-    let keys = patch.props?.keys.indicies
-    keys?.forEach { index in
-        let pred = patch.props![index]!.keys
-        let opId = pred.sorted(by: lamportCompare)[0]
-
-        if case .primitive(.string(let character)) = getValue(patch: patch.props![index]![opId]!, object: nil, updated: &updated) {
-            elems[index] = Text.Character(value: character, pred: Array(pred), elmId: elems[index].elmId)
-        } else {
-            fatalError()
-        }
-    }
-    let text = Text(objectId: objectId, content: elems)
-    updated[objectId] = .text(text)
-
-    return text
+func updateText(patch: ListDiff, text: Text?, updated: inout [ObjectId: Object]) -> Text {
+    fatalError()
+//    let objectId = patch.objectId
+//    var elems: [Text.Character]
+//    if case .text(let text) = updated[objectId] {
+//        elems = text.content
+//    } else if let text = text {
+//        elems = text.content
+//    } else {
+//        elems = []
+//    }
+//    patch.edits?.iterate(insertCallback: { (index, newElems) in
+//        let blanks: [Text.Character] = newElems.map({ Text.Character(value: "", pred: [], elmId: $0) })
+//        elems.replaceSubrange(index..<index, with: blanks)
+//    }, removeCallback: { (index, deletions) in
+//        elems.removeSubrange(index..<index + deletions)
+//    })
+//    let keys = patch.props.keys.indicies
+//    keys?.forEach { index in
+//        let pred = patch.props![index]!.keys
+//        let opId = pred.sorted(by: lamportCompare)[0]
+//
+//        if case .primitive(.string(let character)) = getValue(patch: patch.props![index]![opId]!, object: nil, updated: &updated) {
+//            elems[index] = Text.Character(value: character, pred: Array(pred), elmId: elems[index].elmId)
+//        } else {
+//            fatalError()
+//        }
+//    }
+//    let text = Text(objectId: objectId, content: elems)
+//    updated[objectId] = .text(text)
+//
+//    return text
 }
 
 /**
@@ -115,29 +125,30 @@ func updateText(patch: ObjectDiff, text: Text?, updated: inout [ObjectId: Object
  * `patch`, or creates a new object if `obj` is undefined. Mutates `updated`
  * to map the objectId to the new object, and returns the new object.
  */
-func updateList(patch: ObjectDiff, list: List?, updated: inout [ObjectId: Object]) -> List {
-    let objectId = patch.objectId
-    var list = list ?? List(objectId: objectId, listValues: [])
-    var conflicts: [[ObjectId: Object]?] = list.conflicts
-    patch.edits?.iterate(
-        insertCallback: { index, newElems in
-            let blanksValues = Array<Object>(repeating: .primitive(1.0), count: newElems.count)
-            list.replaceSubrange(index..<index, with: blanksValues)
-            let blanksConflicts = Array<[ObjectId : Object]?>(repeating: nil, count: newElems.count)
-            conflicts.replaceSubrange(index..<index, with: blanksConflicts)
-            list.elemIds.replaceSubrange(index..<index, with: newElems)
-        },
-        removeCallback: { index, deletions in
-            let range = index..<index + deletions
-            list.removeSubrange(range)
-            conflicts.removeSubrange(range)
-            list.elemIds.removeSubrange(range)
-        })
-    applyProperties(props: patch.props, list: &list, conflicts: &conflicts, updated: &updated)
-    list.conflicts = conflicts.compactMap({ $0 })
-    updated[objectId] = .list(list)
-
-    return list
+func updateList(patch: ListDiff, list: List?, updated: inout [ObjectId: Object]) -> List {
+    fatalError()
+//    let objectId = patch.objectId
+//    var list = list ?? List(objectId: objectId, listValues: [])
+//    var conflicts: [[ObjectId: Object]?] = list.conflicts
+//    patch.edits?.iterate(
+//        insertCallback: { index, newElems in
+//            let blanksValues = Array<Object>(repeating: .primitive(1.0), count: newElems.count)
+//            list.replaceSubrange(index..<index, with: blanksValues)
+//            let blanksConflicts = Array<[ObjectId : Object]?>(repeating: nil, count: newElems.count)
+//            conflicts.replaceSubrange(index..<index, with: blanksConflicts)
+//            list.elemIds.replaceSubrange(index..<index, with: newElems)
+//        },
+//        removeCallback: { index, deletions in
+//            let range = index..<index + deletions
+//            list.removeSubrange(range)
+//            conflicts.removeSubrange(range)
+//            list.elemIds.removeSubrange(range)
+//        })
+//    applyProperties(props: patch.props, list: &list, conflicts: &conflicts, updated: &updated)
+//    list.conflicts = conflicts.compactMap({ $0 })
+//    updated[objectId] = .list(list)
+//
+//    return list
 }
 
 /**
@@ -145,7 +156,7 @@ func updateList(patch: ObjectDiff, list: List?, updated: inout [ObjectId: Object
  * `patch`, or creates a new object if `obj` is undefined. Mutates `updated`
  * to map the objectId to the new object, and returns the new object.
  */
-func updateMap(patch: ObjectDiff, map: Map?, updated: inout [ObjectId: Object]) -> Map {
+func updateMap(patch: MapDiff, map: Map?, updated: inout [ObjectId: Object]) -> Map {
     let objectId = patch.objectId
     var map = map ?? Map(objectId: objectId, mapValues: [:], conflicts: [:])
 
@@ -253,10 +264,14 @@ func lamportCompare(ts1: ObjectId, ts2: ObjectId) -> Bool {
  */
 func getValue(patch: Diff, object: Object?, updated: inout [ObjectId: Object]) -> Object? {
     switch patch {
-    case .object(let objectDiff) where object?.objectId != patch.objectId:
-        return interpretPatch(patch: objectDiff, obj: nil, updated: &updated)
-    case .object(let objectDiff):
-        return interpretPatch(patch: objectDiff, obj: object, updated: &updated)
+    case .map(let mapDiff) where object?.objectId != patch.objectId:
+        return interpretPatch(patch: mapDiff, obj: nil, updated: &updated)
+    case .map(let mapDiff):
+        return interpretPatch(patch: mapDiff, obj: object, updated: &updated)
+    case .list(let listDiff) where object?.objectId != patch.objectId:
+        return interpretPatch(patch: listDiff, obj: nil, updated: &updated)
+    case .list(let listDiff):
+        return interpretPatch(patch: listDiff, obj: object, updated: &updated)
     case .value(let valueDiff) where valueDiff.datatype == .counter:
         if case .number(let counterValue) = valueDiff.value {
             return .counter(Counter(Int(counterValue)))
