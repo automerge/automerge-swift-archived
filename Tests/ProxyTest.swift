@@ -101,6 +101,23 @@ class ProxyTest: XCTestCase {
         XCTAssertEqual(document.content.key1, ["1"])
     }
 
+    // should allow unsafe access caste for collections
+    func testProxyUnsafe4() {
+        struct Scheme: Codable, Equatable {
+            var key1: [String]
+        }
+        // GIVEN
+        var document = Document(Scheme(key1: ["1"]))
+
+        // WHEN
+        document.change({ doc in
+            doc.unsafe().key1.as([String].self).append(contentsOf: ["2", "3"])
+            XCTAssertEqual(doc.key1.get(), ["1", "2", "3"])
+        })
+
+        XCTAssertEqual(document.content.key1, ["1", "2", "3"])
+    }
+
     // should allow deep object assigment
     func testProxiesSwift1() {
         struct Scheme: Codable, Equatable {
