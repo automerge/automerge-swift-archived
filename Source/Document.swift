@@ -228,6 +228,10 @@ public struct Document<T: Codable> {
         return backend.getHeads()
     }
 
+    public func getChanges(between oldDocument: Document<T>) -> [[UInt8]] {
+        return backend.getChanges(heads: oldDocument.backend.getHeads())
+    }
+
 }
 
 
