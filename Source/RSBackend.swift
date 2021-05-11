@@ -107,6 +107,19 @@ public final class RSBackend {
         return resut
     }
 
+    public func getChanges(heads: [String]) -> [[UInt8]] {
+        var resut = [[UInt8]]()
+        var headsBuffer = Array<UInt8>(hex: heads.joined())
+        var length = automerge_get_changes(automerge, UInt(heads.count), &headsBuffer);
+        while (length > 0) {
+            var data = Array<UInt8>(repeating: 0, count: length)
+            length = automerge_read_binary(automerge, &data)
+            resut.append(data)
+        }
+
+        return resut
+    }
+
     public func getMissingDeps() -> [String] {
         let length = automerge_get_missing_deps(automerge)
         var buffer = Array<Int8>(repeating: 0, count: length)
@@ -126,7 +139,7 @@ public final class RSBackend {
             resut.append(data)
         }
         let heads: [String] = resut.map({ abcd in
-            return abcd.map({ String($0, radix: 16, uppercase: false) }).joined()
+            return abcd.toHexString()
         })
 
         return heads
