@@ -124,29 +124,17 @@ public final class RSBackend {
         return patch
     }
 
-    public func getChanges() -> [[UInt8]] {
-        var resut = [[UInt8]]()
-        var length = automerge_get_changes(automerge.automerge, 0, nil);
-        while (length > 0) {
-            var data = Array<UInt8>(repeating: 0, count: length)
-            length = automerge_read_binary(automerge.automerge, &data)
-            resut.append(data)
-        }
-
-        return resut
-    }
-
-    public func getChanges(heads: [String]) -> [[UInt8]] {
-        var resut = [[UInt8]]()
+    public func getChanges(heads: [String] = []) -> [[UInt8]] {
+        var changes = [[UInt8]]()
         var headsBuffer = Array<UInt8>(hex: heads.joined())
         var length = automerge_get_changes(automerge.automerge, UInt(heads.count), &headsBuffer);
         while (length > 0) {
             var data = Array<UInt8>(repeating: 0, count: length)
             length = automerge_read_binary(automerge.automerge, &data)
-            resut.append(data)
+            changes.append(data)
         }
 
-        return resut
+        return changes
     }
 
     public func getMissingDeps() -> [String] {
@@ -159,18 +147,13 @@ public final class RSBackend {
 
     public func getHeads() -> [String] {
         var length = automerge_get_heads(automerge.automerge)
-        var resut = [[UInt8]]()
+        var heads = [[UInt8]]()
         while (length > 0) {
             var data = Array<UInt8>(repeating: 0, count: 32)
-
             length = automerge_read_binary(automerge.automerge, &data)
-
-            resut.append(data)
+            heads.append(data)
         }
-        let heads: [String] = resut.map({ abcd in
-            return abcd.toHexString()
-        })
 
-        return heads
+        return heads.map { $0.toHexString() }
     }
 }
