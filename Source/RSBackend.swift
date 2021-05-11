@@ -119,34 +119,16 @@ public final class RSBackend {
         var length = automerge_get_heads(automerge)
         var resut = [[UInt8]]()
         while (length > 0) {
-            var data = Array<UInt8>(repeating: 0, count: length)
+            var data = Array<UInt8>(repeating: 0, count: 32)
 
             length = automerge_read_binary(automerge, &data)
-//            data.insert(UInt8(resut.count * 32), at: 0)
-            data.append(UInt8(resut.count * 32))
+
             resut.append(data)
         }
         let heads: [String] = resut.map({ abcd in
-            return String(bytes: abcd, encoding: .utf8)!
+            return abcd.map({ String($0, radix: 16, uppercase: false) }).joined()
         })
-        
-        fatalError()
-//        var buffer = Array<Int8>(repeating: 0, count: length)
-//        automerge_read_json(automerge, &buffer)
-//        let newString = String(cString: buffer)
-//        return try! decoder.decode([String].self, from: newString.data(using: .utf8)!)
+
+        return heads
     }
 }
-
-//printf("*** get head from dbB ***\n\n");
-//int num_heads = 0;
-//len = automerge_get_heads(dbB);
-//while (len > 0) {
-//  assert(len == 32);
-//  int nextlen = automerge_read_binary(dbB,buff + (num_heads * 32));
-//  num_heads++;
-//  len = nextlen;
-//}
-//assert(num_heads == 2);
-//len = automerge_get_changes(dbB,num_heads,buff);
-//assert(len == 0);

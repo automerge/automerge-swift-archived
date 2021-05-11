@@ -1549,9 +1549,10 @@ class AutomergeTest: XCTestCase {
         struct Scheme: Codable, Equatable {
             var birds: [String]
         }
-        let s1 = Document(Scheme(birds: ["Chaffinch"]))
+        var s1 = Document(Scheme(birds: ["Chaffinch"]))
+        s1.change({ $0.birds.append("Test") })
         let heads = s1.getHeads()
-        XCTAssertEqual(heads, [])
+        XCTAssertEqual(heads.count, 1)
     }
 
 }
