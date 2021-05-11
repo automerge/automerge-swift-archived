@@ -216,7 +216,7 @@ class DocumentTest: XCTestCase {
             struct Schema: Codable, Equatable {
                 var now: Date?
             }
-            let now = Date(timeIntervalSince1970: 0)
+            let now = Date(timeIntervalSince1970: 126254)
             var doc1 = Document(Schema(now: nil))
             let req = doc1.change { $0.now?.set(now) }
             XCTAssertEqual(doc1.content, Schema(now: now))
@@ -228,7 +228,7 @@ class DocumentTest: XCTestCase {
                             actor: doc1.actor,
                             seq: 1,
                             ops: [
-                                Op(action: .set, obj: .root, key: "now", insert: false, value: .number(now.timeIntervalSince1970), datatype: .timestamp, pred: [])
+                                Op(action: .set, obj: .root, key: "now", insert: false, value: .number(now.timeIntervalSince1970 * 1000), datatype: .timestamp, pred: [])
             ]))
         }
 
