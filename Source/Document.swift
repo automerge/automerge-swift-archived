@@ -210,6 +210,10 @@ public struct Document<T: Codable> {
         return backend.getChanges(heads: oldDocument.backend.getHeads())
     }
 
+    public func getChanges(since heads: [String]) -> [[UInt8]] {
+        return backend.getChanges(heads: heads)
+    }
+
 }
 
 
