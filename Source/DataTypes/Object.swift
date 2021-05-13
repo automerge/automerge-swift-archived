@@ -33,7 +33,7 @@ enum Object: Equatable, Codable {
     }
 
     init(arrayLiteral elements: Object...) {
-        self = .list(List(objectId: ObjectId(objectId: ""), listValues: elements))
+        self = .list(List(objectId: ObjectId(""), listValues: elements))
     }
 
     public func encode(to encoder: Encoder) throws {

@@ -23,11 +23,9 @@ extension Proxy {
                   realConflicts.count > 1 else {
                 return nil
             }
-            let encoder = JSONEncoder()
-            let decoder = JSONDecoder()
 
-            let json = try! encoder.encode(realConflicts)
-            return try! decoder.decode([String: Y].self, from: json).compactMapKeys({ Actor(actorId: $0) })
+            let typedObjects: [String: Y] = try! objectToType.map(realConflicts.compactMapKeys({ $0.objectId }))
+            return typedObjects.compactMapKeys({ Actor(actorId: $0) })
         default:
             fatalError()
         }
@@ -50,11 +48,8 @@ extension Proxy where Wrapped: Collection, Wrapped.Index == Int, Wrapped.Element
             return nil
         }
 
-        let encoder = JSONEncoder()
-        let decoder = JSONDecoder()
-
-        let json = try! encoder.encode(realConflicts)
-        return try! decoder.decode([String: Wrapped.Element].self, from: json).compactMapKeys({ Actor(actorId: $0) })
+        let typedObjects: [String: Wrapped.Element] = try! objectToType.map(realConflicts.compactMapKeys({ $0.objectId }))
+        return typedObjects.compactMapKeys({ Actor(actorId: $0) })
     }
 }
 

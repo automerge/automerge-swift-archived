@@ -7,16 +7,18 @@
 
 import Foundation
 
-struct List: Equatable, Collection, Codable {
+struct List: Equatable, Codable {
 
     let objectId: ObjectId
-    var listValues: [Object]
-    var conflicts: [[String: Object]]
+    private var listValues: [Object]
+    var conflicts: [[ObjectId: Object]]
+    var elemIds: [ObjectId]
 
-    init(objectId: ObjectId, listValues: [Object] = [], conflicts: [[String: Object]] = []) {
+    init(objectId: ObjectId = "", listValues: [Object] = [], conflicts: [[ObjectId: Object]] = [], elemIds: [ObjectId] = []) {
         self.objectId = objectId
         self.listValues = listValues
         self.conflicts = conflicts
+        self.elemIds = elemIds
     }
 
     func encode(to encoder: Encoder) throws {
@@ -27,9 +29,21 @@ struct List: Equatable, Collection, Codable {
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         self.listValues = try container.decode([Object].self)
-        self.objectId = ObjectId(objectId: "")
+        self.objectId = ObjectId("")
         self.conflicts = []
+        self.elemIds = []
     }
+
+}
+
+extension List: Collection, MutableCollection, RangeReplaceableCollection {
+    init() {
+        self.objectId = ""
+        self.listValues = []
+        self.conflicts = []
+        self.elemIds = []
+    }
+
 
     var startIndex: Int {
         return listValues.startIndex
@@ -43,10 +57,30 @@ struct List: Equatable, Collection, Codable {
         get {
            return listValues[position]
         }
+        set {
+            listValues[position] = newValue
+        }
     }
 
     // Method that returns the next index when iterating
     func index(after i: Int) -> Int {
         return listValues.index(after: i)
+    }
+
+    public mutating func replaceSubrange<C, R>(_ subrange: R, with proxyElements: C) where C : Collection, R : RangeExpression, Element == C.Element, Index == R.Bound {
+        listValues.replaceSubrange(subrange, with: proxyElements)
+    }
+
+    public func reserveCapacity(_ n: Int) {}
+
+}
+
+extension List: ExpressibleByArrayLiteral {
+
+    init(arrayLiteral elements: Object...) {
+        self.objectId = ""
+        self.listValues = elements
+        self.conflicts = []
+        self.elemIds = []
     }
 }

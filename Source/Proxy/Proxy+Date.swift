@@ -27,3 +27,21 @@ extension Proxy where Wrapped == Date? {
 
 }
 
+//extension Proxy where Wrapped == [Date] {
+//
+//    public func set(_ newValue: Wrapped) {
+//        let list = List("", listValues: newValue.map({ .date($0) }))
+//        set(newValue: .list(list))
+//    }
+//
+//}
+
+//extension Proxy where Wrapped == [Date?] {
+//
+//    public func set(_ newValue: Wrapped) {
+//        if let newValue = newValue {
+//            set(newValue: .date(newValue))
+//        }
+//    }
+//
+//}

@@ -24,9 +24,16 @@ class TableTest: XCTestCase {
             $0.books?.set(Table())
         }
 
-        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: actor, seq: 1, version: 0, ops: [
-            Op(action: .makeTable, obj: .root, key: "books", child: req!.ops[0].child)
-        ], undoable: true))
+        XCTAssertEqual(req, Request(
+                        startOp: 1,
+                        deps: [],
+                        message: "",
+                        time: req!.time,
+                        actor: actor,
+                        seq: 1,
+                        ops: [
+            Op(action: .makeTable, obj: .root, key: "books", pred: [])
+        ]))
     }
 
     // should generate ops to insert a row
@@ -41,16 +48,25 @@ class TableTest: XCTestCase {
         let actor = Actor()
         var doc = Document(Scheme(books: Table()), actor: actor)
 
+        var rowId: ObjectId!
         let req = doc.change {
-            $0.books.add(.init(authors: "Kleppmann, Martin", title: "Designing Data-Intensive Applications"))
+            rowId = $0.books.add(.init(authors: "Kleppmann, Martin", title: "Designing Data-Intensive Applications"))
         }
 
-        let rowId = req!.ops[0].key
-        XCTAssertEqual(req, Request(requestType: .change, message: "", time: req!.time, actor: actor, seq: 2, version: 1, ops: [
-            Op(action: .makeMap, obj: req!.ops[0].obj, key: rowId, child: req!.ops[0].child),
-            Op(action: .set, obj: ObjectId(objectId: "\(rowId)"), key: "authors", value: .string("Kleppmann, Martin")),
-            Op(action: .set, obj: ObjectId(objectId: "\(rowId)"), key: "title", value: .string("Designing Data-Intensive Applications")),
-        ], undoable: true))
+        let books = doc.rootProxy().books.objectId
+        let rowObjID = doc.rootProxy().books.row(by: rowId)?.objectId
+        XCTAssertEqual(req, Request(
+                        startOp: 2,
+                        deps: [],
+                        message: "",
+                        time: req!.time,
+                        actor: actor,
+                        seq: 2,
+                        ops: [
+                            Op(action: .makeMap, obj: books!, key: .string(rowId.objectId), pred: []),
+                            Op(action: .set, obj: rowObjID!, key: "authors", value: "Kleppmann, Martin", pred: []),
+                            Op(action: .set, obj: rowObjID!, key: "title", value: "Designing Data-Intensive Applications", pred: []),
+                        ]))
     }
 
     // should look up a row by ID

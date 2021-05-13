@@ -7,9 +7,9 @@
 
 import Foundation
 
-public struct ObjectId: Equatable, Hashable, Codable, ExpressibleByStringLiteral {
+public struct ObjectId: Equatable, Hashable, Codable, ExpressibleByStringLiteral, ExpressibleByStringInterpolation {
 
-    init(objectId: String = UUID().uuidString) {
+    init(_ objectId: String = UUID().uuidString) {
         self.objectId = objectId
     }
 
@@ -25,9 +25,31 @@ public struct ObjectId: Equatable, Hashable, Codable, ExpressibleByStringLiteral
         try container.encode(objectId)
     }
 
-    static let root = ObjectId(objectId: "00000000-0000-0000-0000-000000000000")
+    static let root: ObjectId = "_root"
+    static let head: ObjectId = "_head"
 
     public init(stringLiteral value: StringLiteralType) {
         self.objectId = value
     }
+
+    /**
+     * Takes a string in the form that is used to identify operations (a counter concatenated
+     * with an actor ID, separated by an `@` sign) and returns an object `{counter, actorId}`.
+     */
+    func parseOpId() -> (counter: Int, actorId: String)? {
+        guard objectId.contains("@") else {
+            return nil
+        }
+        let splitted = objectId.split(separator: "@")
+        return (counter: Int(String(splitted[0]))!, actorId: String(splitted[1]))
+    }
 }
+
+extension ObjectId: Comparable {
+
+    public static func < (lhs: ObjectId, rhs: ObjectId) -> Bool {
+        return lhs.objectId < rhs.objectId
+    }
+
+}
+
