@@ -18,16 +18,16 @@ public extension Proxy {
 
     func row<Row: Codable>(by rowId: ObjectId) -> Proxy<Row>? where Wrapped == Table<Row> {
         guard case .table(let table) = context.getObject(objectId: objectId!),
-              let row = table.entries[rowId],
+              let row = table[rowId],
               let objectId = row.objectId else {
             return nil
         }
 
-        let encoder = JSONEncoder()
-        let decoder = JSONDecoder()
-
-        let json = try! encoder.encode(row)
-        return Proxy<Row>(context: context, objectId: objectId, path: path + [.init(key: .string(rowId.objectId), objectId: objectId)], value: try! decoder.decode(Row.self, from: json))
+        return Proxy<Row>(
+            context: context,
+            objectId: objectId,
+            path: path + [.init(key: .string(rowId.objectId), objectId: objectId)],
+            value: try! ObjectToTypeTransformer().map(row))
     }
 
     /**
@@ -35,7 +35,11 @@ public extension Proxy {
      does not exist in the table.
     */
     func removeRow(by rowId: ObjectId) {
-        context.deleteTableRow(path: path, rowId: rowId)
+        guard case .table(let table) = context.getObject(objectId: objectId!) else {
+            return
+        }
+        context.deleteTableRow(path: path, rowId: rowId, pred: table.opIds[rowId]!)
+
     }
 
 }

@@ -19,7 +19,7 @@ class ProxyTest: XCTestCase {
 
         // WHEN
         document.change({ doc in
-            XCTAssertEqual(doc.objectId, "00000000-0000-0000-0000-000000000000")
+            XCTAssertEqual(doc.objectId, .root)
         })
     }
 

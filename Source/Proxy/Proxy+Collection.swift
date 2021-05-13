@@ -12,12 +12,12 @@ extension Proxy: Collection, Sequence where Wrapped: Collection, Wrapped.Element
     public typealias Index = Int
     public typealias Element = Proxy<Wrapped.Element>
     
-    public var startIndex: Index { self.get().startIndex }
-    public var endIndex: Index { self.get().endIndex }
+    public var startIndex: Index { list.startIndex }
+    public var endIndex: Index { list.endIndex }
 
     public subscript(position: Int) -> Proxy<Wrapped.Element> {
         get {
-            let objectId = list.listValues[position].objectId
+            let objectId = list[position].objectId
             return Proxy<Wrapped.Element>(
                 context: context,
                 objectId: objectId,
@@ -29,7 +29,7 @@ extension Proxy: Collection, Sequence where Wrapped: Collection, Wrapped.Element
 
     // Method that returns the next index when iterating
     public func index(after i: Index) -> Index {
-        return self.get().index(after: i)
+        return list.index(after: i)
     }
 
     fileprivate var list: List {
@@ -46,7 +46,7 @@ extension Proxy: MutableCollection where Wrapped: MutableCollection, Wrapped.Ele
 
     public subscript(position: Int) -> Proxy<Wrapped.Element> {
         get {
-            let objectId = list.listValues[position].objectId
+            let objectId = list[position].objectId
             return Proxy<Wrapped.Element>(
                 context: context,
                 objectId: objectId,
@@ -69,7 +69,7 @@ extension Proxy: RangeReplaceableCollection where Wrapped: RangeReplaceableColle
         let void: (ObjectDiff, Object?, inout [ObjectId: Object]) -> Object? = { _, _, _ in
             fatalError()
         }
-        self.init(context: Context(actorId: Actor(), applyPatch: void, updated: [:], cache: [:], ops: []), objectId: nil, path: [], value: nil)
+        self.init(context: Context(actorId: Actor(), applyPatch: void, updated: [:], cache: [:], ops: [], maxOp: 0), objectId: nil, path: [], value: nil)
     }
 
     public func replaceSubrange<C, R>(_ subrange: R, with proxyElements: C) where C : Collection, R : RangeExpression, Element == C.Element, Index == R.Bound {

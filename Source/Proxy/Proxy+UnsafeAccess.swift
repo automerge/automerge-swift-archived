@@ -34,7 +34,7 @@ public final class UnsafeProxy {
         guard case .map(let map)? = objectId.map({ context.getObject(objectId: $0) }) else {
             fatalError()
         }
-        let objectId = map.mapValues[dynamicMember]?.objectId
+        let objectId = map[dynamicMember]?.objectId
         return UnsafeProxy(
             context: context,
             objectId: objectId,
@@ -43,7 +43,7 @@ public final class UnsafeProxy {
     }
 
     private func set(rootObject: Map) {
-        for (key, value) in rootObject.mapValues {
+        for (key, value) in rootObject {
             context.setMapKey(path: path, key: key, value: value)
         }
     }
@@ -71,7 +71,7 @@ public final class UnsafeProxy {
             guard case .list(let list)? = objectId.map({ context.getObject(objectId: $0) }) else {
                 fatalError()
             }
-            if index >= list.listValues.count {
+            if index >= list.count {
                 return UnsafeProxy(
                     context: context,
                     objectId: nil,

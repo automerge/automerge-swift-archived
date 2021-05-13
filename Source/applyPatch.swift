@@ -56,16 +56,15 @@ func updateTable(patch: ObjectDiff, table: Table<Map>?, updated: inout [ObjectId
     let objectId = patch.objectId
     var table = table ?? Table<Map>(tableValues: [:], objectId: objectId)
 
-    let keys = patch.props?.keys.strings
-    keys?.forEach({ (key) in
-        let key = ObjectId(objectId: key)
-        let opIds = Array(patch.props![.string(key.objectId)]!.keys)
+    patch.props?.keys.strings.forEach({ key in
+        let key = ObjectId(key)
+        let opIds = Array(patch.props![key.objectId]!.keys)
         if opIds.isEmpty {
-            table.entries[key] = nil
+            table[key] = nil
         } else if opIds.count == 1 {
-            let subpatch = patch.props![.string(key.objectId)]![opIds[0]]
-            let row = getValue(patch: subpatch!, object: table.entries[key], updated: &updated)
-            table.entries[key] = row
+            let subpatch = patch.props![key.objectId]![opIds[0]]
+            table[key] = getValue(patch: subpatch!, object: table[key], updated: &updated)
+            table.opIds[key] = opIds[0]
         }
     })
     updated[objectId] = .table(table)
@@ -88,17 +87,19 @@ func updateText(patch: ObjectDiff, text: Text?, updated: inout [ObjectId: Object
     } else {
         elems = []
     }
-    patch.edits?.iterate(insertCallback: { (index, insertions) in
-        let blanks: [Text.Character] = Array(repeating: Text.Character(value: "", opId: ""), count: insertions)
-        elems.insert(contentsOf: blanks, at: index)
+    patch.edits?.iterate(insertCallback: { (index, newElems) in
+        let blanks: [Text.Character] = newElems.map({ Text.Character(value: "", pred: [], elmId: $0) })
+        elems.replaceSubrange(index..<index, with: blanks)
     }, removeCallback: { (index, deletions) in
         elems.removeSubrange(index..<index + deletions)
     })
     let keys = patch.props?.keys.indicies
     keys?.forEach { index in
-        let opId = patch.props![.index(index)]!.keys.sorted(by: lamportCompare)[0]
-        if case .primitive(.string(let character)) = getValue(patch: patch.props![.index(index)]![opId]!, object: nil, updated: &updated) {
-            elems[index] = Text.Character(value: character, opId: opId)
+        let pred = patch.props![index]!.keys
+        let opId = pred.sorted(by: lamportCompare)[0]
+
+        if case .primitive(.string(let character)) = getValue(patch: patch.props![index]![opId]!, object: nil, updated: &updated) {
+            elems[index] = Text.Character(value: character, pred: Array(pred), elmId: elems[index].elmId)
         } else {
             fatalError()
         }
@@ -117,20 +118,21 @@ func updateText(patch: ObjectDiff, text: Text?, updated: inout [ObjectId: Object
 func updateList(patch: ObjectDiff, list: List?, updated: inout [ObjectId: Object]) -> List {
     let objectId = patch.objectId
     var list = list ?? List(objectId: objectId, listValues: [])
-    var listValues = list.listValues
-    var conflicts: [[String: Object]?] = list.conflicts
+    var conflicts: [[ObjectId: Object]?] = list.conflicts
     patch.edits?.iterate(
-        insertCallback: { index, insertions in
-            let blanksValues = Array<Object>(repeating: .primitive(1.0), count: insertions)
-            listValues.replaceSubrange(index..<index, with: blanksValues)
-            let blanksConflicts = Array<[String : Object]?>(repeating: nil, count: insertions)
+        insertCallback: { index, newElems in
+            let blanksValues = Array<Object>(repeating: .primitive(1.0), count: newElems.count)
+            list.replaceSubrange(index..<index, with: blanksValues)
+            let blanksConflicts = Array<[ObjectId : Object]?>(repeating: nil, count: newElems.count)
             conflicts.replaceSubrange(index..<index, with: blanksConflicts)
+            list.elemIds.replaceSubrange(index..<index, with: newElems)
         },
         removeCallback: { index, deletions in
-            listValues.removeSubrange(index..<index + deletions)
-            conflicts.removeSubrange(index..<index + deletions)
+            let range = index..<index + deletions
+            list.removeSubrange(range)
+            conflicts.removeSubrange(range)
+            list.elemIds.removeSubrange(range)
         })
-    list.listValues = listValues
     applyProperties(props: patch.props, list: &list, conflicts: &conflicts, updated: &updated)
     list.conflicts = conflicts.compactMap({ $0 })
     updated[objectId] = .list(list)
@@ -169,29 +171,27 @@ func updateMap(patch: ObjectDiff, map: Map?, updated: inout [ObjectId: Object]) 
 func applyProperties(
     props: Props?,
     list: inout List,
-    conflicts: inout [[String: Object]?],
+    conflicts: inout [[ObjectId: Object]?],
     updated: inout [ObjectId: Object]
 ) {
     guard let props = props else {
         return
     }
     for index in props.keys.indicies {
-        var values = [String: Object]()
-        let opIds = props[.index(index)]?.keys.sorted(by: lamportCompare) ?? []
+        var values = [ObjectId: Object]()
+        let opIds = props[index]?.keys.sorted(by: lamportCompare) ?? []
         for opId in opIds {
-            let subPatch = props[.index(index)]![opId]
+            let subPatch = props[index]![opId]
             let object = conflicts[index]?[opId]
-            values[opId] = getValue(patch: subPatch!, object: object ?? nil, updated: &updated)
+            values[opId] = getValue(patch: subPatch!, object: object, updated: &updated)
         }
-        var listValues = list.listValues
-        if listValues.count > index {
-            listValues[index] = values[opIds[0]]!
-        } else if index == listValues.count {
-            listValues.append(values[opIds[0]]!)
+        if list.count > index {
+            list[index] = values[opIds[0]]!
+        } else if index == list.count {
+            list.append(values[opIds[0]]!)
         } else {
             fatalError()
         }
-        list.listValues = listValues
         conflicts[index] = values
     }
 }
@@ -219,18 +219,18 @@ func applyProperties(
         return
     }
     for key in props.keys.strings {
-        var values = [String: Object]()
-        let opIds = props[.string(key)]?.keys.sorted(by: lamportCompare) ?? []
+        var values = [ObjectId: Object]()
+        let opIds = props[key]?.keys.sorted(by: lamportCompare) ?? []
         for opId in opIds {
-            let subPatch = props[.string(key)]![opId]
+            let subPatch = props[key]![opId]
             let object = map.conflicts[key]?[opId]
-            values[opId] = getValue(patch: subPatch!, object: object ?? nil, updated: &updated)
+            values[opId] = getValue(patch: subPatch!, object: object, updated: &updated)
         }
         if opIds.count == 0 {
-            map.mapValues[key] = nil
+            map[key] = nil
             map.conflicts[key] = nil
         } else {
-            map.mapValues[key] = values[opIds[0]]
+            map[key] = values[opIds[0]]
             map.conflicts[key] = values
         }
     }
@@ -239,22 +239,13 @@ func applyProperties(
  * Compares two strings, interpreted as Lamport timestamps of the form
  * 'counter@actorId'. Returns 1 if ts1 is greater, or -1 if ts2 is greater.
  */
-func  lamportCompare(ts1: String, ts2: String) -> Bool {
-    let time1 = ts1.contains("@") ? parseOpId2(opId: ts1) : (counter: 0, actorId: ts1)
-    let time2 = ts2.contains("@") ? parseOpId2(opId: ts2) : (counter: 0, actorId: ts2)
+func lamportCompare(ts1: ObjectId, ts2: ObjectId) -> Bool {
+    let time1 = ts1.parseOpId() ?? (counter: 0, actorId: ts1.objectId)
+    let time2 = ts2.parseOpId() ?? (counter: 0, actorId: ts2.objectId)
     if time1.counter == time2.counter {
         return time1.actorId > time2.actorId
     }
     return time1.counter > time2.counter
-}
-
-/**
- * Takes a string in the form that is used to identify operations (a counter concatenated
- * with an actor ID, separated by an `@` sign) and returns an object `{counter, actorId}`.
- */
-func parseOpId2(opId: String) -> (counter: Int, actorId: String) {
-    let splitted = opId.split(separator: "@")
-    return (counter: Int(String(splitted[0]))!, actorId: String(splitted[1]))
 }
 
 /**
@@ -273,7 +264,7 @@ func getValue(patch: Diff, object: Object?, updated: inout [ObjectId: Object]) -
         fatalError()
     case .value(let valueDiff) where valueDiff.datatype == .timestamp:
         if case .number(let timeIntervalSince1970) = valueDiff.value {
-            return .date(Date(timeIntervalSince1970: timeIntervalSince1970))
+            return .date(Date(timeIntervalSince1970: timeIntervalSince1970 / 1000))
         }
         fatalError()
     case .value(let valueDiff):

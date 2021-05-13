@@ -15,6 +15,7 @@ struct Edit: Equatable, Codable {
 
     let action: Action
     let index: Int
+    let elemId: ObjectId?
 }
 
 extension Array where Element == Edit {
@@ -25,23 +26,22 @@ extension Array where Element == Edit {
      * and calls `insertCallback(index, count)` or `removeCallback(index, count)`, as appropriate,
      * for each sequence of insertions or removals.
      */
-    func iterate(insertCallback: (Int, Int) -> Void, removeCallback: (Int, Int) -> Void) {
+    func iterate(insertCallback: (Int, [ObjectId]) -> Void, removeCallback: (Int, Int) -> Void) {
         var splicePosition = -1
         var deletions: Int!
-        var insertions: Int!
+        var insertions: [ObjectId] = []
 
         for (i, edit) in enumerated() {
             let index = edit.index
 
-            if splicePosition < 0 {
-                splicePosition = index
-                deletions = 0
-                insertions = 0
-            }
             switch edit.action {
             case .insert:
-                insertions += 1
-
+                if splicePosition < 0 {
+                    splicePosition = index
+                    deletions = 0
+                    insertions = []
+                }
+                insertions.append(edit.elemId!)
                 // If there are multiple consecutive insertions at successive indexes,
                 // accumulate them and then process them in a single insertCallback
                 if i == count - 1 || self[i + 1].action != .insert || self[i + 1].index != index + 1 {
@@ -49,6 +49,11 @@ extension Array where Element == Edit {
                     splicePosition = -1
                 }
             case .remove:
+                if splicePosition < 0 {
+                    splicePosition = index
+                    deletions = 0
+                    insertions = []
+                }
                 deletions += 1
 
                 // If there are multiple consecutive removals of the same index,
