@@ -1572,7 +1572,7 @@ class AutomergeTest: XCTestCase {
             var birds: [String]
         }
         var s1 = Document(Scheme(birds: ["Chaffinch"]))
-        var s2 = Document<Scheme>(changes: s1.allChanges())
+        var s2 = s1
         s1.change({ $0.birds.append("Bullfinch") })
         let changes = s1.getChanges(between: s2)
         XCTAssertEqual(changes.count, 1)

@@ -55,7 +55,8 @@ public struct Document<T: Codable> {
     }
 
     public init(changes: [[UInt8]], actor: Actor = Actor()) {
-        let (backend, patch) = RSBackend().apply(changes: changes)
+        let backend = RSBackend()
+        let patch = backend.apply(changes: changes)
         var doc = Document<T>(actor: actor, backend: backend)
 
         doc.applyPatch(patch: patch)
@@ -111,8 +112,14 @@ public struct Document<T: Codable> {
             ops: context?.ops ?? []
         )
 
-        let(newBackend, patch) = backend.applyLocalChange(request: request)
-        self.backend = newBackend
+        let backend: RSBackend
+        if isKnownUniquelyReferenced(&self.backend) {
+            backend = self.backend
+        } else {
+            backend = self.backend.clone()
+        }
+        let patch = backend.applyLocalChange(request: request)
+        self.backend = backend
 
         applyPatchToDoc(patch: patch, fromBackend: true, context: context)
         return request
@@ -188,8 +195,14 @@ public struct Document<T: Codable> {
     }
 
     public mutating func apply(changes: [[UInt8]]) {
-        let(newBackend, patch) = backend.apply(changes: changes)
-        backend = newBackend
+        let backend: RSBackend
+        if isKnownUniquelyReferenced(&self.backend) {
+            backend = self.backend
+        } else {
+            backend = self.backend.clone()
+        }
+        let patch = backend.apply(changes: changes)
+        self.backend = backend
         applyPatch(patch: patch)
     }
 
