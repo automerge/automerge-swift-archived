@@ -40,7 +40,7 @@ public final class Proxy<Wrapped: Codable> {
     private let valueResolver: () -> Wrapped?
 
     lazy var objectToType = ObjectToTypeTransformer()
-    lazy var typeToObject = ObjectToTypeTransformer()
+    lazy var typeToObject = TypeToObjectTransformer()
 
     public func get() -> Wrapped {
         return valueResolver()!
@@ -101,8 +101,7 @@ public final class Proxy<Wrapped: Codable> {
     }
 
     public func set(_ newValue: Wrapped) {
-        let mapper = TypeToObject()
-        let object = try! mapper.map(newValue)
+        let object = try! typeToObject.map(newValue)
 
         set(newValue: object)
     }

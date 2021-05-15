@@ -20,7 +20,7 @@ final class EncoderDateFormatter: DateFormatter {
 
 }
 
-final class TypeToObject {
+final class TypeToObjectTransformer {
 
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()

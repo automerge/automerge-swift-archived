@@ -14,7 +14,7 @@ final class TypeToObjectTests: XCTestCase {
     // Tranform String to primitive
     func testMap1() throws {
         let value = "Hello"
-        let mapper = TypeToObject()
+        let mapper = TypeToObjectTransformer()
 
         let result = try mapper.map(value)
 
@@ -24,7 +24,7 @@ final class TypeToObjectTests: XCTestCase {
     // Tranform Double to primitive
     func testMap2() throws {
         let value: Double = 2.0
-        let mapper = TypeToObject()
+        let mapper = TypeToObjectTransformer()
 
         let result = try mapper.map(value)
 
@@ -34,7 +34,7 @@ final class TypeToObjectTests: XCTestCase {
     // Tranform Double to primitive
     func testMap3() throws {
         let value: Int = 2
-        let mapper = TypeToObject()
+        let mapper = TypeToObjectTransformer()
 
         let result = try mapper.map(value)
 
@@ -44,7 +44,7 @@ final class TypeToObjectTests: XCTestCase {
     // Tranform Bool to primitive
     func testMap4() throws {
         let value: Bool = true
-        let mapper = TypeToObject()
+        let mapper = TypeToObjectTransformer()
 
         let result = try mapper.map(value)
 
@@ -54,7 +54,7 @@ final class TypeToObjectTests: XCTestCase {
     // Tranform Date to date
     func testMap5() throws {
         let value = Date()
-        let mapper = TypeToObject()
+        let mapper = TypeToObjectTransformer()
 
         let result = try mapper.map(value)
 
@@ -68,7 +68,7 @@ final class TypeToObjectTests: XCTestCase {
     // Transform Array<String> to List.string
     func testMap6() throws {
         let value = ["Hallo", "world"]
-        let mapper = TypeToObject()
+        let mapper = TypeToObjectTransformer()
 
         let result = try mapper.map(value)
 
@@ -78,7 +78,7 @@ final class TypeToObjectTests: XCTestCase {
     // Transform Array<Double> to List.number
     func testMap7() throws {
         let value = [2.0, 2.0]
-        let mapper = TypeToObject()
+        let mapper = TypeToObjectTransformer()
 
         let result = try mapper.map(value)
 
@@ -88,7 +88,7 @@ final class TypeToObjectTests: XCTestCase {
     // Transform Counter to Counter
     func testMap8() throws {
         let value = Counter(0)
-        let mapper = TypeToObject()
+        let mapper = TypeToObjectTransformer()
 
         let result = try mapper.map(value)
 
@@ -104,7 +104,7 @@ final class TypeToObjectTests: XCTestCase {
             let birds: Birds
         }
         let value = Scheme(birds: .init(wrens: 1, magpies: 1))
-        let mapper = TypeToObject()
+        let mapper = TypeToObjectTransformer()
 
         let result = try mapper.map(value)
 
@@ -120,7 +120,7 @@ final class TypeToObjectTests: XCTestCase {
             var deepObjList: [DeepObj]
         }
         let value = Scheme(deepObjList: [])
-        let mapper = TypeToObject()
+        let mapper = TypeToObjectTransformer()
 
         let result = try mapper.map(value)
 
@@ -136,7 +136,7 @@ final class TypeToObjectTests: XCTestCase {
             var deepObjList: [DeepObj]
         }
         let value = Scheme(deepObjList: [.init(list: [])])
-        let mapper = TypeToObject()
+        let mapper = TypeToObjectTransformer()
 
         let result = try mapper.map(value)
 
@@ -149,7 +149,7 @@ final class TypeToObjectTests: XCTestCase {
             var list: [Int]
         }
         let value = Scheme(list: [1, 2])
-        let mapper = TypeToObject()
+        let mapper = TypeToObjectTransformer()
 
         let result = try mapper.map(value)
 
@@ -159,7 +159,7 @@ final class TypeToObjectTests: XCTestCase {
     // Transform Text to .text
     func testMap13() throws {
         let value = Text()
-        let mapper = TypeToObject()
+        let mapper = TypeToObjectTransformer()
 
         let result = try mapper.map(value)
 
