@@ -200,9 +200,23 @@ class TextTest: XCTestCase {
             doc.text?.set(text)
             doc.text?.delete(at: 0)
             doc.text?.insert("I", at: 0)
-            XCTAssertEqual("\(doc.text.get()!)", "Init")
+            XCTAssertEqual(doc.text.get()?.description, "Init")
         }
-        XCTAssertEqual("\(s1.content.text!)", "Init")
+        XCTAssertEqual(s1.content.text?.description, "Init")
+    }
+
+    // Should allow replace subrange
+    func testTextWithInitialValue7() {
+        struct Scheme: Codable, Equatable {
+            var text: Text?
+        }
+
+        var s1 = Document(Scheme(text: Text("Hello Text!")))
+        s1.change { doc in
+            doc.text?.replaceSubrange(6..<10, with: "World")
+
+        }
+        XCTAssertEqual(s1.content.text?.description, "Hello World!")
     }
 
 }
