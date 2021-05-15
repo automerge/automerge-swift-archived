@@ -22,27 +22,28 @@ final class EncoderDateFormatter: DateFormatter {
 
 final class TypeToObjectTransformer {
 
+    init() {
+        encoder.dateEncodingStrategy = .formatted(formatter)
+        decoder.dateDecodingStrategy = .formatted(formatter)
+    }
+
+    static let shared = TypeToObjectTransformer()
+
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
     private let formatter = EncoderDateFormatter()
 
     func map<T: Codable>(_ value: T) throws -> Object {
-        encoder.dateEncodingStrategy = .formatted(formatter)
-        decoder.dateDecodingStrategy = .formatted(formatter)
         let encoded = try encoder.encode(value)
         return try decoder.decode(Object.self, from: encoded)
     }
 
     func map<T: Codable>(_ value: Array<T>) throws -> [Object] {
-        encoder.dateEncodingStrategy = .formatted(formatter)
-        decoder.dateDecodingStrategy = .formatted(formatter)
         let encoded = try encoder.encode(value)
         return try decoder.decode([Object].self, from: encoded)
     }
 
     func map<T: Codable>(_ value: [String: T]) throws -> [String: Object] {
-        encoder.dateEncodingStrategy = .formatted(formatter)
-        decoder.dateDecodingStrategy = .formatted(formatter)
         let encoded = try encoder.encode(value)
         return try decoder.decode([String: Object].self, from: encoded)
     }
