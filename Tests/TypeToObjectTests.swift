@@ -21,6 +21,22 @@ final class TypeToObjectTests: XCTestCase {
         XCTAssertEqual(result, .primitive("Hello"))
     }
 
+    // Tranform String to primitive
+    func testMap1Perfo() throws {
+        let value = "Hello"
+        let mapper = TypeToObject()
+
+        measure {
+            try! (0...100).forEach { _ in
+                let result = try mapper.map(value)
+            }
+
+        }
+
+
+//        XCTAssertEqual(result, .primitive("Hello"))
+    }
+
     // Tranform Double to primitive
     func testMap2() throws {
         let value: Double = 2.0
@@ -108,7 +124,7 @@ final class TypeToObjectTests: XCTestCase {
 
         let result = try mapper.map(value)
 
-        XCTAssertEqual(result, .map(Map(objectId: "", mapValues: ["birds": .map(Map(objectId: "", mapValues: ["wrens": 1.0, "magpies": 1.0]))])))
+        XCTAssertEqual(result, .map(["birds": .map(Map(objectId: "", mapValues: ["wrens": 1.0, "magpies": 1.0]))]))
     }
 
     // Transform Counter to Counter
@@ -124,11 +140,24 @@ final class TypeToObjectTests: XCTestCase {
 
         let result = try mapper.map(value)
 
-        XCTAssertEqual(result, .map(Map(objectId: "", mapValues: ["deepObjList": .list(List(objectId: "", listValues: [], conflicts: []))])))
+        XCTAssertEqual(result, .map(["deepObjList": .list([])]))
     }
 
     // Transform Counter to Counter
     func testMap11() throws {
+        struct Scheme: Codable, Equatable {
+            var deepObjList: [Int]
+        }
+        let value = Scheme(deepObjList: [1])
+        let mapper = TypeToObject()
+
+        let result = try mapper.map(value)
+
+        XCTAssertEqual(result, .map(["deepObjList": .list([1.0])]))
+    }
+
+    // Transform Counter to Counter
+    func testMap12() throws {
         struct Scheme: Codable, Equatable {
             struct DeepObj: Codable, Equatable {
                 var list: [Int]
@@ -144,7 +173,7 @@ final class TypeToObjectTests: XCTestCase {
     }
 
     // Transform Counter to Counter
-    func testMap12() throws {
+    func testMap13() throws {
         struct Scheme: Codable, Equatable {
             var list: [Int]
         }
@@ -157,7 +186,7 @@ final class TypeToObjectTests: XCTestCase {
     }
 
     // Transform Text to .text
-    func testMap13() throws {
+    func testMap14() throws {
         let value = Text()
         let mapper = TypeToObject()
 

@@ -77,6 +77,32 @@ enum Object: Equatable, Codable {
         }
     }
 
+    mutating func set(value: Object, at keyPath: [String]) {
+        var keyPath = keyPath
+        if case .map(var map) = self {
+            let key = keyPath.removeFirst()
+            if keyPath.count == 0 {
+                map[key] = value
+            } else {
+                var valueAtKey = map[key] ?? .map([:])
+                valueAtKey.set(value: value, at: keyPath)
+                map[key] = valueAtKey
+            }
+            self = .map(map)
+        } else if case .list(var list) = self {
+            let string = keyPath.removeFirst()
+            let key = Int(string)!
+            if keyPath.count == 0 {
+                list[key] = value
+            } else {
+                var valueAtKey = list[key] //?? .list([])
+                valueAtKey.set(value: value, at: keyPath)
+                list[key] = valueAtKey
+            }
+            self = .list(list)
+        }
+    }
+
 }
 
 
