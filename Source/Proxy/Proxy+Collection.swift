@@ -45,15 +45,15 @@ extension Proxy: Collection, Sequence where Wrapped: Collection, Wrapped.Element
 extension MutableProxy: Collection, Sequence where Wrapped: Collection, Wrapped.Element: Codable, Wrapped.Index == Int {
 
     public typealias Index = Int
-    public typealias Element = Proxy<Wrapped.Element>
+    public typealias Element = MutableProxy<Wrapped.Element>
 
     public var startIndex: Index { list.startIndex }
     public var endIndex: Index { list.endIndex }
 
-    public subscript(position: Int) -> Proxy<Wrapped.Element> {
+    public subscript(position: Int) -> MutableProxy<Wrapped.Element> {
         get {
             let objectId = list[position].objectId
-            return Proxy<Wrapped.Element>(
+            return MutableProxy<Wrapped.Element>(
                 context: context,
                 objectId: objectId,
                 path: path + [.init(key: .index(position), objectId: objectId)],
@@ -79,10 +79,10 @@ extension MutableProxy: Collection, Sequence where Wrapped: Collection, Wrapped.
 
 extension MutableProxy: MutableCollection where Wrapped: MutableCollection, Wrapped.Element: Codable, Wrapped.Index == Int {
 
-    public subscript(position: Int) -> Proxy<Wrapped.Element> {
+    public subscript(position: Int) -> MutableProxy<Wrapped.Element> {
         get {
             let objectId = list[position].objectId
-            return Proxy<Wrapped.Element>(
+            return MutableProxy<Wrapped.Element>(
                 context: context,
                 objectId: objectId,
                 path: path + [.init(key: .index(position), objectId: objectId)]
