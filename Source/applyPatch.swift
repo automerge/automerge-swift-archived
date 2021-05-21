@@ -264,7 +264,7 @@ func getValue(patch: Diff, object: Object?, updated: inout [ObjectId: Object]) -
         fatalError()
     case .value(let valueDiff) where valueDiff.datatype == .timestamp:
         if case .number(let timeIntervalSince1970) = valueDiff.value {
-            return .date(Date(timeIntervalSince1970: timeIntervalSince1970))
+            return .date(Date(timeIntervalSince1970: timeIntervalSince1970 / 1000))
         }
         fatalError()
     case .value(let valueDiff):
