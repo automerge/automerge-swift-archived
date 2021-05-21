@@ -117,5 +117,3 @@ private struct RelativeBufferPointer<Offset: FixedWidthInteger, Pointee> {
         return UnsafeBufferPointer(start: ptr, count: count)
     }
 }
-
-
