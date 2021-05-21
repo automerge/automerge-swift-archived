@@ -14,7 +14,9 @@ struct ObjectsUnkeyedEncoding: UnkeyedEncodingContainer {
     init(data: ObjectEncoding.Data, codingPath: [CodingKey]) {
         self.data = data
         self.codingPath = codingPath
-
+        if codingPath.map({ $0.stringValue }).last == "_am_tabel_values_" {
+            data.root.set(value: .table(Table(tableValues: [:])), at: codingPath.map({ $0.stringValue }).dropLast())
+        }
         data.root.set(value: .list([]), at: codingPath.map({ $0.stringValue }))
     }
 
