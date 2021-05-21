@@ -48,6 +48,16 @@ final class ObjectEncoderTests: XCTestCase {
         XCTAssertEqual(result, .table(Table<Map>()))
     }
 
+    func testTableInArray() throws {
+        struct Object: Codable {}
+        let value = [Table<Object>()]
+        let encoder = ObjectEncoder()
+
+        let result = try encoder.encode(value)
+
+        XCTAssertEqual(result, .list([.table(Table<Map>())]))
+    }
+
     func testText() throws {
         let value = Text()
         let encoder = ObjectEncoder()

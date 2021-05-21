@@ -98,6 +98,10 @@ struct ObjectsKeyedEncoding<Key: CodingKey>: KeyedEncodingContainerProtocol {
         try value.encode(to: stringsEncoding)
     }
 
+    mutating func encode<T: Encodable>(_ value: Table<T>, forKey key: Key) throws {
+        fatalError()
+    }
+
     mutating func nestedContainer<NestedKey: CodingKey>(keyedBy keyType: NestedKey.Type, forKey key: Key) -> KeyedEncodingContainer<NestedKey> {
         let container = ObjectsKeyedEncoding<NestedKey>(data: data, codingPath: codingPath + [key])
         return KeyedEncodingContainer(container)

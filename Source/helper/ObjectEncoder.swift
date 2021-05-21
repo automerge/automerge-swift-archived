@@ -27,6 +27,14 @@ final class ObjectEncoder {
         let object = stringsEncoding.data.root
         return object
     }
+
+    func encode<T: Encodable>(_ value: Table<T>) throws -> Object {
+        var entries: [ObjectId: Object] = [:]
+        for id in value.ids {
+            entries[id] = try encode(value[id])
+        }
+        return .table(Table(tableValues: entries))
+    }
 }
 
 
