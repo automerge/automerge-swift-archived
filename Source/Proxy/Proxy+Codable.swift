@@ -17,3 +17,14 @@ extension Proxy where Wrapped: Codable {
     }
     
 }
+
+extension MutableProxy where Wrapped: Codable {
+
+    public func set(_ newValue: Wrapped) {
+        let mapper = TypeToObject()
+        let object = try! mapper.map(newValue)
+
+        set(newValue: object)
+    }
+
+}
