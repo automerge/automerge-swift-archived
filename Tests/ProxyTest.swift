@@ -61,7 +61,7 @@ class ProxyTest: XCTestCase {
 
         // WHEN
         document.change({ doc in
-            doc.toAny().key1.as(String.self).set("value1")
+            doc.toAny().key1.as(String.self).set(newValue: "value1")
             XCTAssertEqual(doc.key1?.get(), "value1")
         })
     }
