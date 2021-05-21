@@ -81,7 +81,7 @@ struct ObjectsKeyedEncoding<Key: CodingKey>: KeyedEncodingContainerProtocol {
     }
 
     mutating func encode<T: Encodable>(_ value: T, forKey key: Key) throws {
-        let codingPath = codingPath + [key]
+        let codingPath = self.codingPath + [key]
         if let date = value as? Date {
             data.encode(key: codingPath, value: .date(date))
             return
@@ -108,7 +108,7 @@ struct ObjectsKeyedEncoding<Key: CodingKey>: KeyedEncodingContainerProtocol {
     }
 
     mutating func nestedUnkeyedContainer(forKey key: Key) -> UnkeyedEncodingContainer {
-        let codingPath = codingPath + [key]
+        let codingPath = self.codingPath + [key]
         return ObjectsUnkeyedEncoding(data: data, codingPath: codingPath)
     }
 
