@@ -79,7 +79,7 @@ struct ObjectsSingleValueEncoding: SingleValueEncodingContainer {
     }
 
     mutating func encode<T: Encodable>(_ value: T) throws {
-        let stringsEncoding = ObjectEncoding(encodedData: data, codingPath: codingPath)
-        try value.encode(to: stringsEncoding)
+        let objectEncoding = ObjectEncoding(encodedData: data, codingPath: codingPath)
+        try value.encode(to: objectEncoding)
     }
 }
