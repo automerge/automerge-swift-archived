@@ -217,83 +217,54 @@ final class ObjectEncoderTests: XCTestCase {
 
         XCTAssertEqual(result, .map(["deepObjList": .list([.map(["list": .list([1, 2, 4])])])]))
     }
-//
-//    // Transform Counter to Counter
-//    func testMap101() throws {
-//        struct Scheme: Codable, Equatable {
-//            var list: [Int]
-//        }
-//        let value = Scheme(list: [])
-//        let encoder = ObjectEncoder()
-//
-//        let result: Object = try mapper.map(value)
-//
-//        XCTAssertEqual(result, .map(["list": .list([])]))
-//    }
-//
-//    // Transform Counter to Counter
-//    func testMap11() throws {
-//        struct Scheme: Codable, Equatable {
-//            var deepObjList: [Int]
-//        }
-//        let value = Scheme(deepObjList: [1])
-//        let encoder = ObjectEncoder()
-//
-//        let result: Object = try mapper.map(value)
-//
-//        XCTAssertEqual(result, .map(["deepObjList": .list([1.0])]))
-//    }
-//
-//    // Transform Counter to Counter
-//    func testMap12() throws {
-//        struct Scheme: Codable, Equatable {
-//            struct DeepObj: Codable, Equatable {
-//                var list: [Int]
-//            }
-//            var deepObjList: [DeepObj]
-//        }
-//        let value = Scheme(deepObjList: [.init(list: [])])
-//        let encoder = ObjectEncoder()
-//
-//        let result: Object = try mapper.map(value)
-//
-//        XCTAssertEqual(result, .map(Map(objectId: "", mapValues: ["deepObjList": .list(List(objectId: "", listValues: [.map(Map(objectId: "", mapValues: ["list": .list(List(objectId: "", listValues: []))]))]))])))
-//    }
-//
-//    func testDeepMapAndList() throws {
-//        struct Scheme: Codable, Equatable {
-//            struct Animals: Codable, Equatable {
-//                struct Birds: Codable, Equatable {
-//                    let pink: String
-//                    let black: String
-//                    var brown: String?
-//                }
-//                var birds: Birds?
-//                var mammals: [String]
-//            }
-//            var animals: Animals
-//        }
-//
-//        let value = Scheme(animals: .init(birds: .init(pink: "flamingo", black: "starling", brown: nil), mammals: ["badger"]))
-//        let encoder = ObjectEncoder()
-//
-//        let result: Object = try mapper.map(value)
-//
-//        XCTAssertEqual(result, .map(["animals":.map(["mammals": .list(["badger"]), "birds": .map(["pink": "flamingo", "black": "starling"])])]))
-//    }
-//
-//
-//    // Transform Counter to Counter
-//    func testListOfInts() throws {
-//        struct Scheme: Codable, Equatable {
-//            var list: [Int]
-//        }
-//        let value = Scheme(list: [1, 2])
-//        let encoder = ObjectEncoder()
-//
-//        let result: Object = try mapper.map(value)
-//
-//        XCTAssertEqual(result, .map(Map(objectId: "", mapValues: ["list": .list(List(objectId: "", listValues: [1.0, 2.0], conflicts: []))])))
-//    }
+
+    func testListInObject() throws {
+        struct Scheme: Codable, Equatable {
+            var deepObjList: [Int]
+        }
+        let value = Scheme(deepObjList: [1])
+        let encoder = ObjectEncoder()
+
+        let result: Object = try encoder.encode(value)
+
+        XCTAssertEqual(result, .map(["deepObjList": .list([1.0])]))
+    }
+
+    func testListInListInObject() throws {
+        struct Scheme: Codable, Equatable {
+            struct DeepObj: Codable, Equatable {
+                var list: [Int]
+            }
+            var deepObjList: [DeepObj]
+        }
+        let value = Scheme(deepObjList: [.init(list: [])])
+        let encoder = ObjectEncoder()
+
+        let result: Object = try encoder.encode(value)
+
+        XCTAssertEqual(result, .map(["deepObjList": .list([.map(["list": .list([])])])]))
+    }
+
+    func testDeepMapAndList() throws {
+        struct Scheme: Codable, Equatable {
+            struct Animals: Codable, Equatable {
+                struct Birds: Codable, Equatable {
+                    let pink: String
+                    let black: String
+                    var brown: String?
+                }
+                var birds: Birds?
+                var mammals: [String]
+            }
+            var animals: Animals
+        }
+
+        let value = Scheme(animals: .init(birds: .init(pink: "flamingo", black: "starling", brown: nil), mammals: ["badger"]))
+        let encoder = ObjectEncoder()
+
+        let result: Object = try encoder.encode(value)
+
+        XCTAssertEqual(result, .map(["animals":.map(["mammals": .list(["badger"]), "birds": .map(["pink": "flamingo", "black": "starling"])])]))
+    }
 
 }
