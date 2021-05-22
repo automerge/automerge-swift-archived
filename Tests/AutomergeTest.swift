@@ -416,10 +416,10 @@ class AutomergeTest: XCTestCase {
         struct Noodle: Codable, Equatable {
             enum TypeNoodle: String, Codable { case ramen, udon }
             let type: TypeNoodle
-            let dishes: [String]
+            var dishes: [String]
         }
         struct Scheme: Codable, Equatable {
-            let noodles: [Noodle]
+            var noodles: [Noodle]
         }
         var s1 = Document(Scheme(noodles: [.init(type: .ramen, dishes: ["tonkotsu", "shoyu"])]))
         s1.change {
