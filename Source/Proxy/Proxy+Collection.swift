@@ -136,9 +136,7 @@ extension MutableProxy where Wrapped: RangeReplaceableCollection, Wrapped.Index 
         insert(newElement, at: endIndex)
     }
 
-    public func insert(
-        _ newElement: __owned Wrapped.Element, at i: Index
-    ) {
+    public func insert(_ newElement: __owned Wrapped.Element, at i: Index) {
         replaceSubrange(i..<i, with: CollectionOfOne(newElement))
     }
 
