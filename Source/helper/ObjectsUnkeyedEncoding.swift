@@ -104,7 +104,7 @@ struct ObjectsUnkeyedEncoding: UnkeyedEncodingContainer {
     }
 
     mutating func encode<T: Encodable>(_ value: T) throws {
-        let codingPath = codingPath + [nextIndexedKey()]
+        let codingPath = self.codingPath + [nextIndexedKey()]
         if let date = value as? Date {
             data.encode(key: codingPath, value: .date(date))
             return
