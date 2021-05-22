@@ -10,8 +10,7 @@ import Foundation
 extension Proxy where Wrapped: Codable {
 
     public func set(_ newValue: Wrapped) {
-        let mapper = TypeToObject()
-        let object = try! mapper.map(newValue)
+        let object = try! objectEncoder.encode(newValue)
 
         set(newValue: object)
     }

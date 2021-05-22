@@ -40,7 +40,7 @@ public final class Proxy<Wrapped> {
     private let valueResolver: () -> Wrapped?
 
     lazy var objectToType = ObjectToTypeTransformer()
-    lazy var typeToObject = ObjectToTypeTransformer()
+    let objectEncoder = ObjectEncoder()
 
     public func get() -> Wrapped {
         return valueResolver()!
