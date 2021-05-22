@@ -42,12 +42,47 @@ extension Proxy: Collection, Sequence where Wrapped: Collection, Wrapped.Element
 
 }
 
-extension Proxy: MutableCollection where Wrapped: MutableCollection, Wrapped.Element: Codable, Wrapped.Index == Int {
+extension MutableProxy: Collection, Sequence where Wrapped: Collection, Wrapped.Element: Codable, Wrapped.Index == Int {
 
-    public subscript(position: Int) -> Proxy<Wrapped.Element> {
+    public typealias Index = Int
+    public typealias Element = MutableProxy<Wrapped.Element>
+
+    public var startIndex: Index { list.startIndex }
+    public var endIndex: Index { list.endIndex }
+
+    public subscript(position: Int) -> MutableProxy<Wrapped.Element> {
         get {
             let objectId = list[position].objectId
-            return Proxy<Wrapped.Element>(
+            return MutableProxy<Wrapped.Element>(
+                context: context,
+                objectId: objectId,
+                path: path + [.init(key: .index(position), objectId: objectId)],
+                value: self.get()[position]
+            )
+        }
+    }
+
+    // Method that returns the next index when iterating
+    public func index(after i: Index) -> Index {
+        return list.index(after: i)
+    }
+
+    fileprivate var list: List {
+        guard case .list(let list) = objectId.map({ context.getObject(objectId: $0) }) else {
+            fatalError("Must contain list")
+        }
+
+        return list
+    }
+
+}
+
+extension MutableProxy: MutableCollection where Wrapped: MutableCollection, Wrapped.Element: Codable, Wrapped.Index == Int {
+
+    public subscript(position: Int) -> MutableProxy<Wrapped.Element> {
+        get {
+            let objectId = list[position].objectId
+            return MutableProxy<Wrapped.Element>(
                 context: context,
                 objectId: objectId,
                 path: path + [.init(key: .index(position), objectId: objectId)]
@@ -63,7 +98,7 @@ extension Proxy: MutableCollection where Wrapped: MutableCollection, Wrapped.Ele
 
 }
 
-extension Proxy: RangeReplaceableCollection where Wrapped: RangeReplaceableCollection, Wrapped.Index == Int, Wrapped.Element: Codable {
+extension MutableProxy: RangeReplaceableCollection where Wrapped: RangeReplaceableCollection, Wrapped.Index == Int, Wrapped.Element: Codable {
 
     public convenience init() {
         let void: (ObjectDiff, Object?, inout [ObjectId: Object]) -> Object? = { _, _, _ in
@@ -86,7 +121,7 @@ extension Proxy: RangeReplaceableCollection where Wrapped: RangeReplaceableColle
 
 }
 
-extension Proxy where Wrapped: RangeReplaceableCollection, Wrapped.Index == Int, Wrapped.Element: Codable {
+extension MutableProxy where Wrapped: RangeReplaceableCollection, Wrapped.Index == Int, Wrapped.Element: Codable {
 
     public func replaceSubrange<C, R>(_ subrange: R, with newElements: C) where C : Collection, R : RangeExpression, C.Element == Wrapped.Element, Index == R.Bound {
         let start = subrange.relative(to: self).startIndex

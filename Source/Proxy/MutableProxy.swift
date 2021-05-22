@@ -2,13 +2,12 @@
 //  File.swift
 //  
 //
-//  Created by Lukas Schmidt on 24.04.20.
+//  Created by Lukas Schmidt on 21.05.21.
 //
 
 import Foundation
 
-@dynamicMemberLookup
-public final class Proxy<Wrapped> {
+public final class MutableProxy<Wrapped> {
 
     init(
         context: Context,
@@ -78,8 +77,7 @@ public final class Proxy<Wrapped> {
     }
 
     public subscript<Y>(dynamicMember dynamicMember: WritableKeyPath<Wrapped, Y>) -> MutableProxy<Y> {
-        let keyPath: KeyPath = dynamicMember as KeyPath
-        let fieldName = keyPath.fieldName!
+        let fieldName = dynamicMember.fieldName!
 
         let objectId = map[fieldName]?.objectId
         return MutableProxy<Y>(
@@ -123,5 +121,5 @@ public final class Proxy<Wrapped> {
             context.setMapKey(path: path, key: key, value: value)
         }
     }
-    
+
 }
