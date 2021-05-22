@@ -11,7 +11,7 @@ public extension Proxy {
 
     @discardableResult
     func add<Row: Codable>(_ row: Row) -> ObjectId where Wrapped == Table<Row>  {
-        let row: Object = try! typeToObject.map(row)
+        let row = try! objectEncoder.encode(row)
 
         return context.addTableRow(path: path, row: row)
     }
