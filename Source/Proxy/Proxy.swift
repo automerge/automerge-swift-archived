@@ -8,7 +8,7 @@
 import Foundation
 
 @dynamicMemberLookup
-public final class Proxy<Wrapped: Codable> {
+public final class Proxy<Wrapped> {
 
     init(
         context: Context,
@@ -98,12 +98,6 @@ public final class Proxy<Wrapped: Codable> {
             let path = Array(self.path.dropLast())
             context.setListIndex(path: path, index: index, value: newValue)
         }
-    }
-
-    public func set(_ newValue: Wrapped) {
-        let object = try! objectEncoder.encode(newValue)
-
-        set(newValue: object)
     }
     
 }
