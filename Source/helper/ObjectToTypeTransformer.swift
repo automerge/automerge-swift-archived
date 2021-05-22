@@ -11,6 +11,8 @@ final class ObjectToTypeTransformer {
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
+    static let shared = ObjectToTypeTransformer()
+
     func map<T: Codable>(_ object: Object) throws -> T {
         let encoded = try encoder.encode(object)
         return try decoder.decode(T.self, from: encoded)

@@ -1546,6 +1546,43 @@ class AutomergeTest: XCTestCase {
         XCTAssertEqual(s3.getMissingsDeps(), [])
     }
 
+    // should report missing dependencies
+    func testGetHeads1() {
+        struct Scheme: Codable, Equatable {
+            var birds: [String]
+        }
+        var s1 = Document(Scheme(birds: ["Chaffinch"]))
+        s1.change({ $0.birds.append("Test") })
+        let heads = s1.getHeads()
+        XCTAssertEqual(heads.count, 1)
+    }
+
+    func testGetChangesBetween1() {
+        struct Scheme: Codable, Equatable {
+            var birds: [String]
+        }
+        let s1 = Document(Scheme(birds: ["Chaffinch"]))
+        let s2 = Document<Scheme>(changes: s1.allChanges())
+        let changes = s1.getChanges(between: s2)
+        XCTAssertEqual(changes.count, 0)
+    }
+
+    func testGetChangesBetween2() {
+        struct Scheme: Codable, Equatable {
+            var birds: [String]
+        }
+        var s1 = Document(Scheme(birds: ["Chaffinch"]))
+        var s2 = s1
+        s1.change({ $0.birds.append("Bullfinch") })
+        let changes = s1.getChanges(between: s2)
+        XCTAssertEqual(changes.count, 1)
+
+        s2.apply(changes: changes)
+
+        let changes2 = s1.getChanges(between: s2)
+        XCTAssertEqual(changes2.count, 0)
+    }
+
 }
 
 
