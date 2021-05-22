@@ -38,7 +38,6 @@ final class Context {
         self.updated = updated
         self.cache = cache
         self.ops = ops
-        self.dateFormatter = EncoderDateFormatter()
         self.maxOp = maxOp
     }
 
@@ -47,7 +46,6 @@ final class Context {
     private let applyPatch: (ObjectDiff, Object?, inout [ObjectId: Object]) -> Object?
     private(set) var updated: [ObjectId: Object]
     private var cache: [ObjectId: Object]
-    private let dateFormatter: EncoderDateFormatter
 
     var idUpdated: Bool {
         return !ops.isEmpty
