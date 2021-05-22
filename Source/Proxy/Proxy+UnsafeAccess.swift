@@ -49,7 +49,7 @@ public final class UnsafeProxy {
     }
 
     public func set<T: Codable>(_ newValue: T) {
-        let newObject: Object = try! TypeToObject().map(newValue)
+        let newObject: Object = try! ObjectEncoder().encode(newValue)
         guard let lastPathKey = path.last?.key else {
             if case .map(let root) = newObject {
                 self.set(rootObject: root)
