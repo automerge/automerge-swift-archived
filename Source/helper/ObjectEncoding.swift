@@ -14,7 +14,7 @@ struct ObjectEncoding: Encoder {
         var root: Object = .map(Map(objectId: "", mapValues: [:], conflicts: [:]))
 
         func encode(key codingKey: [CodingKey], value: Object) {
-            root.set(value: value, at: codingKey.map { $0.stringValue })
+            root.set(value: value, at: codingKey)
         }
     }
 

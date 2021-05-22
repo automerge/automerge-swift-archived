@@ -14,10 +14,10 @@ struct ObjectsUnkeyedEncoding: UnkeyedEncodingContainer {
     init(data: ObjectEncoding.Data, codingPath: [CodingKey]) {
         self.data = data
         self.codingPath = codingPath
-        if codingPath.map({ $0.stringValue }).last == "_am_tabel_values_" {
-            data.root.set(value: .table(Table(tableValues: [:])), at: codingPath.map({ $0.stringValue }).dropLast())
+        if codingPath.last?.stringValue == "_am_tabel_values_" {
+            data.root.set(value: .table(Table(tableValues: [:])), at: codingPath.dropLast())
         }
-        data.root.set(value: .list([]), at: codingPath.map({ $0.stringValue }))
+        data.root.set(value: .list([]), at: codingPath)
     }
 
     let codingPath: [CodingKey]

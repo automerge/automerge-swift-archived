@@ -37,4 +37,36 @@ final class ObjectEncoder {
     }
 }
 
+extension Object {
+
+    mutating func set(value: Object, at keyPath: [CodingKey]) {
+        guard keyPath.count != 0 else {
+            self = value
+            return
+        }
+        var keyPath = keyPath
+        if case .map(var map) = self {
+            let key = keyPath.removeFirst().stringValue
+            if var valueAtKey = map[key] {
+                valueAtKey.set(value: value, at: keyPath)
+                map[key] = valueAtKey
+            } else {
+                map[key] = value
+            }
+            self = .map(map)
+        } else if let key = keyPath.removeFirst().intValue,
+                  case .list(var list) = self {
+            if list.count <= key {
+                list.append(value)
+            } else {
+                var valueAtKey = list[key]
+                valueAtKey.set(value: value, at: keyPath)
+                list[key] = valueAtKey
+            }
+            self = .list(list)
+        }
+    }
+    
+}
+
 
