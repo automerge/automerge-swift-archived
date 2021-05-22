@@ -44,7 +44,14 @@ public final class AnyProxy {
 
     public func `as`<T: Codable>(_ type: T.Type) -> Proxy<T> {
         let transformer = ObjectToTypeTransformer()
-        return Proxy<T>(context: context, objectId: objectId, path: path, value: self.objectId.map { try! transformer.map(self.context.getObject(objectId: $0)) } )
+        return Proxy<T>(
+            context: context,
+            objectId: objectId,
+            path: path,
+            value: { [objectId, context] in
+                objectId.map { [context] in try! transformer.map(context.getObject(objectId: $0)) }
+            }
+        )
     }
 
 }
