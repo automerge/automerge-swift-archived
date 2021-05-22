@@ -24,7 +24,7 @@ struct ObjectsUnkeyedEncoding: UnkeyedEncodingContainer {
     private(set) var count: Int = 0
 
     private mutating func nextIndexedKey() -> CodingKey {
-        let nextCodingKey = IndexedCodingKey(intValue: count)!
+        let nextCodingKey = IndexedCodingKey(intValue: count)
         count += 1
         return nextCodingKey
     }
@@ -33,7 +33,7 @@ struct ObjectsUnkeyedEncoding: UnkeyedEncodingContainer {
         let intValue: Int?
         let stringValue: String
 
-        init?(intValue: Int) {
+        init(intValue: Int) {
             self.intValue = intValue
             self.stringValue = intValue.description
         }
