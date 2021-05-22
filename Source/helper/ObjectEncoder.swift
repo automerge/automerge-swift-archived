@@ -7,13 +7,10 @@
 
 import Foundation
 
-/// An object that encodes instances of a data type
-/// as strings following the simple strings file format.
 final class ObjectEncoder {
 
-    /// Returns a strings file-encoded representation of the specified value.
     func encode<T: Encodable>(_ value: T) throws -> Object {
-        let stringsEncoding = ObjectEncoding(encodedData: ObjectEncoding.Data())
+        let objectEncoding = ObjectEncoding(encodedData: ObjectEncoding.Data())
         if let date = value as? Date {
             return .date(date)
         }
@@ -23,8 +20,8 @@ final class ObjectEncoder {
         if let text = value as? Text {
             return .text(text)
         }
-        try value.encode(to: stringsEncoding)
-        let object = stringsEncoding.data.root
+        try value.encode(to: objectEncoding)
+        let object = objectEncoding.data.root
         return object
     }
 

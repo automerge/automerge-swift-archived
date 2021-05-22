@@ -9,9 +9,8 @@ import Foundation
 
 struct ObjectEncoding: Encoder {
 
-    /// Stores the actual strings file data during encoding.
     final class Data {
-        var root: Object = .map(Map(objectId: "", mapValues: [:], conflicts: [:]))
+        var root: Object = .map([:])
 
         func encode(key codingKey: [CodingKey], value: Object) {
             root.set(value: value, at: codingKey)

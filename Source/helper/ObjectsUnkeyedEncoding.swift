@@ -117,9 +117,9 @@ struct ObjectsUnkeyedEncoding: UnkeyedEncodingContainer {
             data.encode(key: codingPath, value: .text(text))
             return
         }
-        let stringsEncoding = ObjectEncoding(encodedData: data, codingPath: codingPath)
+        let objectEncoding = ObjectEncoding(encodedData: data, codingPath: codingPath)
 
-        try value.encode(to: stringsEncoding)
+        try value.encode(to: objectEncoding)
     }
 
     mutating func nestedContainer<NestedKey: CodingKey>(keyedBy keyType: NestedKey.Type) -> KeyedEncodingContainer<NestedKey> {

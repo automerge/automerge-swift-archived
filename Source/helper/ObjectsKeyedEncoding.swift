@@ -94,8 +94,8 @@ struct ObjectsKeyedEncoding<Key: CodingKey>: KeyedEncodingContainerProtocol {
             data.encode(key: codingPath, value: .text(text))
             return
         }
-        let stringsEncoding = ObjectEncoding(encodedData: data, codingPath: codingPath)
-        try value.encode(to: stringsEncoding)
+        let objectEncoding = ObjectEncoding(encodedData: data, codingPath: codingPath)
+        try value.encode(to: objectEncoding)
     }
 
     mutating func encode<T: Encodable>(_ value: Table<T>, forKey key: Key) throws {
