@@ -15,7 +15,7 @@ struct ObjectsKeyedEncoding<Key: CodingKey>: KeyedEncodingContainerProtocol {
         self.data = data
         self.codingPath = codingPath
 
-        data.root.set(value: .map([:]), at: codingPath.map({ $0.stringValue }))
+        data.root.set(value: .map([:]), at: codingPath)
     }
 
     let codingPath: [CodingKey]
@@ -108,8 +108,7 @@ struct ObjectsKeyedEncoding<Key: CodingKey>: KeyedEncodingContainerProtocol {
     }
 
     mutating func nestedUnkeyedContainer(forKey key: Key) -> UnkeyedEncodingContainer {
-        let codingPath = self.codingPath + [key]
-        return ObjectsUnkeyedEncoding(data: data, codingPath: codingPath)
+        return ObjectsUnkeyedEncoding(data: data, codingPath: codingPath + [key])
     }
 
     mutating func superEncoder() -> Encoder {

@@ -76,34 +76,6 @@ enum Object: Equatable, Codable {
             self = .primitive(.null)
         }
     }
-
-    mutating func set(value: Object, at keyPath: [String]) {
-        if keyPath.count == 0 {
-            self = value
-            return
-        }
-        var keyPath = keyPath
-        if case .map(var map) = self {
-            let key = keyPath.removeFirst()
-            if var valueAtKey = map[key] {
-                valueAtKey.set(value: value, at: keyPath)
-                map[key] = valueAtKey
-            } else {
-                map[key] = value
-            }
-            self = .map(map)
-        } else if case .list(var list) = self {
-            let key = Int(keyPath.removeFirst())!
-            if list.count <= key {
-                list.append(value)
-            } else {
-                var valueAtKey = list[key]
-                valueAtKey.set(value: value, at: keyPath)
-                list[key] = valueAtKey
-            }
-            self = .list(list)
-        }
-    }
 }
 
 
