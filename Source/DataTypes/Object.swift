@@ -76,7 +76,6 @@ enum Object: Equatable, Codable {
             self = .primitive(.null)
         }
     }
-
 }
 
 
