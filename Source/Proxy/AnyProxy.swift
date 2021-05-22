@@ -43,8 +43,15 @@ public final class AnyProxy {
     }
 
     public func `as`<T: Codable>(_ type: T.Type) -> MutableProxy<T> {
-        let transformer = ObjectToTypeTransformer()
-        return MutableProxy<T>(context: context, objectId: objectId, path: path, value: self.objectId.map { try! transformer.map(self.context.getObject(objectId: $0)) } )
+        let decoder = ObjectDecoder()
+        return MutableProxy<T>(
+            context: context,
+            objectId: objectId,
+            path: path,
+            value: { [objectId, context] in
+                objectId.map { [context] in try! decoder.decode(context.getObject(objectId: $0)) }
+            }
+        )
     }
 
 }
