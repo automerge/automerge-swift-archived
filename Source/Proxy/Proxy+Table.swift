@@ -27,7 +27,7 @@ public extension Proxy {
             context: context,
             objectId: objectId,
             path: path + [.init(key: .string(rowId.objectId), objectId: objectId)],
-            value: try! self.objectToType.map(row))
+            value: { [objectToType] in try! objectToType.map(row) })
     }
 
     /**
