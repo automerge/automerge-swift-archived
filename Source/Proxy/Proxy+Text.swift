@@ -9,16 +9,32 @@ import Foundation
 
 public extension Proxy where Wrapped == Text {
 
-    func insert(_ character: String, at index: Int) {
-        precondition(character.count == 1)
-        context.splice(path: path, start: index, deletions: 0, insertions: [.primitive(.string(character))])
+    func insert(_ character: Character, at index: Int) {
+        context.splice(path: path, start: index, deletions: 0, insertions: [.primitive(.string(String(character)))])
     }
 
-    func insert(contentsOf characters: [String], at index: Int) {
+    func insert(_ string: String, at index: Int) {
+        insert(contentsOf: Array(string), at: index)
+    }
+
+    func insert(contentsOf characters: [Character], at index: Int) {
         context.splice(path: path, start: index, deletions: 0, insertions: characters.map({ character in
-            precondition(character.count == 1)
-            return .primitive(.string(character))
+            return .primitive(.string(String(character)))
         }))
+    }
+
+    func replaceSubrange(_ subrange: Range<Int>, with newElements: [Character]) {
+        let start = subrange.relative(to: self).startIndex
+        let deleteCount = subrange.relative(to: self).endIndex - subrange.relative(to: self).startIndex
+        let encoded: [Object] = newElements.map({ .primitive(.string(String($0))) })
+        context.splice(path: path, start: start, deletions: deleteCount, insertions: encoded)
+    }
+
+    func replaceSubrange(_ subrange: Range<Int>, with string: String) {
+        let start = subrange.relative(to: self).startIndex
+        let deleteCount = subrange.relative(to: self).endIndex - subrange.relative(to: self).startIndex
+        let encoded: [Object] = Array(string).map({ .primitive(.string(String($0))) })
+        context.splice(path: path, start: start, deletions: deleteCount, insertions: encoded)
     }
 
     func delete(_ characterCount: Int, charactersAtIndex index: Int) {

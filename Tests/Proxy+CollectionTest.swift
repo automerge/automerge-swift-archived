@@ -182,5 +182,4 @@ class ProxyCollectionTest: XCTestCase {
             XCTAssertEqual(doc.nested[0].get(), [1])
         })
     }
-
 }

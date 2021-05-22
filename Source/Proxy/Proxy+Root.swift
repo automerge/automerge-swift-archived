@@ -12,7 +12,7 @@ extension Proxy {
         return Proxy<T>(context: context, objectId: .root, path: [], value: {
             let object = context.getObject(objectId: .root)
             
-            return try! ObjectToTypeTransformer().map(object)
+            return try! ObjectToTypeTransformer.shared.map(object)
         })
     }
 }
