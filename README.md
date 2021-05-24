@@ -186,7 +186,7 @@ The .getChanges()/.apply(changes:) API works as follows:
 ```swift
 // On one node
 var newDoc = oldDoc
-newDoc.change {
+newDoc.change { doc in
   // make arbitrary change to the document
 }
 let changes = newDoc.getChanges(between: oldDoc)
@@ -201,3 +201,40 @@ Note that `newDoc.getChanges(between: currentDoc)` takes  an old  document state
 The counterpart, `Document.apply(chnages:)` applies the list of changes to the document. Automerge guarantees that whenever any two documents have applied the same set of changes — even if the changes were applied in a different order — then those two documents are equal. That property is called convergence, and it is the essence of what Automerge is all about.
 
 `doc1.merge(doc2)` is a related function that is useful for testing. It looks for any changes that appear in doc2 but not in doc1, and applies them to doc1. This function requires that doc1 and doc2 have different actor IDs (that is, they originated from different calls to Document.init()). See the Usage section above for an example using `Document.merge()`.
+
+### Conflicting changes
+
+Automerge allows different nodes to independently make arbitrary changes to their respective copies of a document. In most cases, those changes can be combined without any trouble. For example, if users modify two different objects, or two different properties in the same object, then it is straightforward to combine those changes.
+
+If users concurrently insert or delete items in a list (or characters in a text document), Automerge preserves all the insertions and deletions. If two users concurrently insert at the same position, Automerge will arbitrarily place one of the insertions first and the other second, while ensuring that the final order is the same on all nodes.
+
+The only case Automerge cannot handle automatically, because there is no well-defined resolution, is when users concurrently update the same property in the same object (or, similarly, the same index in the same list). In this case, Automerge arbitrarily picks one of the concurrently written values as the "winner":
+
+```swift
+// Initialize documents with known actor IDs
+var doc1 = Document(Coordinate(), Actor(actorId: "actor-1")
+var doc2 = Document(Coordinate(), Actor(actorId: "actor-2")
+doc1.change { doc in
+  doc.x.set(1)
+})
+doc2.change { doc in
+  doc.x.set(2)
+})
+doc1.merge(doc2)
+doc2.merge(doc1)
+
+// Now, doc1 might be either {x: 1} or {x: 2} -- the choice is random.
+// However, doc2 will be the same, whichever value is chosen as winner.
+doc1.coontent.x == doc2.coontent.x
+```
+Although only one of the concurrently written values shows up in the object, the other values are not lost. They are merely relegated to a conflicts object. Suppose doc.x = 2 is chosen as the "winning" value:
+
+```swift
+doc1 // {x: 2}
+doc2 // {x: 2}
+doc1.rootProxy().conflicts(dynamicMember: \.x)) // {'actor-1': 1}
+doc2.rootProxy().conflicts(dynamicMember: \.x)) // {'actor-1': 1}
+```
+Here, we've recorded a conflict on property x. The key actor-1 is the actor ID that "lost" the conflict. The associated value is the value actor-1 assigned to the property x. You might use the information in the conflicts object to show the conflict in the user interface.
+
+The next time you assign to a conflicting property, the conflict is automatically considered to be resolved, and the conflict disappears from the object returned by Automerge.getConflicts().
