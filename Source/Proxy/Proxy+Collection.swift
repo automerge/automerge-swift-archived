@@ -42,12 +42,47 @@ extension Proxy: Collection, Sequence where Wrapped: Collection, Wrapped.Element
 
 }
 
-extension Proxy: MutableCollection where Wrapped: MutableCollection, Wrapped.Element: Codable, Wrapped.Index == Int {
+extension MutableProxy: Collection, Sequence where Wrapped: Collection, Wrapped.Element: Codable, Wrapped.Index == Int {
 
-    public subscript(position: Int) -> Proxy<Wrapped.Element> {
+    public typealias Index = Int
+    public typealias Element = MutableProxy<Wrapped.Element>
+
+    public var startIndex: Index { list.startIndex }
+    public var endIndex: Index { list.endIndex }
+
+    public subscript(position: Int) -> MutableProxy<Wrapped.Element> {
         get {
             let objectId = list[position].objectId
-            return Proxy<Wrapped.Element>(
+            return MutableProxy<Wrapped.Element>(
+                context: context,
+                objectId: objectId,
+                path: path + [.init(key: .index(position), objectId: objectId)],
+                value: self.get()[position]
+            )
+        }
+    }
+
+    // Method that returns the next index when iterating
+    public func index(after i: Index) -> Index {
+        return list.index(after: i)
+    }
+
+    fileprivate var list: List {
+        guard case .list(let list) = objectId.map({ context.getObject(objectId: $0) }) else {
+            fatalError("Must contain list")
+        }
+
+        return list
+    }
+
+}
+
+extension MutableProxy: MutableCollection where Wrapped: MutableCollection, Wrapped.Element: Codable, Wrapped.Index == Int {
+
+    public subscript(position: Int) -> MutableProxy<Wrapped.Element> {
+        get {
+            let objectId = list[position].objectId
+            return MutableProxy<Wrapped.Element>(
                 context: context,
                 objectId: objectId,
                 path: path + [.init(key: .index(position), objectId: objectId)]
@@ -63,7 +98,7 @@ extension Proxy: MutableCollection where Wrapped: MutableCollection, Wrapped.Ele
 
 }
 
-extension Proxy: RangeReplaceableCollection where Wrapped: RangeReplaceableCollection, Wrapped.Index == Int, Wrapped.Element: Codable {
+extension MutableProxy: RangeReplaceableCollection where Wrapped: RangeReplaceableCollection, Wrapped.Index == Int, Wrapped.Element: Codable {
 
     public convenience init() {
         let void: (MapDiff, Object?, inout [ObjectId: Object]) -> Object? = { _, _, _ in
@@ -76,30 +111,32 @@ extension Proxy: RangeReplaceableCollection where Wrapped: RangeReplaceableColle
         let newElements = proxyElements.map { $0.get() }
         let start = subrange.relative(to: self).startIndex
         let deleteCount = subrange.relative(to: self).endIndex - subrange.relative(to: self).startIndex
-        let encoded = try!TypeToObject().map(Array(newElements))
-        context.splice(path: path, start: start, deletions: deleteCount, insertions: encoded)
+        guard case .list(let list) = try! objectEncoder.encode(Array(newElements)) else {
+            fatalError()
+        }
+        context.splice(path: path, start: start, deletions: deleteCount, insertions: Array(list))
     }
 
     public func reserveCapacity(_ n: Int) {}
 
 }
 
-extension Proxy where Wrapped: RangeReplaceableCollection, Wrapped.Index == Int, Wrapped.Element: Codable {
+extension MutableProxy where Wrapped: RangeReplaceableCollection, Wrapped.Index == Int, Wrapped.Element: Codable {
 
     public func replaceSubrange<C, R>(_ subrange: R, with newElements: C) where C : Collection, R : RangeExpression, C.Element == Wrapped.Element, Index == R.Bound {
         let start = subrange.relative(to: self).startIndex
         let deleteCount = subrange.relative(to: self).endIndex - subrange.relative(to: self).startIndex
-        let encoded = try! TypeToObject().map(Array(newElements))
-        context.splice(path: path, start: start, deletions: deleteCount, insertions: encoded)
+        guard case .list(let list) = try! objectEncoder.encode(Array(newElements)) else {
+            fatalError()
+        }
+        context.splice(path: path, start: start, deletions: deleteCount, insertions: Array(list))
     }
 
     public func append(_ newElement: __owned Wrapped.Element) {
         insert(newElement, at: endIndex)
     }
 
-    public func insert(
-        _ newElement: __owned Wrapped.Element, at i: Index
-    ) {
+    public func insert(_ newElement: __owned Wrapped.Element, at i: Index) {
         replaceSubrange(i..<i, with: CollectionOfOne(newElement))
     }
 
