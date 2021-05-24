@@ -95,13 +95,13 @@ doc1.merge(doc2)
 // can also see a snapshot of the application state at any moment in time in the
 // past. For example, we can count how many cards there were at each point:
 
-History(doc1).map {($0.change.message, $0.snapshot.cards.count) }
-Automerge.getHistory(finalDoc).map(state => [state.change.message, state.snapshot.cards.length])
-// [ [ 'Initialization', 0 ],
-//   [ 'Add card', 1 ],
-//   [ 'Add another card', 2 ],
-//   [ 'Mark card as done', 2 ],
-//   [ 'Delete card', 1 ] ]
+History(doc1).map { ($0.change.message, $0.snapshot.cards.count) }
+// [ ('Initialization', 0),
+//   ('Add card', 1),
+//   ('Add another card', 2),
+//   ('Mark card as done', 2),
+//   ('Delete card', 1)
+//  ]
 
 ```
 
@@ -121,7 +121,7 @@ var doc = Automerge.Document(Cards(cards: []))
 
 `doc.change` enables you to modify an Automerge document doc.
 
- The changeFn function you pass to`doc.change` is called with a mutable version of doc, as shown below.
+ The change function you pass to`doc.change` is called with a mutable version of doc, as shown below.
 
  The optional message argument allows you to attach an arbitrary string to the change, which is not interpreted by Automerge, but saved as part of the change history
 
@@ -137,11 +137,11 @@ currentDoc.change() { doc in
     doc.boolValue.set(true)
 
     doc.nestedObject.set(NestedObject(property: "val")) // creates a nested object
-    doc.nestedObject.propertyset("value")
+    doc.nestedObject.property.set("value")
 
     // Arrays are fully supported
     doc.list = [] // creates an empty list object
-    doc.list.append(contentsOf: [2, 3]
+    doc.list.append(contentsOf: [2, 3])
     doc.list.insert(1, at: 0)
     doc.list[2].set(3)
     // now doc.list is [0, 1, 3]
@@ -166,38 +166,38 @@ Note: Specifying actor
 The Document initializer takes an optional `actor` parameter:
 
 ```swift
-let actor = Actor(actorId: "1234abcd-56789qrstuv")
+let actor = Actor(actorId: "1234abcd56789qrstuv")
 let doc2 = Document(Cards(cards: []), actor: actor)
 let doc3 = Document(data: binary, actor: actor)
 ```
 
-The actor ID is a string that uniquely identifies the current node; if you omit actor ID, a random UUID is generated. If you pass in your own actor ID, you must ensure that there can never be two different processes with the same actor ID. Even if you have two different processes running on the same machine, they must have distinct actor IDs.
+The actor ID is a string that uniquely identifies the current node; if you omit actor ID, a random ID is generated. If you pass in your own actor ID, you must ensure that there can never be two different processes with the same actor ID. Even if you have two different processes running on the same machine, they must have distinct actor IDs.
 
 Unless you know what you are doing, you should stick with the default, and let actor ID be auto-generated.
 
+### Sending and receiving changes
 
-### Undo and redo
+The Automerge library itself is agnostic to the network layer — that is, you can use whatever communication mechanism you like to get changes from one node to another. There are currently a few options, with more under development:
 
-Automerge makes it easy to support an undo/redo feature in your application. Note that undo is a somewhat tricky concept in a collaborative application! Here, "undo" is taken as meaning "what the user expects to happen when they hit ctrl+Z/⌘ Z". In particular, the undo feature undoes the most recent change by the local user; it cannot currently be used to revert changes made by other users.
+Use `.getChanges()` and  `.apply(changes:)` to manually capture changes on one node and apply them on another.
 
-Moreover, undo is not the same as jumping back to a previous version of a document; see the next section on how to examine document history. Undo works by applying the inverse operation of the local user's most recent change, and redo works by applying the inverse of the inverse. Both undo and redo create new changes, so from other users' point of view, an undo or redo looks the same as any other kind of change.
-
-To check whether undo is currently available, use the function `canUndo()`. It returns true if the local user has made any changes since the document was created or loaded. You can then call doc.undo() to perform an undo. The functions canRedo() and redo() do the inverse:
+The .getChanges()/.apply(changes:) API works as follows:
 
 ```swift
-var doc = Automerge.Document(Birds(birds: []))
-doc.change() {
-    $0.birds.append("blackbird")
+// On one node
+var newDoc = oldDoc
+newDoc.change {
+  // make arbitrary change to the document
 }
-doc.change() {
-    $0.birds.append("robin")
-}
-// now doc is {birds: ['blackbird', 'robin']}
+let changes = newDoc.getChanges(between: oldDoc)
+network.broadcast(changes)
 
-doc.canUndo // returns true
-doc.undo() // now doc is {birds: ['blackbird']}
-doc.undo() // now doc is {birds: []}
-doc.redo() // now doc is {birds: ['blackbird']}
-doc.redo() // now doc is {birds: ['blackbird', 'robin']}
+// On another node
+let changes = network.receive()
+currentDoc.apply(changes: changes)
 ```
-You can pass an optional message as second argument to `.undo(message: String)` and `.redo(doc, message)`. This string is used as "commit message" that describes the undo/redo change, and it appears in the change history.
+Note that `newDoc.getChanges(between: currentDoc)` takes  an old  document state as argument. It then returns a list of all the changes that were made in newDoc since oldDoc. If you want a list of all the changes ever made in doc, you can call `Document.getAllChanges()`.
+
+The counterpart, `Document.apply(chnages:)` applies the list of changes to the document. Automerge guarantees that whenever any two documents have applied the same set of changes — even if the changes were applied in a different order — then those two documents are equal. That property is called convergence, and it is the essence of what Automerge is all about.
+
+`doc1.merge(doc2)` is a related function that is useful for testing. It looks for any changes that appear in doc2 but not in doc1, and applies them to doc1. This function requires that doc1 and doc2 have different actor IDs (that is, they originated from different calls to Document.init()). See the Usage section above for an example using `Document.merge()`.
