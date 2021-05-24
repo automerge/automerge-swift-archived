@@ -24,7 +24,7 @@ extension Proxy {
                 return nil
             }
 
-            let typedObjects: [String: Y] = try! objectToType.map(realConflicts.compactMapKeys({ $0.objectId }))
+            let typedObjects: [String: Y] = try! objectDecoder.decode(realConflicts.compactMapKeys({ $0.objectId }))
             return typedObjects.compactMapKeys({ Actor(actorId: $0) })
         default:
             fatalError()
@@ -48,7 +48,7 @@ extension Proxy where Wrapped: Collection, Wrapped.Index == Int, Wrapped.Element
             return nil
         }
 
-        let typedObjects: [String: Wrapped.Element] = try! objectToType.map(realConflicts.compactMapKeys({ $0.objectId }))
+        let typedObjects: [String: Wrapped.Element] = try! objectDecoder.decode(realConflicts.compactMapKeys({ $0.objectId }))
         return typedObjects.compactMapKeys({ Actor(actorId: $0) })
     }
 }

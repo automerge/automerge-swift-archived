@@ -52,8 +52,7 @@ class ProxyTest: XCTestCase {
         }
     }
 
-    // should allow unsafe access for map key
-    func testProxyUnsafe1() {
+    func testAnyProxy1() {
         struct Scheme: Codable, Equatable {
             var key1: String?
         }
@@ -62,13 +61,28 @@ class ProxyTest: XCTestCase {
 
         // WHEN
         document.change({ doc in
-            doc.unsafe().key1.set("value1")
+            doc.toAny().key1.as(String.self).set("value1")
             XCTAssertEqual(doc.key1?.get(), "value1")
         })
     }
 
-    // should allow unsafe access for collection index
-    func testProxyUnsafe2() {
+    func testAnyProxy2() {
+        struct Scheme: Codable, Equatable {
+            var key1: [String]
+        }
+        // GIVEN
+        var document = Document(Scheme(key1: ["2"]))
+
+        // WHEN
+        document.change({ doc in
+            doc.toAny().key1.as([String].self)[0].set("1")
+            XCTAssertEqual(doc.key1.get(), ["1"])
+        })
+        
+        XCTAssertEqual(document.content.key1, ["1"])
+    }
+
+    func testAnyProxy3() {
         struct Scheme: Codable, Equatable {
             var key1: [String]
         }
@@ -77,28 +91,11 @@ class ProxyTest: XCTestCase {
 
         // WHEN
         document.change({ doc in
-            doc.unsafe().key1[1].set("2")
-            XCTAssertEqual(doc.key1.get(), ["1", "2"])
+            doc.toAny().key1.as([String].self).append(contentsOf: ["2", "3"])
+            XCTAssertEqual(doc.key1.get(), ["1", "2", "3"])
         })
-        
-        XCTAssertEqual(document.content.key1, ["1", "2"])
-    }
-    
-    // should allow unsafe access for collection index
-    func testProxyUnsafe3() {
-        struct Scheme: Codable, Equatable {
-            var key1: [String]
-        }
-        // GIVEN
-        var document = Document(Scheme(key1: []))
 
-        // WHEN
-        document.change({ doc in
-            doc.unsafe().key1[0].set("1")
-            XCTAssertEqual(doc.key1.get(), ["1"])
-        })
-        
-        XCTAssertEqual(document.content.key1, ["1"])
+        XCTAssertEqual(document.content.key1, ["1", "2", "3"])
     }
 
     // should allow deep object assigment

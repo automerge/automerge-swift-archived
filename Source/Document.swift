@@ -55,7 +55,8 @@ public struct Document<T: Codable> {
     }
 
     public init(changes: [[UInt8]], actor: Actor = Actor()) {
-        let (backend, patch) = RSBackend().apply(changes: changes)
+        let backend = RSBackend()
+        let patch = backend.apply(changes: changes)
         var doc = Document<T>(actor: actor, backend: backend)
 
         doc.applyPatch(patch: patch)
@@ -87,6 +88,51 @@ public struct Document<T: Codable> {
     }
 
     /**
+     * Applies `patch` to the document root object `doc`. This patch must come
+     * from the backend; it may be the result of a local change or a remote change.
+     * If it is the result of a local change, the `seq` field from the change
+     * request should be included in the patch, so that we can match them up here.
+     */
+    public mutating func applyPatch(patch: Patch) {
+        applyPatchToDoc(patch: patch, fromBackend: true, context: nil)
+    }
+
+    public func save() -> [UInt8] {
+        return backend.save()
+    }
+
+    public func rootProxy() -> Proxy<T> {
+        let context = Context(cache: cache, actorId: actor, maxOp: state.maxOp)
+        return .rootProxy(context: context)
+    }
+
+    public func allChanges() -> [[UInt8]] {
+        return backend.getChanges()
+    }
+
+    public mutating func apply(changes: [[UInt8]]) {
+        let patch = writableBackend().apply(changes: changes)
+        applyPatch(patch: patch)
+    }
+
+    public mutating func merge(_ remoteDocument: Document<T>) {
+        precondition(actor != remoteDocument.actor, "Cannot merge an actor with itself")
+        apply(changes: remoteDocument.allChanges())
+    }
+
+    public func getMissingsDeps() -> [String] {
+        return backend.getMissingDeps()
+    }
+
+    public func getHeads() -> [String] {
+        return backend.getHeads()
+    }
+
+    public func getChanges(between oldDocument: Document<T>) -> [[UInt8]] {
+        return backend.getChanges(heads: oldDocument.backend.getHeads())
+    }
+
+    /**
      * Adds a new change request to the list of pending requests, and returns an
      * updated document root object. `requestType` is a string indicating the type
      * of request, which may be "change", "undo", or "redo". For the "change" request
@@ -111,11 +157,18 @@ public struct Document<T: Codable> {
             ops: context?.ops ?? []
         )
 
-        let(newBackend, patch) = backend.applyLocalChange(request: request)
-        self.backend = newBackend
+        let patch = writableBackend().applyLocalChange(request: request)
 
         applyPatchToDoc(patch: patch, fromBackend: true, context: context)
         return request
+    }
+
+    private mutating func writableBackend() -> RSBackend {
+        if !isKnownUniquelyReferenced(&self.backend) {
+            backend = backend.clone()
+        }
+
+        return backend
     }
 
     /**
@@ -145,16 +198,6 @@ public struct Document<T: Codable> {
     }
 
     /**
-     * Applies `patch` to the document root object `doc`. This patch must come
-     * from the backend; it may be the result of a local change or a remote change.
-     * If it is the result of a local change, the `seq` field from the change
-     * request should be included in the patch, so that we can match them up here.
-     */
-    public mutating func applyPatch(patch: Patch) {
-        applyPatchToDoc(patch: patch, fromBackend: true, context: nil)
-    }
-
-    /**
      * Takes a set of objects that have been updated (in `updated`) and an updated state object
      * `state`, and returns a new immutable document root object based on `doc` that reflects
      * those updates.
@@ -174,34 +217,4 @@ public struct Document<T: Codable> {
         }
     }
 
-    public func save() -> [UInt8] {
-        return backend.save()
-    }
-
-    public func rootProxy() -> Proxy<T> {
-        let context = Context(cache: cache, actorId: actor, maxOp: state.maxOp)
-        return .rootProxy(context: context)
-    }
-
-    public func allChanges() -> [[UInt8]] {
-        return backend.getChanges()
-    }
-
-    public mutating func apply(changes: [[UInt8]]) {
-        let(newBackend, patch) = backend.apply(changes: changes)
-        backend = newBackend
-        applyPatch(patch: patch)
-    }
-
-    public mutating func merge(_ remoteDocument: Document<T>) {
-        precondition(actor != remoteDocument.actor, "Cannot merge an actor with itself")
-        apply(changes: remoteDocument.allChanges())
-    }
-
-    public func getMissingsDeps() -> [String] {
-        return backend.getMissingDeps()
-    }
-
 }
-
-
