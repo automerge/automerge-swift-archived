@@ -10,12 +10,12 @@ import Foundation
 struct RemoveEdit: Codable, Equatable {
 
     init(index: Int, count: Int) {
-        self.action = "remove"
+        self.action = .remove
         self.index = index
         self.count = count
     }
 
-    let action: String
+    let action: Edit2.Action
     let index: Int
     let count: Int
 }

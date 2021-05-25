@@ -10,13 +10,13 @@ import Foundation
 struct MultiInsertEdit: Codable, Equatable {
 
     init(index: Int, elemId: ObjectId, values: [Primitive]) {
-        self.action = "multi-insert"
+        self.action = .multiInsert
         self.index = index
         self.elemId = elemId
         self.values = values
     }
 
-    let action: String
+    let action: Edit2.Action
     let index: Int
     let elemId: ObjectId
     let values: [Primitive]
