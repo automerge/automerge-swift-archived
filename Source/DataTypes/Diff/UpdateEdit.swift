@@ -9,13 +9,13 @@ import Foundation
 
 struct UpdateEdit: Codable, Equatable {
     init(index: Int, opId: ObjectId, value: Diff) {
-        self.action = "update"
+        self.action = .update
         self.index = index
         self.opId = opId
         self.value = value
     }
 
-    let action: String
+    let action: Edit2.Action
     let index: Int
     let opId: ObjectId
     let value: Diff

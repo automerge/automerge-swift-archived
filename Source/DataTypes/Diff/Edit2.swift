@@ -8,10 +8,55 @@
 import Foundation
 
 enum Edit2: Codable, Equatable {
+
+    enum Action: String, Codable {
+        case insert
+        case multiInsert = "multi-insert"
+        case update
+        case remove
+    }
+
     case singleInsert(SingleInsertEdit)
     case multiInsert(MultiInsertEdit)
     case update(UpdateEdit)
     case remove(RemoveEdit)
+
+    var action: Action {
+        switch self {
+        case .singleInsert(let edit):
+            return edit.action
+        case .multiInsert(let edit):
+            return edit.action
+        case .update(let edit):
+            return edit.action
+        case .remove(let edit):
+            return edit.action
+        }
+    }
+
+    var index: Int {
+        switch self {
+        case .singleInsert(let edit):
+            return edit.index
+        case .multiInsert(let edit):
+            return edit.index
+        case .update(let edit):
+            return edit.index
+        case .remove(let edit):
+            return edit.index
+        }
+    }
+
+    var opId: ObjectId? {
+        switch self {
+        case .singleInsert(let edit):
+            return edit.opId
+        case .update(let edit):
+            return edit.opId
+        default:
+            return nil
+        }
+    }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()

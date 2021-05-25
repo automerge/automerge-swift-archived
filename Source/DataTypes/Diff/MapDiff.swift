@@ -21,6 +21,28 @@ class MapDiff: Codable, Equatable {
         self.props = props
     }
 
+    required init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        self.objectId = try values.decode(ObjectId.self, forKey: .objectId)
+        self.type = try values.decode(ObjectType.self, forKey: .type)
+        
+        var props = Props()
+        let stringProps = try? values.decodeIfPresent([String: [String: Diff]].self, forKey: .props)
+        if let keys = stringProps?.keys {
+            for key in keys {
+                if let index = Int(key) {
+                    props[index] = stringProps![key]?.compactMapKeys({ ObjectId($0) })
+                } else {
+                    props[key] = stringProps![key]?.compactMapKeys({ ObjectId($0) })
+                }
+                
+            }
+        }
+        
+        self.props = props
+    }
+
+
     enum ObjectType: String, Codable, Equatable {
         case map
         case table

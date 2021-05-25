@@ -10,14 +10,14 @@ import Foundation
 struct SingleInsertEdit: Codable, Equatable {
 
     init(index: Int, elemId: ObjectId, opId: ObjectId, value: Diff) {
-        self.action = "insert"
+        self.action = .insert
         self.index = index
         self.elemId = elemId
         self.opId = opId
         self.value = value
     }
 
-    let action: String
+    let action: Edit2.Action
     let index: Int
     let elemId: ObjectId
     let opId: ObjectId

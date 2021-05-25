@@ -126,30 +126,119 @@ func updateText(patch: ListDiff, text: Text?, updated: inout [ObjectId: Object])
  * to map the objectId to the new object, and returns the new object.
  */
 func updateList(patch: ListDiff, list: List?, updated: inout [ObjectId: Object]) -> List {
-    fatalError()
-//    let objectId = patch.objectId
-//    var list = list ?? List(objectId: objectId, listValues: [])
-//    var conflicts: [[ObjectId: Object]?] = list.conflicts
-//    patch.edits?.iterate(
-//        insertCallback: { index, newElems in
-//            let blanksValues = Array<Object>(repeating: .primitive(1.0), count: newElems.count)
-//            list.replaceSubrange(index..<index, with: blanksValues)
-//            let blanksConflicts = Array<[ObjectId : Object]?>(repeating: nil, count: newElems.count)
-//            conflicts.replaceSubrange(index..<index, with: blanksConflicts)
-//            list.elemIds.replaceSubrange(index..<index, with: newElems)
-//        },
-//        removeCallback: { index, deletions in
-//            let range = index..<index + deletions
-//            list.removeSubrange(range)
-//            conflicts.removeSubrange(range)
-//            list.elemIds.removeSubrange(range)
-//        })
-//    applyProperties(props: patch.props, list: &list, conflicts: &conflicts, updated: &updated)
-//    list.conflicts = conflicts.compactMap({ $0 })
-//    updated[objectId] = .list(list)
-//
-//    return list
+    let objectId = patch.objectId
+    var list = list ?? List(objectId: objectId, listValues: [])
+    var i = 0
+    while i < patch.edits.count {
+        defer {
+            i += 1
+        }
+        let edit = patch.edits[i]
+        if edit.action == .insert || edit.action == .update {
+            let oldValue = list.conflicts[safe: edit.index]?[edit.opId!]
+            var lastValue = getValue(patch: edit.value!, object: oldValue, updated: &updated)
+            var values = [edit.opId!: lastValue!]
+
+            while i < patch.edits.count - 1 &&
+                    patch.edits[i + 1].index == edit.index &&
+                    patch.edits[i + 1].action == .update
+            {
+                i += 1
+                let conflict = patch.edits[i]
+                let oldValue = list.conflicts[conflict.index][conflict.opId!]
+                lastValue = getValue(patch: conflict.value!, object: oldValue, updated: &updated)
+                values[conflict.opId!] = lastValue
+            }
+
+            if case .singleInsert(let insert) = edit {
+                list.insert(lastValue!, at: edit.index)
+                list.conflicts.insert(values, at: edit.index)
+                list.elemIds.insert(insert.elemId, at: edit.index)
+            } else {
+                list[edit.index] = lastValue!
+                list.conflicts[edit.index] = values
+            }
+        } else if case .multiInsert(let multiInsert) = edit {
+            let startElemId = multiInsert.elemId.parseOpId()!
+            var newElems = [ObjectId]()
+            var newValues = [Object]()
+            var newConflicts = [[ObjectId : Object]]()
+            for (i, value) in multiInsert.values.enumerated() {
+                let elemId: ObjectId = "\(startElemId.counter + i)@\(startElemId.actorId)"
+                newValues.append(.primitive(value))
+                newConflicts.append([elemId: .primitive(value)])
+                newElems.append(elemId)
+            }
+            list.insert(contentsOf: newValues, at: edit.index)
+            list.conflicts.insert(contentsOf: newConflicts, at: edit.index)
+            list.elemIds.insert(contentsOf: newElems, at: edit.index)
+        } else if case .remove(let remove) = edit {
+            list.removeSubrange((remove.index..<remove.index + remove.count))
+            list.conflicts.removeSubrange((remove.index..<remove.index + remove.count))
+            list.elemIds.removeSubrange((remove.index..<remove.index + remove.count))
+        }
+    }
+    updated[objectId] = .list(list)
+    return list
 }
+
+
+//function updateListObject(patch, obj, updated) {
+//  const objectId = patch.objectId
+//  if (!updated[objectId]) {
+//    updated[objectId] = cloneListObject(obj, objectId)
+//  }
+//
+//  const list = updated[objectId], conflicts = list[CONFLICTS], elemIds = list[ELEM_IDS]
+//  for (let i = 0; i < patch.edits.length; i++) {
+//    const edit = patch.edits[i]
+//
+//    if (edit.action === 'insert' || edit.action === 'update') {
+//      const oldValue = conflicts[edit.index] && conflicts[edit.index][edit.opId]
+//      let lastValue = getValue(edit.value, oldValue, updated)
+//      let values = {[edit.opId]: lastValue}
+//
+//      // Successive updates for the same index are an indication of a conflict on that list element.
+//      // Edits are sorted in increasing order by Lamport timestamp, so the last value (with the
+//      // greatest timestamp) is the default resolution of the conflict.
+//      while (i < patch.edits.length - 1 && patch.edits[i + 1].index === edit.index &&
+//             patch.edits[i + 1].action === 'update') {
+//        i++
+//        const conflict = patch.edits[i]
+//        const oldValue2 = conflicts[conflict.index] && conflicts[conflict.index][conflict.opId]
+//        lastValue = getValue(conflict.value, oldValue2, updated)
+//        values[conflict.opId] = lastValue
+//      }
+//
+//      if (edit.action === 'insert') {
+//        list.splice(edit.index, 0, lastValue)
+//        conflicts.splice(edit.index, 0, values)
+//        elemIds.splice(edit.index, 0, edit.elemId)
+//      } else {
+//        list[edit.index] = lastValue
+//        conflicts[edit.index] = values
+//      }
+//
+//    } else if (edit.action === 'multi-insert') {
+//      const startElemId = parseOpId(edit.elemId), newElems = [], newValues = [], newConflicts = []
+//      edit.values.forEach((value, index) => {
+//        const elemId = `${startElemId.counter + index}@${startElemId.actorId}`
+//        newValues.push(value)
+//        newConflicts.push({[elemId]: {value, type: 'value'}})
+//        newElems.push(elemId)
+//      })
+//      list.splice(edit.index, 0, ...newValues)
+//      conflicts.splice(edit.index, 0, ...newConflicts)
+//      elemIds.splice(edit.index, 0, ...newElems)
+//
+//    } else if (edit.action === 'remove') {
+//      list.splice(edit.index, edit.count)
+//      conflicts.splice(edit.index, edit.count)
+//      elemIds.splice(edit.index, edit.count)
+//    }
+//  }
+//  return list
+//}
 
 /**
  * Updates the map object `obj` according to the modifications described in
