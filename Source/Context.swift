@@ -7,6 +7,31 @@
 
 import Foundation
 
+final class ObjectCache: ExpressibleByDictionaryLiteral {
+
+    init(dictionaryLiteral elements: (ObjectId, Object)...) {
+        self.cached = Dictionary(uniqueKeysWithValues: elements)
+    }
+    init() {
+        cached = [:]
+    }
+
+    var cached: [ObjectId: Object]
+
+    subscript(objectId: ObjectId) -> Object? {
+        get {
+           return cached[objectId]
+        }
+        set {
+            cached[objectId] = newValue
+        }
+    }
+
+    func merge(_ other: ObjectCache, uniquingKeysWith: (Object, Object) -> Object) {
+        cached.merge(other.cached, uniquingKeysWith: uniquingKeysWith)
+    }
+}
+
 final class Context {
 
     struct KeyPathElement: Equatable {
@@ -14,11 +39,11 @@ final class Context {
         let objectId: ObjectId?
     }
 
-    convenience init(cache: [ObjectId: Object], actorId: Actor, maxOp: Int) {
+    convenience init(cache: ObjectCache, actorId: Actor, maxOp: Int) {
         self.init(
             actorId: actorId,
             applyPatch: interpretPatch,
-            updated: [ObjectId: Object](),
+            updated: ObjectCache(),
             cache: cache,
             ops: [],
             maxOp: maxOp
@@ -27,9 +52,9 @@ final class Context {
 
     init(
         actorId: Actor,
-        applyPatch: @escaping (MapDiff, Object?, inout [ObjectId: Object]) -> Object?,
-        updated: [ObjectId: Object],
-        cache: [ObjectId: Object],
+        applyPatch: @escaping (MapDiff, Object?, ObjectCache) -> Object?,
+        updated: ObjectCache,
+        cache: ObjectCache,
         ops: [Op] = [],
         maxOp: Int
     ) {
@@ -43,9 +68,9 @@ final class Context {
 
     private let actorId: Actor
     private let maxOp: Int
-    private let applyPatch: (MapDiff, Object?, inout [ObjectId: Object]) -> Object?
-    private(set) var updated: [ObjectId: Object]
-    private var cache: [ObjectId: Object]
+    private let applyPatch: (MapDiff, Object?, ObjectCache) -> Object?
+    private (set) var updated: ObjectCache
+    private let cache: ObjectCache
 
     var idUpdated: Bool {
         return !ops.isEmpty
@@ -201,7 +226,18 @@ final class Context {
 
     /// Returns the operation ID of the next operation to be added to the context.
     private func nextOpId() -> ObjectId {
-        return ObjectId("\(maxOp + ops.count + 1)@\(actorId.actorId)")
+        var numberOfOps = maxOp + 1
+        for op in ops {
+            if let values = op.values, op.action == .set {
+                numberOfOps += values.count
+            } else if let multiOp = op.multiOp, op.action == .del {
+                numberOfOps += multiOp
+            } else {
+                numberOfOps += 1
+            }
+
+        }
+        return "\(numberOfOps)@\(actorId.actorId)"
     }
 
     /**
@@ -215,12 +251,12 @@ final class Context {
         precondition(index >= 0 && index <= list.count, "List index \(index) is out of bounds for list of length \(list.count)")
 
         var elmId = getElmId(list: getSaveObject(objectId: subPatch.objectId), index: index, insert: true)
-        let primitives: [Primitive] = values.compactMap({ value in
+        let primitives: [Primitive] = values.compactMap { value in
             if case .primitive(let primitive) = value {
                 return primitive
             }
             return nil
-        })
+        }
 
         if primitives.count == values.count && values.count > 1 {
             let nextElmId = nextOpId()
@@ -234,7 +270,6 @@ final class Context {
                 subPatch.edits.append(.singleInsert(SingleInsertEdit(index: index + offset, elemId: elmId, opId: elmId, value: valuePatch)))
             }
         }
-
     }
 
     func getElmId(list: Object?, index: Int, insert: Bool = false) -> ObjectId {
@@ -251,7 +286,6 @@ final class Context {
         if case .text(let text)? = list {
             return text.elemIds[index]
         }
-
 
         fatalError()
     }
@@ -324,7 +358,7 @@ final class Context {
         if case .list(let subPatch) = subPatch, insertions.count > 0 {
             insertListItems(subPatch: subPatch, index: start, values: insertions, newObject: false)
         }
-        _ = applyPatch(diff, cache[.root], &updated)
+        cache[.root] = applyPatch(diff, cache[.root], updated)
     }
 
     /**
@@ -487,8 +521,7 @@ final class Context {
         let diff = MapDiff(objectId: .root, type: .map)
         var subPatch = getSubpatch(diff: diff, path: path)
         callback(&subPatch)
-        cache[.root] = applyPatch(diff, cache[.root], &updated)
-        updated[.root] = cache[.root]
+        cache[.root] = applyPatch(diff, cache[.root], updated)
     }
 
     /**
@@ -496,20 +529,30 @@ final class Context {
      * by mutating the patch object. Returns the subpatch at the given path.
      */
     func getSubpatch(diff: MapDiff, path: [KeyPathElement]) -> Diff {
+        if path.isEmpty {
+            return .map(diff)
+        }
         var subPatch: Diff = .map(diff)
         var object = getObject(objectId: .root)
         for pathComponent in path {
-            if subPatch.props[pathComponent.key] == nil {
-                subPatch.props[pathComponent.key] = getValuesDescriptions(path: path, object: object, key: pathComponent.key)
+            let values = getValuesDescriptions(path: path, object: object, key: pathComponent.key)
+            if case .map(let mapDiff) = subPatch {
+                if mapDiff.props[pathComponent.key] == nil {
+                    mapDiff.props[pathComponent.key] = values
+                }
+            } else if case .list(let listDiff) = subPatch, case .index(let index) = pathComponent.key {
+                for (opId, value) in values {
+                    listDiff.edits.append(.update(UpdateEdit(index: index, opId: opId, value: value)))
+                }
             }
+
             var nextOpId: ObjectId!
-            let values = subPatch.props[pathComponent.key]!
-            for opId in values.keys where values[opId]!.objectId == pathComponent.objectId {
-                nextOpId = opId
+            for (opId, value) in values {
+                if value.objectId == pathComponent.objectId {
+                    nextOpId = opId
+                }
             }
-
             subPatch = values[nextOpId!]!
-
             object = getPropertyValue(object: object, key: pathComponent.key, opId: nextOpId!)
         }
 
@@ -671,8 +714,14 @@ final class Context {
         }
 
         applyAt(path: path, callback: { subpatch in
-            subpatch.props[key] = [opId: .value(.init(value: .number(Double(counterValue + delta)), datatype: .counter))]
+            if case .list(let listDiff) = subpatch, case .index(let index) = key {
+                listDiff.edits.append(.update(UpdateEdit(index: index, opId: opId, value: .value(.init(value: .number(Double(counterValue + delta)), datatype: .counter)))))
+            } else if case .map = subpatch {
+                subpatch.props[key] = [opId: .value(.init(value: .number(Double(counterValue + delta)), datatype: .counter))]
+            }
+
         })
     }
 
 }
+
