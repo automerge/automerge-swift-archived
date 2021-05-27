@@ -1,4 +1,0 @@
-module AutomergeBackend {
-    header "automerge.h"
-    export *
-}
