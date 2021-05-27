@@ -12,45 +12,45 @@ import Foundation
  * Clones a writable copy of `obj` and places it in `updated` (indexed by
  * objectId), if that has not already been done. Returns the updated object.
  */
-func interpretPatch(patch: MapDiff, obj: Object?, updated: ObjectCache) -> Object? {   
+func interpretPatch(patch: MapDiff, obj: Object?, updated: inout [ObjectId: Object]) -> Object? {
     if let obj = obj, obj.isPrimitive, patch.props.keys.isEmpty && updated[patch.objectId] == nil {
         return obj
     }
     switch (patch.type, obj) {
     case (.map, .map(let map)):
-        let newMap = updateMap(patch: patch, map: map, updated: updated)
+        let newMap = updateMap(patch: patch, map: map, updated: &updated)
         return .map(newMap)
     case (.map, .none):
-        let newMap = updateMap(patch: patch, map: nil, updated: updated)
+        let newMap = updateMap(patch: patch, map: nil, updated: &updated)
         return .map(newMap)
     case (.table, .table(let table)):
-        let newTable = updateTable(patch: patch, table: table, updated: updated)
+        let newTable = updateTable(patch: patch, table: table, updated: &updated)
         return .table(newTable)
     case (.table, .none):
-        let newTable = updateTable(patch: patch, table: nil, updated: updated)
+        let newTable = updateTable(patch: patch, table: nil, updated: &updated)
         return .table(newTable)
     default:
         fatalError()
     }
 }
 
-func interpretPatch(patch: ListDiff, obj: Object?, updated: ObjectCache) -> Object? {
+func interpretPatch(patch: ListDiff, obj: Object?, updated: inout [ObjectId: Object]) -> Object? {
     if let obj = obj, obj.isPrimitive, patch.edits.isEmpty && updated[patch.objectId] != nil {
         return obj
     }
 
     switch (patch.type, obj) {
     case (.list, .list(let list)):
-        let newList = updateList(patch: patch, list: list, updated: updated)
+        let newList = updateList(patch: patch, list: list, updated: &updated)
         return .list(newList)
     case (.list, .none):
-        let newList = updateList(patch: patch, list: nil, updated: updated)
+        let newList = updateList(patch: patch, list: nil, updated: &updated)
         return .list(newList)
     case (.text, .text(let text)):
-        let newText = updateText(patch: patch, text: text, updated: updated)
+        let newText = updateText(patch: patch, text: text, updated: &updated)
         return .text(newText)
     case (.text, .none):
-        let newText = updateText(patch: patch, text: nil, updated: updated)
+        let newText = updateText(patch: patch, text: nil, updated: &updated)
         return .text(newText)
     default:
         fatalError()
@@ -62,7 +62,7 @@ func interpretPatch(patch: ListDiff, obj: Object?, updated: ObjectCache) -> Obje
  * `patch`, or creates a new object if `obj` is undefined. Mutates `updated`
  * to map the objectId to the new object, and returns the new object.
  */
-func updateTable(patch: MapDiff, table: Table<Map>?, updated: ObjectCache) -> Table<Map> {
+func updateTable(patch: MapDiff, table: Table<Map>?, updated: inout [ObjectId: Object]) -> Table<Map> {
     let objectId = patch.objectId
     var table = table ?? Table<Map>(tableValues: [:], objectId: objectId)
 
@@ -73,7 +73,7 @@ func updateTable(patch: MapDiff, table: Table<Map>?, updated: ObjectCache) -> Ta
             table[key] = nil
         } else if opIds.count == 1 {
             let subpatch = patch.props[key.objectId]![opIds[0]]
-            table[key] = getValue(patch: subpatch!, object: table[key], updated: updated)
+            table[key] = getValue(patch: subpatch!, object: table[key], updated: &updated)
             table.opIds[key] = opIds[0]
         }
     })
@@ -87,7 +87,7 @@ func updateTable(patch: MapDiff, table: Table<Map>?, updated: ObjectCache) -> Ta
  * `patch`, or creates a new object if `obj` is undefined. Mutates `updated`
  * to map the objectId to the new object, and returns the new object.
  */
-func updateText(patch: ListDiff, text: Text?, updated: ObjectCache) -> Text {
+func updateText(patch: ListDiff, text: Text?, updated: inout [ObjectId: Object]) -> Text {
     fatalError()
 //    let objectId = patch.objectId
 //    var elems: [Text.Character]
@@ -109,7 +109,7 @@ func updateText(patch: ListDiff, text: Text?, updated: ObjectCache) -> Text {
 //        let pred = patch.props![index]!.keys
 //        let opId = pred.sorted(by: lamportCompare)[0]
 //
-//        if case .primitive(.string(let character)) = getValue(patch: patch.props![index]![opId]!, object: nil, updated: updated) {
+//        if case .primitive(.string(let character)) = getValue(patch: patch.props![index]![opId]!, object: nil, updated: &updated) {
 //            elems[index] = Text.Character(value: character, pred: Array(pred), elmId: elems[index].elmId)
 //        } else {
 //            fatalError()
@@ -126,7 +126,7 @@ func updateText(patch: ListDiff, text: Text?, updated: ObjectCache) -> Text {
  * `patch`, or creates a new object if `obj` is undefined. Mutates `updated`
  * to map the objectId to the new object, and returns the new object.
  */
-func updateList(patch: ListDiff, list: List?, updated: ObjectCache) -> List {
+func updateList(patch: ListDiff, list: List?, updated: inout [ObjectId: Object]) -> List {
     let objectId = patch.objectId
     var list = list ?? List(objectId: objectId, listValues: [])
     var i = 0
@@ -137,7 +137,7 @@ func updateList(patch: ListDiff, list: List?, updated: ObjectCache) -> List {
         let edit = patch.edits[i]
         if edit.action == .insert || edit.action == .update {
             let oldValue = list.conflicts[safe: edit.index]?[edit.opId!]
-            var lastValue = getValue(patch: edit.value!, object: oldValue, updated: updated)
+            var lastValue = getValue(patch: edit.value!, object: oldValue, updated: &updated)
             var values = [edit.opId!: lastValue!]
 
             while i < patch.edits.count - 1 &&
@@ -147,7 +147,7 @@ func updateList(patch: ListDiff, list: List?, updated: ObjectCache) -> List {
                 i += 1
                 let conflict = patch.edits[i]
                 let oldValue2 = list.conflicts[conflict.index][conflict.opId!]
-                lastValue = getValue(patch: conflict.value!, object: oldValue2, updated: updated)
+                lastValue = getValue(patch: conflict.value!, object: oldValue2, updated: &updated)
                 values[conflict.opId!] = lastValue
             }
 
@@ -310,11 +310,11 @@ func updateList(patch: ListDiff, list: List?, updated: ObjectCache) -> List {
  * `patch`, or creates a new object if `obj` is undefined. Mutates `updated`
  * to map the objectId to the new object, and returns the new object.
  */
-func updateMap(patch: MapDiff, map: Map?, updated: ObjectCache) -> Map {
+func updateMap(patch: MapDiff, map: Map?, updated: inout [ObjectId: Object]) -> Map {
     let objectId = patch.objectId
     var map = map ?? Map(objectId: objectId, mapValues: [:], conflicts: [:])
 
-    applyProperties(props: patch.props, objectId: objectId, map: &map, updated: updated)
+    applyProperties(props: patch.props, objectId: objectId, map: &map, updated: &updated)
     updated[objectId] = .map(map)
 
     return map
@@ -337,7 +337,7 @@ func applyProperties(
     props: Props?,
     list: inout List,
     conflicts: inout [[ObjectId: Object]?],
-    updated: ObjectCache
+    updated: inout [ObjectId: Object]
 ) {
     guard let props = props else {
         return
@@ -348,7 +348,7 @@ func applyProperties(
         for opId in opIds {
             let subPatch = props[index]![opId]
             let object = conflicts[index]?[opId]
-            values[opId] = getValue(patch: subPatch!, object: object, updated: updated)
+            values[opId] = getValue(patch: subPatch!, object: object, updated: &updated)
         }
         if list.count > index {
             list[index] = values[opIds[0]]!
@@ -378,7 +378,7 @@ func applyProperties(
     props: Props?,
     objectId: ObjectId,
     map: inout Map,
-    updated: ObjectCache
+    updated: inout [ObjectId: Object]
 ) {
     guard let props = props else {
         return
@@ -389,7 +389,7 @@ func applyProperties(
         for opId in opIds {
             let subPatch = props[key]![opId]
             let object = map.conflicts[key]?[opId]
-            values[opId] = getValue(patch: subPatch!, object: object, updated: updated)
+            values[opId] = getValue(patch: subPatch!, object: object, updated: &updated)
         }
         if opIds.count == 0 {
             map[key] = nil
@@ -416,16 +416,16 @@ func lamportCompare(ts1: ObjectId, ts2: ObjectId) -> Bool {
 /**
  * Reconstructs the value from the patch object `patch`.
  */
-func getValue(patch: Diff, object: Object?, updated: ObjectCache) -> Object? {
+func getValue(patch: Diff, object: Object?, updated: inout [ObjectId: Object]) -> Object? {
     switch patch {
     case .map(let mapDiff) where object?.objectId != patch.objectId:
-        return interpretPatch(patch: mapDiff, obj: nil, updated: updated)
+        return interpretPatch(patch: mapDiff, obj: nil, updated: &updated)
     case .map(let mapDiff):
-        return interpretPatch(patch: mapDiff, obj: object, updated: updated)
+        return interpretPatch(patch: mapDiff, obj: object, updated: &updated)
     case .list(let listDiff) where object?.objectId != patch.objectId:
-        return interpretPatch(patch: listDiff, obj: nil, updated: updated)
+        return interpretPatch(patch: listDiff, obj: nil, updated: &updated)
     case .list(let listDiff):
-        return interpretPatch(patch: listDiff, obj: object, updated: updated)
+        return interpretPatch(patch: listDiff, obj: object, updated: &updated)
     case .value(let valueDiff) where valueDiff.datatype == .counter:
         if case .number(let counterValue) = valueDiff.value {
             return .counter(Counter(Int(counterValue)))

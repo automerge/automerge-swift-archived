@@ -27,7 +27,7 @@ public struct Document<T: Codable> {
     private var backend: RSBackend
     private var state: State
     private var root: Map
-    private var cache: ObjectCache
+    private var cache: [ObjectId: Object]
 
     private init(actor: Actor, backend: RSBackend) {
         self.actor = actor
@@ -181,8 +181,8 @@ public struct Document<T: Codable> {
      * change from the frontend.
      */
     private mutating func applyPatchToDoc(patch: Patch, fromBackend: Bool, context: Context?) {
-        let updated = context?.updated ?? ObjectCache()
-        let newRoot = interpretPatch(patch: patch.diffs, obj: .map(root), updated: updated)
+        var updated = context?.updated ?? [ObjectId: Object]()
+        let newRoot = interpretPatch(patch: patch.diffs, obj: .map(root), updated: &updated)
         updated[.root] = newRoot
 
         if fromBackend {
