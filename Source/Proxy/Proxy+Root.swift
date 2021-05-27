@@ -13,7 +13,6 @@ extension Proxy {
             let object = context.getObject(objectId: .root)
             
             return try! ObjectDecoder().decode(object)
-
         })
     }
 }
