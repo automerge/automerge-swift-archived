@@ -7,13 +7,7 @@
 
 import Foundation
 
-class MapDiff: Codable, Equatable {
-    static func == (lhs: MapDiff, rhs: MapDiff) -> Bool {
-        return lhs.objectId == rhs.objectId &&
-            lhs.type == rhs.type &&
-            lhs.props == rhs.props
-    }
-
+final class MapDiff: Codable {
 
     init(objectId: ObjectId, type: ObjectType, props: Props = [:]) {
         self.objectId = objectId
@@ -53,4 +47,15 @@ class MapDiff: Codable, Equatable {
     var props: Props
 
     static let empty = MapDiff(objectId: ObjectId("_EMPTY"), type: .map, props: [:])
+
+}
+
+extension MapDiff: Equatable {
+
+    static func == (lhs: MapDiff, rhs: MapDiff) -> Bool {
+        return lhs.objectId == rhs.objectId &&
+            lhs.type == rhs.type &&
+            lhs.props == rhs.props
+    }
+
 }

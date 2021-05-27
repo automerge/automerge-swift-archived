@@ -7,8 +7,6 @@
 
 import Foundation
 
-
-
 enum Diff: Equatable, Codable {
     case map(MapDiff)
     case list(ListDiff)
