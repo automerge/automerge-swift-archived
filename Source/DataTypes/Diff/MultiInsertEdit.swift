@@ -16,7 +16,7 @@ struct MultiInsertEdit: Codable, Equatable {
         self.values = values
     }
 
-    let action: Edit2.Action
+    let action: Edit.Action
     let index: Int
     let elemId: ObjectId
     let values: [Primitive]

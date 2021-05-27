@@ -191,7 +191,7 @@ final class Context {
         } else {
             ops.append(Op(action: .makeText, obj: obj, key: key, insert: insert, pred: pred))
         }
-        let elems: [Object] = text.content.map { .primitive(.string($0.value)) }
+        let elems: [Object] = text.content.map { $0.value }
 
         let subpatch = ListDiff(objectId: objectId, type: .text, edits: [])
         insertListItems(subPatch: subpatch, index: 0, values: elems, newObject: true)
@@ -309,7 +309,7 @@ final class Context {
                 let thisPred = getPred(object: object, key: .index(start + i))
                 let thisPredParsed = (thisPred.count == 1 ? thisPred.first?.parseOpId() : nil)
 
-                if var op = op,
+                if op != nil,
                    let lastElemParsed = lastElemParsed,
                    let lastPredParsed = lastPredParsed,
                    let thisPredParsed = thisPredParsed,
@@ -317,7 +317,8 @@ final class Context {
                     lastElemParsed.counter + 1 == thisElemParsed?.counter &&
                     lastPredParsed.actorId == thisPredParsed.actorId &&
                     lastPredParsed.counter + 1 == thisPredParsed.counter {
-                    op.multiOp = (op.multiOp ?? 1) + 1
+                    let multiOp = op?.multiOp ?? 1
+                    op?.multiOp = (multiOp) + 1
                 } else {
                     if let op = op {
                         ops.append(op)

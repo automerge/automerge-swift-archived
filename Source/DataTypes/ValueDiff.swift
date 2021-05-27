@@ -17,9 +17,7 @@ struct ValueDiff: Equatable, Codable {
 
     init(date: Date) {
         let miliseconds: Primitive = .number(Double(Int(date.timeIntervalSince1970 * 1000)))
-        self.value = miliseconds
-        self.type = "value"
-        self.datatype = .timestamp
+        self.init(value: miliseconds, datatype: .timestamp)
     }
 
     let type: String

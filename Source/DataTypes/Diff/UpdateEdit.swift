@@ -8,6 +8,7 @@
 import Foundation
 
 struct UpdateEdit: Codable, Equatable {
+    
     init(index: Int, opId: ObjectId, value: Diff) {
         self.action = .update
         self.index = index
@@ -15,7 +16,7 @@ struct UpdateEdit: Codable, Equatable {
         self.value = value
     }
 
-    let action: Edit2.Action
+    let action: Edit.Action
     let index: Int
     let opId: ObjectId
     let value: Diff

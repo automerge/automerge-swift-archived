@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum Edit2: Codable, Equatable {
+enum Edit: Codable, Equatable {
 
     enum Action: String, Codable {
         case insert

@@ -17,7 +17,7 @@ struct SingleInsertEdit: Codable, Equatable {
         self.value = value
     }
 
-    let action: Edit2.Action
+    let action: Edit.Action
     let index: Int
     let elemId: ObjectId
     let opId: ObjectId
