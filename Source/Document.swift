@@ -181,7 +181,7 @@ public struct Document<T: Codable> {
      * change from the frontend.
      */
     private mutating func applyPatchToDoc(patch: Patch, fromBackend: Bool, context: Context?) {
-        var updated = context?.updated ?? [ObjectId: Object]()
+        var updated = [ObjectId: Object]()
         let newRoot = interpretPatch(patch: patch.diffs, obj: .map(root), updated: &updated)
         updated[.root] = newRoot
 
@@ -203,27 +203,5 @@ public struct Document<T: Codable> {
         }
     }
 
-//    /**
-//     * Takes a set of objects that have been updated (in `updated`) and an updated state object
-//     * `state`, and returns a new immutable document root object based on `doc` that reflects
-//     * those updates.
-//     */
-//    private mutating func updateRootObject(update: ObjectCache) {
-//
-//    }
-
 }
 
-fileprivate extension Array where Element == Op {
-    var countOps: Int {
-        var count = 0
-        for op in self {
-            if let values = op.values, op.action == .set {
-                count += values.count
-            } else {
-                count += 1
-            }
-        }
-        return countOps
-    }
-}

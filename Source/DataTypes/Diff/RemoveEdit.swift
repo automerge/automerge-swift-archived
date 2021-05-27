@@ -15,7 +15,7 @@ struct RemoveEdit: Codable, Equatable {
         self.count = count
     }
 
-    let action: Edit2.Action
+    let action: Edit.Action
     let index: Int
     let count: Int
 }

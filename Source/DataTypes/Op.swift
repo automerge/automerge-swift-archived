@@ -35,6 +35,7 @@ public struct Op: Equatable, Codable {
         self.values = values
         self.datatype = datatype
         self.pred = pred
+        self.multiOp = multiOp
     }
 
     public let action: OpAction

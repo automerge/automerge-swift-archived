@@ -38,7 +38,7 @@ enum Diff: Equatable, Codable {
         }
     }
 
-    var edits: [Edit2] {
+    var edits: [Edit] {
         get {
             if case .list(let list) = self {
                 return list.edits

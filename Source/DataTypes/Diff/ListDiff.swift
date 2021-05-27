@@ -15,7 +15,7 @@ class ListDiff: Codable, Equatable {
     }
 
 
-    init(objectId: ObjectId, type: ListType, edits: [Edit2] = []) {
+    init(objectId: ObjectId, type: ListType, edits: [Edit] = []) {
         self.objectId = objectId
         self.type = type
         self.edits = edits
@@ -28,5 +28,5 @@ class ListDiff: Codable, Equatable {
 
     let objectId: ObjectId
     let type: ListType
-    var edits: [Edit2]
+    var edits: [Edit]
 }

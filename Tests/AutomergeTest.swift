@@ -435,7 +435,6 @@ class AutomergeTest: XCTestCase {
 
     // should handle assignment of individual list indexes
     func testSerialUseLists7() throws {
-        throw XCTSkip("Fix this")
         struct Scheme: Codable, Equatable {
             var noodles: [String]?
             var japaneseFood: [String]?
