@@ -14,9 +14,6 @@ public struct Counter: Codable, Equatable {
         self.value = value
     }
 
-    enum CodingKeys: String, CodingKey  {
-        case value = "_am_counter_value_"
-    }
 }
 
 extension Counter: ExpressibleByIntegerLiteral {

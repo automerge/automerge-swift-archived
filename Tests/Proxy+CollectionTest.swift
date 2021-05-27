@@ -81,7 +81,6 @@ class ProxyCollectionTest: XCTestCase {
             XCTAssertEqual(doc.list[0].get(), 1)
             XCTAssertEqual(doc.list[1].get(), 3)
             XCTAssertEqual(doc.list.count, 2)
-
         })
 
         // WHEN

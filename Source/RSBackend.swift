@@ -68,8 +68,8 @@ public final class RSBackend {
         let length = automerge_apply_local_change(automerge, string)
         var buffer = Array<Int8>(repeating: 0, count: length)
         automerge_read_json(automerge, &buffer)
-        let newString = String(cString: buffer)
-        let patch = try! decoder.decode(Patch.self, from: newString.data(using: .utf8)!)
+        let patchString = String(cString: buffer)
+        let patch = try! decoder.decode(Patch.self, from: patchString.data(using: .utf8)!)
 
         return patch
     }
@@ -111,10 +111,11 @@ public final class RSBackend {
     }
 
     public func getMissingDeps() -> [String] {
-        let length = automerge_get_missing_deps(automerge)
-        var buffer = Array<Int8>(repeating: 0, count: length)
-        automerge_read_json(automerge, &buffer)
-        let newString = String(cString: buffer)
+        var buffer = [UInt8]()
+        let length = automerge_get_missing_deps(automerge, 0, &buffer)
+        var jsonBuffer = Array<Int8>(repeating: 0, count: length)
+        automerge_read_json(automerge, &jsonBuffer)
+        let newString = String(cString: jsonBuffer)
         return try! decoder.decode([String].self, from: newString.data(using: .utf8)!)
     }
 

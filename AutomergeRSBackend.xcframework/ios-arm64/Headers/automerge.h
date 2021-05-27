@@ -8,6 +8,8 @@
 
 typedef struct Backend Backend;
 
+typedef struct SyncState SyncState;
+
 /**
  * # Safety
  * This must me called with a valid backend pointer
@@ -35,9 +37,26 @@ intptr_t automerge_decode_change(Backend *backend, uintptr_t len, const uint8_t 
 
 /**
  * # Safety
+ * `encoded_state_[ptr|len]` must be the address & length of a byte array
+ * Returns an opaque pointer to a SyncState
+ * panics (segfault?) if the buffer was invalid
+ */
+SyncState *automerge_decode_sync_state(const uint8_t *encoded_state_ptr, uintptr_t encoded_state_len);
+
+/**
+ * # Safety
  * This must me called with a valid pointer a json string of a change
  */
 intptr_t automerge_encode_change(Backend *backend, const char *change);
+
+/**
+ * # Safety
+ * Must be called with a valid backend pointer
+ * sync_state must be a valid pointer to a SyncState
+ * Returns an `isize` indicating the length of the binary message
+ * (-1 if there was an error)
+ */
+intptr_t automerge_encode_sync_state(Backend *backend, SyncState *sync_state);
 
 /**
  * # Safety
@@ -53,10 +72,25 @@ void automerge_free(Backend *backend);
 
 /**
  * # Safety
+ * Must be called with a valid backend pointer
+ * sync_state must be a valid pointer to a SyncState
+ * Returns an `isize` indicating the length of the binary message
+ * (-1 if there was an error, 0 if there is no message)
+ */
+intptr_t automerge_generate_sync_message(Backend *backend, SyncState *sync_state);
+
+/**
+ * # Safety
  * This must me called with a valid backend pointer
  * binary must be a valid pointer to len bytes
  */
 intptr_t automerge_get_changes(Backend *backend, uintptr_t len, const uint8_t *binary);
+
+/**
+ * # Safety
+ * `backend` and `other` must be valid pointers to Backends
+ */
+intptr_t automerge_get_changes_added(Backend *backend, Backend *other);
 
 /**
  * # Safety
@@ -82,8 +116,9 @@ intptr_t automerge_get_last_local_change(Backend *backend);
 /**
  * # Safety
  * This must me called with a valid backend pointer
+ * binary must be a valid pointer to len bytes
  */
-intptr_t automerge_get_missing_deps(Backend *backend);
+intptr_t automerge_get_missing_deps(Backend *backend, uintptr_t len, const uint8_t *binary);
 
 /**
  * # Safety
@@ -124,9 +159,25 @@ intptr_t automerge_read_json(Backend *backend, char *buffer);
 
 /**
  * # Safety
+ * Must be called with a valid backend pointer
+ * sync_state must be a valid pointer to a SyncState
+ * `encoded_msg_[ptr|len]` must be the address & length of a byte array
+ */
+intptr_t automerge_receive_sync_message(Backend *backend, SyncState *sync_state, const uint8_t *encoded_msg_ptr, uintptr_t encoded_msg_len);
+
+/**
+ * # Safety
  * This must me called with a valid backend pointer
  */
 intptr_t automerge_save(Backend *backend);
+
+/**
+ * # Safety
+ * sync_state must be a valid pointer to a SyncState
+ */
+void automerge_sync_state_free(SyncState *sync_state);
+
+SyncState *automerge_sync_state_init(void);
 
 /**
  * # Safety

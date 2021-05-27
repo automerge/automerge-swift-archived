@@ -8,21 +8,46 @@
 import Foundation
 
 enum Diff: Equatable, Codable {
-    case object(ObjectDiff)
+    case map(MapDiff)
+    case list(ListDiff)
     case value(ValueDiff)
 
     var objectId: ObjectId? {
-        if case .object(let object) = self {
-            return object.objectId
+        if case .map(let map) = self {
+            return map.objectId
+        }
+        if case .list(let list) = self {
+            return list.objectId
         }
         return nil
     }
 
-    var props: Props? {
-        if case .object(let object) = self {
-            return object.props
+    var props: Props {
+        get {
+            if case .map(let map) = self {
+                return map.props
+            }
+            fatalError()
         }
-        return nil
+        set {
+            if case .map(let map) = self {
+                map.props = newValue
+            }
+        }
+    }
+
+    var edits: [Edit] {
+        get {
+            if case .list(let list) = self {
+                return list.edits
+            }
+            fatalError()
+        }
+        set {
+            if case .list(let list) = self {
+                list.edits = newValue
+            }
+        }
     }
 
     static func value(_ value: Primitive) -> Diff {
@@ -33,8 +58,10 @@ enum Diff: Equatable, Codable {
         let container = try decoder.singleValueContainer()
         if let value = try? container.decode(ValueDiff.self) {
             self = .value(value)
+        } else if let map = try? container.decode(MapDiff.self) {
+            self = .map(map)
         } else {
-            self = .object(try container.decode(ObjectDiff.self))
+            self = .list(try container.decode(ListDiff.self))
         }
     }
 
@@ -43,8 +70,10 @@ enum Diff: Equatable, Codable {
         switch self {
         case .value(let value):
             try container.encode(value)
-        case .object(let object):
-            try container.encode(object)
+        case .map(let map):
+            try container.encode(map)
+        case .list(let list):
+            try container.encode(list)
         }
     }
 }

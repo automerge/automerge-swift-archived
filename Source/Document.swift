@@ -142,7 +142,7 @@ public struct Document<T: Codable> {
      * string describing the change.
      */
     private mutating func makeChange(
-        context: Context?,
+        context: Context,
         message: String
     ) -> Request?
     {
@@ -154,12 +154,14 @@ public struct Document<T: Codable> {
             time: Date(),
             actor: actor,
             seq: state.seq,
-            ops: context?.ops ?? []
+            ops: context.ops
         )
 
         let patch = writableBackend().applyLocalChange(request: request)
 
         applyPatchToDoc(patch: patch, fromBackend: true, context: context)
+
+        
         return request
     }
 
@@ -181,8 +183,6 @@ public struct Document<T: Codable> {
     private mutating func applyPatchToDoc(patch: Patch, fromBackend: Bool, context: Context?) {
         var updated = [ObjectId: Object]()
         let newRoot = interpretPatch(patch: patch.diffs, obj: .map(root), updated: &updated)
-        var cache = self.cache
-        cache = context?.updated ?? cache
         updated[.root] = newRoot
 
         if fromBackend {
@@ -194,23 +194,9 @@ public struct Document<T: Codable> {
             state.maxOp = max(state.maxOp, patch.maxOp)
         }
 
-        updateRootObject(update: &updated)
-    }
+        cache.merge(updated, uniquingKeysWith: { old, new in return new })
 
-    /**
-     * Takes a set of objects that have been updated (in `updated`) and an updated state object
-     * `state`, and returns a new immutable document root object based on `doc` that reflects
-     * those updates.
-     */
-    private mutating func updateRootObject(update: inout [ObjectId: Object]) {
-        var newDoc = update[.root]
-        if newDoc == nil {
-            newDoc = cache[.root]
-            update[.root] = newDoc
-        }
-        cache.merge(update, uniquingKeysWith: { old, new in return new })
-
-        if case .map(let newRoot)? = newDoc {
+        if case .map(let newRoot)? = updated[.root] {
             self.root = newRoot
         } else {
             fatalError()
@@ -218,3 +204,4 @@ public struct Document<T: Codable> {
     }
 
 }
+
