@@ -58,6 +58,17 @@ enum Edit: Codable, Equatable {
         }
     }
 
+    var value: Diff? {
+        switch self {
+        case .update(let update):
+            return update.value
+        case .singleInsert(let insert):
+            return insert.value
+        default:
+            return nil
+        }
+    }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let singleInsert = try? container.decode(SingleInsertEdit.self) {
@@ -82,17 +93,6 @@ enum Edit: Codable, Equatable {
             try container.encode(edit)
         case .remove(let edit):
             try container.encode(edit)
-        }
-    }
-
-    var value: Diff? {
-        switch self {
-        case .update(let update):
-            return update.value
-        case .singleInsert(let insert):
-            return insert.value
-        default:
-            return nil
         }
     }
 }
