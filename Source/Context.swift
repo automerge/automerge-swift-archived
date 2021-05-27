@@ -7,31 +7,6 @@
 
 import Foundation
 
-final class ObjectCache: ExpressibleByDictionaryLiteral {
-
-    init(dictionaryLiteral elements: (ObjectId, Object)...) {
-        self.cached = Dictionary(uniqueKeysWithValues: elements)
-    }
-    init() {
-        cached = [:]
-    }
-
-    var cached: [ObjectId: Object]
-
-    subscript(objectId: ObjectId) -> Object? {
-        get {
-           return cached[objectId]
-        }
-        set {
-            cached[objectId] = newValue
-        }
-    }
-
-    func merge(_ other: ObjectCache, uniquingKeysWith: (Object, Object) -> Object) {
-        cached.merge(other.cached, uniquingKeysWith: uniquingKeysWith)
-    }
-}
-
 final class Context {
 
     struct KeyPathElement: Equatable {
@@ -39,11 +14,11 @@ final class Context {
         let objectId: ObjectId?
     }
 
-    convenience init(cache: ObjectCache, actorId: Actor, maxOp: Int) {
+    convenience init(cache: [ObjectId: Object], actorId: Actor, maxOp: Int) {
         self.init(
             actorId: actorId,
             applyPatch: interpretPatch,
-            updated: ObjectCache(),
+            updated: [:],
             cache: cache,
             ops: [],
             maxOp: maxOp
@@ -52,9 +27,9 @@ final class Context {
 
     init(
         actorId: Actor,
-        applyPatch: @escaping (MapDiff, Object?, ObjectCache) -> Object?,
-        updated: ObjectCache,
-        cache: ObjectCache,
+        applyPatch: @escaping (MapDiff, Object?, inout [ObjectId: Object]) -> Object?,
+        updated: [ObjectId: Object],
+        cache: [ObjectId: Object],
         ops: [Op] = [],
         maxOp: Int
     ) {
@@ -68,9 +43,9 @@ final class Context {
 
     private let actorId: Actor
     private let maxOp: Int
-    private let applyPatch: (MapDiff, Object?, ObjectCache) -> Object?
-    private (set) var updated: ObjectCache
-    private let cache: ObjectCache
+    private let applyPatch: (MapDiff, Object?, inout [ObjectId: Object]) -> Object?
+    private (set) var updated: [ObjectId: Object]
+    private var cache: [ObjectId: Object]
 
     var idUpdated: Bool {
         return !ops.isEmpty
@@ -358,7 +333,7 @@ final class Context {
         if case .list(let subPatch) = subPatch, insertions.count > 0 {
             insertListItems(subPatch: subPatch, index: start, values: insertions, newObject: false)
         }
-        cache[.root] = applyPatch(diff, cache[.root], updated)
+        cache[.root] = applyPatch(diff, cache[.root], &updated)
     }
 
     /**
@@ -521,7 +496,7 @@ final class Context {
         let diff = MapDiff(objectId: .root, type: .map)
         var subPatch = getSubpatch(diff: diff, path: path)
         callback(&subPatch)
-        cache[.root] = applyPatch(diff, cache[.root], updated)
+        cache[.root] = applyPatch(diff, cache[.root], &updated)
     }
 
     /**

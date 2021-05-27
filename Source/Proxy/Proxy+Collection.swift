@@ -101,7 +101,7 @@ extension MutableProxy: MutableCollection where Wrapped: MutableCollection, Wrap
 extension MutableProxy: RangeReplaceableCollection where Wrapped: RangeReplaceableCollection, Wrapped.Index == Int, Wrapped.Element: Codable {
 
     public convenience init() {
-        let void: (MapDiff, Object?, ObjectCache) -> Object? = { _, _, _ in
+        let void: (MapDiff, Object?, inout [ObjectId: Object]) -> Object? = { _, _, _ in
             fatalError()
         }
         self.init(context: Context(actorId: Actor(), applyPatch: void, updated: [:], cache: [:], ops: [], maxOp: 0), objectId: nil, path: [], value: nil)

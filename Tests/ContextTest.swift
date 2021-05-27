@@ -23,7 +23,7 @@ final class Spion<T> {
 
 extension Spion where T == MapDiff {
 
-    var observerDiff: (T, Object?, ObjectCache) -> Object? {
+    var observerDiff: (T, Object?, inout [ObjectId: Object]) -> Object? {
         return { diff, _, _ in
             self.observer(diff)
             return nil
