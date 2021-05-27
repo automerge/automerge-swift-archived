@@ -21,8 +21,10 @@ public struct Op: Equatable, Codable {
         elemId: ObjectId? = nil,
         insert: Bool = false,
         value: Primitive? = nil,
+        values: [Primitive]? = nil,
         datatype: DataType? = nil,
-        pred: [ObjectId]?
+        pred: [ObjectId]?,
+        multiOp: Int? = nil
     ) {
         self.action = action
         self.obj = obj
@@ -30,8 +32,10 @@ public struct Op: Equatable, Codable {
         self.elemId = elemId
         self.insert = insert
         self.value = value
+        self.values = values
         self.datatype = datatype
         self.pred = pred
+        self.multiOp = multiOp
     }
 
     public let action: OpAction
@@ -40,8 +44,10 @@ public struct Op: Equatable, Codable {
     public let elemId: ObjectId?
     public let insert: Bool
     public let value: Primitive?
+    public let values: [Primitive]?
     public let datatype: DataType?
     public let pred: [ObjectId]?
+    public var multiOp: Int?
 }
 
 public enum OpAction: String, Codable {
