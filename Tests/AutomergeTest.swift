@@ -125,26 +125,52 @@ class AutomergeTest: XCTestCase {
         XCTAssertEqual(s1.content, Scheme(value: nil))
     }
 
-    // sshould support Date objects in maps
+    // should support Date objects in maps
     func testSerialUseChanges5() {
-        struct Scheme: Codable, Equatable { var now: Date? }
+        struct Scheme: Codable, Equatable { var now: Date }
         let now = Date(timeIntervalSince1970: 0)
-        var s1 = Document(Scheme(now: nil))
-        s1.change { $0.now.set(now) }
+        let now2 = Date(timeIntervalSince1970: 2)
+        var s1 = Document(Scheme(now: now))
+        s1.change { $0.now.set(now2) }
 
         let s2 = Document<Scheme>(changes: s1.allChanges())
-        XCTAssertEqual(s2.content.now, now)
+        XCTAssertEqual(s2.content.now, now2)
+    }
+
+    // should support URL objects in maps
+    func testSerialUseChanges6() {
+        struct Scheme: Codable, Equatable { var url: URL? }
+        let url = URL(string: "automerge.com")
+        let url2 = URL(string: "automerge.com/test")
+        var s1 = Document(Scheme(url: url))
+        s1.change { $0.url.set(url2) }
+
+        let s2 = Document<Scheme>(changes: s1.allChanges())
+        XCTAssertEqual(s2.content.url, url2)
     }
 
     // should support Date objects in lists
-    func testSerialUseChanges6() {
-        struct Scheme: Codable, Equatable { var list: [Date]? }
+    func testSerialUseChanges7() {
+        struct Scheme: Codable, Equatable { var list: [Date] }
         let now = Date(timeIntervalSince1970: 0)
-        var s1 = Document(Scheme(list: nil))
-        s1.change { $0.list.set([now]) }
+        let now2 = Date(timeIntervalSince1970: 2)
+        var s1 = Document(Scheme(list: [now]))
+        s1.change { $0.list.set([now2]) }
 
         let s2 = Document<Scheme>(changes: s1.allChanges())
-        XCTAssertEqual(s2.content.list, [now])
+        XCTAssertEqual(s2.content.list, [now2])
+    }
+
+    // should support URL objects in lists
+    func testSerialUseChanges8() {
+        struct Scheme: Codable, Equatable { var list: [URL?]? }
+        let url = URL(string: "automerge.com")
+        let url2 = URL(string: "automerge.com/test")
+        var s1 = Document(Scheme(list: [url]))
+        s1.change { $0.list.set([url2]) }
+
+        let s2 = Document<Scheme>(changes: s1.allChanges())
+        XCTAssertEqual(s2.content.list, [url2])
     }
 
     // should handle single-property assignment

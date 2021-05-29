@@ -20,6 +20,9 @@ final class ObjectEncoder {
         if let text = value as? Text {
             return .text(text)
         }
+        if let url = value as? URL {
+            return .primitive(.string(url.absoluteString))
+        }
         try value.encode(to: objectEncoding)
         let object = objectEncoding.data.root
         return object
