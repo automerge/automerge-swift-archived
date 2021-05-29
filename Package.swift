@@ -40,12 +40,9 @@ let package = Package(
         )
     ],
     dependencies: [
+        .package(name: "AutomergeBackend", url: "https://github.com/lightsprint09/automerge-swift-backend", from: "0.1.4")
     ],
     targets: [
-        .binaryTarget(
-            name: "AutomergeBackend",
-            path: "./AutomergeRSBackend.xcframework"
-        ),
         .target(
             name: "Automerge",
             dependencies: ["AutomergeBackend"],
