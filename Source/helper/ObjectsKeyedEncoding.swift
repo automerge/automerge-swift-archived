@@ -94,6 +94,10 @@ struct ObjectsKeyedEncoding<Key: CodingKey>: KeyedEncodingContainerProtocol {
             data.encode(key: codingPath, value: .text(text))
             return
         }
+        if let url = value as? URL {
+            data.encode(key: codingPath, value: .primitive(.string(url.absoluteString)))
+            return
+        }
         let objectEncoding = ObjectEncoding(encodedData: data, codingPath: codingPath)
         try value.encode(to: objectEncoding)
     }
