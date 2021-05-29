@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "AutomergeBackend",
+        "repositoryURL": "https://github.com/lightsprint09/automerge-swift-backend",
+        "state": {
+          "branch": null,
+          "revision": "d6e0a639dad6e88dbcafdc2b6cc846706c5edfed",
+          "version": "0.1.4"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
