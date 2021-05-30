@@ -31,7 +31,7 @@ let package = Package(
     name: "Automerge",
     platforms: [
         .iOS(.v12),
-        .macOS(.v10_10)
+        .macOS(.v10_12)
     ],
     products: [
         .library(
@@ -40,18 +40,24 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(name: "AutomergeBackend", url: "https://github.com/lightsprint09/automerge-swift-backend", from: "0.1.4")
+        .package(name: "AutomergeBackend", url: "https://github.com/lightsprint09/automerge-swift-backend", from: "0.1.5"),
+        .package(name: "ZippyJSON", url: "https://github.com/michaeleisel/ZippyJSON", from: "1.2.4"),
     ],
     targets: [
         .target(
             name: "Automerge",
-            dependencies: ["AutomergeBackend"],
+            dependencies: ["AutomergeBackend", "ZippyJSON"],
             path: "Source"
         ),
         .testTarget(
             name: "AutomergeTests",
             dependencies: ["Automerge"],
             path: "Tests"
+        ),
+        .testTarget(
+            name: "AutomergePerformanceTests",
+            dependencies: ["Automerge"],
+            path: "TestPerformance"
         )
     ]
 )

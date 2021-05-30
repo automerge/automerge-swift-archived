@@ -6,8 +6,35 @@
         "repositoryURL": "https://github.com/lightsprint09/automerge-swift-backend",
         "state": {
           "branch": null,
-          "revision": "d6e0a639dad6e88dbcafdc2b6cc846706c5edfed",
+          "revision": "0a331d9513f0c11cccfa31d2f82567756e474c9c",
+          "version": "0.1.5"
+        }
+      },
+      {
+        "package": "JJLISO8601DateFormatter",
+        "repositoryURL": "https://github.com/michaeleisel/JJLISO8601DateFormatter",
+        "state": {
+          "branch": null,
+          "revision": "99fadf2e6425a0f827b1b485ea60bc2b7ecdd22c",
           "version": "0.1.4"
+        }
+      },
+      {
+        "package": "ZippyJSON",
+        "repositoryURL": "https://github.com/michaeleisel/ZippyJSON",
+        "state": {
+          "branch": null,
+          "revision": "1ab389998592d038a60a3ca71aa7554d0e84ab4a",
+          "version": "1.2.4"
+        }
+      },
+      {
+        "package": "ZippyJSONCFamily",
+        "repositoryURL": "https://github.com/michaeleisel/ZippyJSONCFamily",
+        "state": {
+          "branch": null,
+          "revision": "c55123b23f0faa898b22bf1b967e72a2df51fdb4",
+          "version": "1.2.4"
         }
       }
     ]

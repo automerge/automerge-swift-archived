@@ -560,8 +560,9 @@ final class Context {
     func getValuesDescriptions(path: [KeyPathElement], object: Object, key: Key) -> [ObjectId: Diff] {
         switch (object, key) {
         case (.table(let table), .string(let key)):
-            if let value = table[ObjectId(key)]  {
-                return [ObjectId(key): getValueDescription(value: value)]
+            let objectId = ObjectId(key)
+            if let value = table[objectId]  {
+                return [objectId: getValueDescription(value: value)]
             } else {
                 return [:]
             }

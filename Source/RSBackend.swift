@@ -7,12 +7,13 @@
 
 import Foundation
 import AutomergeBackend
+import ZippyJSON
 
 public final class RSBackend {
 
     private var automerge: OpaquePointer
     private let encoder: JSONEncoder
-    private let decoder: JSONDecoder
+    private let decoder: ZippyJSONDecoder
 
     public convenience init() {
         self.init(automerge: automerge_init())
@@ -42,7 +43,7 @@ public final class RSBackend {
     private init(automerge: OpaquePointer) {
         self.automerge = automerge
         self.encoder = JSONEncoder()
-        self.decoder = JSONDecoder()
+        self.decoder = ZippyJSONDecoder()
         encoder.dateEncodingStrategy = .custom({ (date, encoder) throws in
             var container = encoder.singleValueContainer()
             let seconds: UInt = UInt(date.timeIntervalSince1970)
