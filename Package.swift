@@ -40,7 +40,7 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(name: "AutomergeBackend", url: "https://github.com/lightsprint09/automerge-swift-backend", from: "0.1.4")
+        .package(name: "AutomergeBackend", url: "https://github.com/lightsprint09/automerge-swift-backend", from: "0.1.5")
     ],
     targets: [
         .target(
