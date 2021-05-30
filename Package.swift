@@ -52,6 +52,11 @@ let package = Package(
             name: "AutomergeTests",
             dependencies: ["Automerge"],
             path: "Tests"
+        ),
+        .testTarget(
+            name: "AutomergePerformanceTests",
+            dependencies: ["Automerge"],
+            path: "TestPerformance"
         )
     ]
 )
