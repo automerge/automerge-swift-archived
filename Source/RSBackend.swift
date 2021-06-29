@@ -43,7 +43,7 @@ public final class RSBackend {
     private init(automerge: OpaquePointer) {
         self.automerge = automerge
         self.encoder = JSONEncoder()
-        self.decoder = ZippyJSONDecoder()
+        self.decoder = .init()
         encoder.dateEncodingStrategy = .custom({ (date, encoder) throws in
             var container = encoder.singleValueContainer()
             let seconds: UInt = UInt(date.timeIntervalSince1970)

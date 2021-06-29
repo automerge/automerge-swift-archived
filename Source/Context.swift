@@ -71,13 +71,13 @@ final class Context {
                 operation = Op(action: .del, obj: objectId, key: key, insert: insert, pred: pred)
             } else {
                 if let elmId = elmId {
-                    operation = Op(action: .set, obj: objectId, elemId: elmId, insert: insert, value: primitive, pred: pred)
+                    operation = Op(action: .set, obj: objectId, elemId: elmId, insert: insert, value: primitive, datatype: primitive.datatype, pred: pred)
                 } else {
-                    operation = Op(action: .set, obj: objectId, key: key, insert: insert, value: primitive, pred: pred)
+                    operation = Op(action: .set, obj: objectId, key: key, insert: insert, value: primitive, datatype: primitive.datatype, pred: pred)
                 }
             }
             ops.append(operation)
-            return .value(primitive)
+            return .value(ValueDiff(value: primitive, datatype: primitive.datatype))
         case .map(let map):
             return .map(createNestedMap(obj: objectId, key: key, map: map, insert: insert, pred: pred, elmId: elmId))
         case .list(let list):
@@ -95,7 +95,7 @@ final class Context {
             }
             return .value(value)
         case .counter(let counter):
-            let value: Primitive = .number(Double(counter.value))
+            let value: Primitive = .int(counter.value)
             if let elmId = elmId {
                 ops.append(Op(action: .set, obj: objectId, elemId: elmId, insert: insert, value: value, datatype: .counter, pred: pred))
             } else {
@@ -420,9 +420,9 @@ final class Context {
         case .table(let table):
             return .map(MapDiff(objectId: table.objectId, type: .table))
         case .primitive(let primitive):
-            return .value(primitive)
+            return .value(ValueDiff(value: primitive, datatype: primitive.datatype))
         case .counter(let counter):
-            return .value(.init(value: .number(Double(counter.value)), datatype: .counter))
+            return .value(.init(value: .int(counter.value), datatype: .counter))
         case .date(let date):
             return .value(ValueDiff(date: date))
         case .text(let text):
@@ -682,19 +682,19 @@ final class Context {
 
         if case .list = object, case .index(let index) = key {
             let elemId = getElmId(list: object, index: index, insert: false)
-            ops.append(Op(action: .inc, obj: objectId, elemId: elemId, insert: false, value: .number(Double(delta)), pred: pred))
+            ops.append(Op(action: .inc, obj: objectId, elemId: elemId, insert: false, value: .int(delta), pred: pred))
         } else if  case .text = object, case .index(let index) = key {
             let elemId = getElmId(list: object, index: index, insert: false)
-            ops.append(Op(action: .inc, obj: objectId, elemId: elemId, insert: false, value: .number(Double(delta)), pred: pred))
+            ops.append(Op(action: .inc, obj: objectId, elemId: elemId, insert: false, value: .int(delta), pred: pred))
         } else {
-            ops.append(Op(action: .inc, obj: objectId, key: key, insert: false, value: .number(Double(delta)), pred: pred))
+            ops.append(Op(action: .inc, obj: objectId, key: key, insert: false, value: .int(delta), pred: pred))
         }
 
         applyAt(path: path, callback: { subpatch in
             if case .list(let listDiff) = subpatch, case .index(let index) = key {
-                listDiff.edits.append(.update(UpdateEdit(index: index, opId: opId, value: .value(.init(value: .number(Double(counterValue + delta)), datatype: .counter)))))
+                listDiff.edits.append(.update(UpdateEdit(index: index, opId: opId, value: .value(.init(value: .int(counterValue + delta), datatype: .counter)))))
             } else if case .map = subpatch {
-                subpatch.props[key] = [opId: .value(.init(value: .number(Double(counterValue + delta)), datatype: .counter))]
+                subpatch.props[key] = [opId: .value(.init(value: .int(counterValue + delta), datatype: .counter))]
             }
 
         })

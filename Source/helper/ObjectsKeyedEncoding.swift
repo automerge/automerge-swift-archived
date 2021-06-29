@@ -33,51 +33,51 @@ struct ObjectsKeyedEncoding<Key: CodingKey>: KeyedEncodingContainerProtocol {
     }
 
     mutating func encode(_ value: Double, forKey key: Key) throws {
-        data.encode(key: codingPath + [key], value: .primitive(.number(value)))
+        data.encode(key: codingPath + [key], value: .primitive(.float64(value)))
     }
 
     mutating func encode(_ value: Float, forKey key: Key) throws {
-        data.encode(key: codingPath + [key], value: .primitive(.number(Double(value))))
+        data.encode(key: codingPath + [key], value: .primitive(.float64(Double(value))))
     }
 
     mutating func encode(_ value: Int, forKey key: Key) throws {
-        data.encode(key: codingPath + [key], value: .primitive(.number(Double(value))))
+        data.encode(key: codingPath + [key], value: .primitive(.int(value)))
     }
 
     mutating func encode(_ value: Int8, forKey key: Key) throws {
-        data.encode(key: codingPath + [key], value: .primitive(.number(Double(value))))
+        data.encode(key: codingPath + [key], value: .primitive(.int(Int(value))))
     }
 
     mutating func encode(_ value: Int16, forKey key: Key) throws {
-        data.encode(key: codingPath + [key], value: .primitive(.number(Double(value))))
+        data.encode(key: codingPath + [key], value: .primitive(.int(Int(value))))
     }
 
     mutating func encode(_ value: Int32, forKey key: Key) throws {
-        data.encode(key: codingPath + [key], value: .primitive(.number(Double(value))))
+        data.encode(key: codingPath + [key], value: .primitive(.int(Int(value))))
     }
 
     mutating func encode(_ value: Int64, forKey key: Key) throws {
-        data.encode(key: codingPath + [key], value: .primitive(.number(Double(value))))
+        data.encode(key: codingPath + [key], value: .primitive(.int(Int(value))))
     }
 
     mutating func encode(_ value: UInt, forKey key: Key) throws {
-        data.encode(key: codingPath + [key], value: .primitive(.number(Double(value))))
+        data.encode(key: codingPath + [key], value: .primitive(.uint(value)))
     }
 
     mutating func encode(_ value: UInt8, forKey key: Key) throws {
-        data.encode(key: codingPath + [key], value: .primitive(.number(Double(value))))
+        data.encode(key: codingPath + [key], value: .primitive(.uint(UInt(value))))
     }
 
     mutating func encode(_ value: UInt16, forKey key: Key) throws {
-        data.encode(key: codingPath + [key], value: .primitive(.number(Double(value))))
+        data.encode(key: codingPath + [key], value: .primitive(.uint(UInt(value))))
     }
 
     mutating func encode(_ value: UInt32, forKey key: Key) throws {
-        data.encode(key: codingPath + [key], value: .primitive(.number(Double(value))))
+        data.encode(key: codingPath + [key], value: .primitive(.uint(UInt(value))))
     }
 
     mutating func encode(_ value: UInt64, forKey key: Key) throws {
-        data.encode(key: codingPath + [key], value: .primitive(.number(Double(value))))
+        data.encode(key: codingPath + [key], value: .primitive(.uint(UInt(value))))
     }
 
     mutating func encode<T: Encodable>(_ value: T, forKey key: Key) throws {
