@@ -24,7 +24,6 @@ struct ValueDiff: Equatable, Codable {
     let value: Primitive
     let datatype: DataType?
 
-
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         self.type = try values.decode(String.self, forKey: .type)

@@ -290,9 +290,9 @@ class ContextTest: XCTestCase {
                             "values": [
                                 "1@actor1": .value(ValueDiff(date: dateValue)),
                                 "1@actor2": .value(.init(value: .int(0), datatype: .counter)),
-                                "1@actor3": .value(.init(value: 42.0, datatype: .float64)),
+                                "1@actor3": 42.0,
                                 "1@actor4": .value(.init(value: .null)),
-                                "1@actor5": .map(MapDiff(objectId: objectId, type: .map, props: ["goldfinches": ["1@\(actor)": .value(.init(value: 3.0, datatype: .float64))]]))
+                                "1@actor5": .map(MapDiff(objectId: objectId, type: .map, props: ["goldfinches": ["1@\(actor)": 3.0]]))
                             ]
                         ]))
     }
