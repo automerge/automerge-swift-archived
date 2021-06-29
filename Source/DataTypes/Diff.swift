@@ -50,10 +50,6 @@ enum Diff: Equatable, Codable {
         }
     }
 
-    static func value(_ value: Primitive) -> Diff {
-        return Diff.value(.init(value: value))
-    }
-
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let value = try? container.decode(ValueDiff.self) {
@@ -81,7 +77,7 @@ enum Diff: Equatable, Codable {
 extension Diff: ExpressibleByFloatLiteral {
     
     init(floatLiteral value: Float) {
-        self = .value(.number(Double(value)))
+        self = .value(ValueDiff(value: .float64(Double(value)), datatype: .float64))
     }
 
 }
@@ -89,7 +85,7 @@ extension Diff: ExpressibleByFloatLiteral {
 extension Diff: ExpressibleByStringLiteral {
 
     init(stringLiteral value: String) {
-        self = .value(.string(value))
+        self = .value(ValueDiff(value: .string(value)))
     }
 
 }

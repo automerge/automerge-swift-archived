@@ -10,6 +10,9 @@ import Foundation
 public enum DataType: String, Equatable, Codable {
     case counter
     case timestamp
+    case int
+    case uint
+    case float64
 }
 
 public struct Op: Equatable, Codable {

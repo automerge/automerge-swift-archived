@@ -17,8 +17,8 @@ final class MapDiff: Codable {
 
     required init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
-        self.objectId = try values.decode(ObjectId.self, forKey: .objectId)
         self.type = try values.decode(ObjectType.self, forKey: .type)
+        self.objectId = try values.decode(ObjectId.self, forKey: .objectId)
         
         var props = Props()
         let stringProps = try? values.decodeIfPresent([String: [String: Diff]].self, forKey: .props)

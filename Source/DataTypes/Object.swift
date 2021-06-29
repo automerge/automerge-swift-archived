@@ -90,11 +90,11 @@ extension Object: ExpressibleByStringLiteral, ExpressibleByFloatLiteral, Express
     }
 
     init(floatLiteral value: Float) {
-        self = .primitive(.number(Double(value)))
+        self = .primitive(.float64(Double(value)))
     }
 
     init(integerLiteral value: IntegerLiteralType) {
-        self = .primitive(.number(Double(value)))
+        self = .primitive(.int(value))
     }
 
     init(dictionaryLiteral elements: (String, Object)...) {

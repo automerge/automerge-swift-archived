@@ -58,7 +58,7 @@ class ContextTest: XCTestCase {
         context.setMapKey(path: [], key: "sparrows", value: 5.0)
 
         // THEN
-        XCTAssertEqual(context.ops, [Op(action: .set, obj: .root, key: "sparrows", value: 5.0, pred: [])])
+        XCTAssertEqual(context.ops, [Op(action: .set, obj: .root, key: "sparrows", value: 5.0, datatype: .float64, pred: [])])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, MapDiff(
                         objectId: .root,
@@ -120,7 +120,7 @@ class ContextTest: XCTestCase {
         context.setMapKey(path: [], key: "goldfinches", value: 3.0)
 
         //THEN
-        XCTAssertEqual(context.ops, [Op(action: .set, obj: .root, key: "goldfinches", value: 3.0, pred: ["1@actor1", "2@actor2"])])
+        XCTAssertEqual(context.ops, [Op(action: .set, obj: .root, key: "goldfinches", value: 3.0, datatype: .float64, pred: ["1@actor1", "2@actor2"])])
         XCTAssertEqual(context.ops[0].pred, ["1@actor1", "2@actor2"])
         XCTAssertEqual(context.ops.count, 1)
 
@@ -152,7 +152,7 @@ class ContextTest: XCTestCase {
         let objectId = applyPatch.value!.props["birds"]!["1@\(actor)"]!.objectId!
         XCTAssertEqual(context.ops, [
             Op(action: .makeMap, obj: .root, key: "birds", pred: []),
-            Op(action: .set, obj: objectId, key: "goldfinches", value: 3.0, pred: [])
+            Op(action: .set, obj: objectId, key: "goldfinches", value: 3.0, datatype: .float64, pred: [])
         ])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, MapDiff(
@@ -189,7 +189,7 @@ class ContextTest: XCTestCase {
         context.setMapKey(path: [.init(key: "birds", objectId: objectId)], key: "goldfinches", value: 3.0)
 
         //THEN
-        XCTAssertEqual(context.ops, [Op(action: .set, obj: objectId, key: "goldfinches", value: 3.0, pred: [])])
+        XCTAssertEqual(context.ops, [Op(action: .set, obj: objectId, key: "goldfinches", value: 3.0, datatype: .float64, pred: [])])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, MapDiff(
                         objectId: .root,
@@ -236,7 +236,7 @@ class ContextTest: XCTestCase {
         context.setMapKey(path: [.init(key: "birds", objectId: objectId2)], key: "goldfinches", value: 3.0)
 
         //Then
-        XCTAssertEqual(context.ops, [Op(action: .set, obj: objectId2, key: "goldfinches", value: 3.0, pred: [])])
+        XCTAssertEqual(context.ops, [Op(action: .set, obj: objectId2, key: "goldfinches", value: 3.0, datatype: .float64, pred: [])])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, MapDiff(
                         objectId: .root,
@@ -281,7 +281,7 @@ class ContextTest: XCTestCase {
         context.setMapKey(path: [.init(key: "values", objectId: objectId)], key: "goldfinches", value: 3.0)
 
         //Then
-        XCTAssertEqual(context.ops, [Op(action: .set, obj: objectId, key: "goldfinches", value: 3.0, pred: [])])
+        XCTAssertEqual(context.ops, [Op(action: .set, obj: objectId, key: "goldfinches", value: 3.0, datatype: .float64, pred: [])])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, MapDiff(
                         objectId: .root,
@@ -289,7 +289,7 @@ class ContextTest: XCTestCase {
                         props: [
                             "values": [
                                 "1@actor1": .value(ValueDiff(date: dateValue)),
-                                "1@actor2": .value(.init(value: 0.0, datatype: .counter)),
+                                "1@actor2": .value(.init(value: .int(0), datatype: .counter)),
                                 "1@actor3": 42.0,
                                 "1@actor4": .value(.init(value: .null)),
                                 "1@actor5": .map(MapDiff(objectId: objectId, type: .map, props: ["goldfinches": ["1@\(actor)": 3.0]]))
@@ -416,7 +416,7 @@ class ContextTest: XCTestCase {
         //Then
         let lessResoutionMiliseconds = Double(Int(now.timeIntervalSince1970 * 1000))
         XCTAssertEqual(context.ops, [
-            Op(action: .set, obj: .root, key: "now", value: .number(lessResoutionMiliseconds), datatype: .timestamp, pred: [])
+            Op(action: .set, obj: .root, key: "now", value: .float64(lessResoutionMiliseconds), datatype: .timestamp, pred: [])
         ])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, MapDiff(
@@ -424,7 +424,7 @@ class ContextTest: XCTestCase {
                         type: .map,
                         props: [
                             "now": [
-                                "1@\(actor)": .value(.init(value: .number(lessResoutionMiliseconds), datatype: .timestamp))
+                                "1@\(actor)": .value(.init(value: .float64(lessResoutionMiliseconds), datatype: .timestamp))
                             ]
                         ]))
     }
@@ -447,7 +447,7 @@ class ContextTest: XCTestCase {
 
         //Then
         XCTAssertEqual(context.ops, [
-            Op(action: .set, obj: .root, key: "counter", value: 3.0, datatype: .counter, pred: [])
+            Op(action: .set, obj: .root, key: "counter", value: 3, datatype: .counter, pred: [])
         ])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, MapDiff(
@@ -455,7 +455,7 @@ class ContextTest: XCTestCase {
                         type: .map,
                         props: [
                             "counter": [
-                                "1@\(actor)": .value(.init(value: 3.0, datatype: .counter))
+                                "1@\(actor)": .value(.init(value: 3, datatype: .counter))
                             ]
                         ]))
     }
@@ -486,7 +486,7 @@ class ContextTest: XCTestCase {
                         type: .map,
                         props: [
                             "uuid": [
-                                "1@\(actor)": .value(.string(uuid))
+                                "1@\(actor)": .value(ValueDiff(value: .string(uuid)))
                             ]
                         ]))
     }
@@ -1176,7 +1176,7 @@ class ContextTest: XCTestCase {
 
         //Then
         XCTAssertEqual(context.ops, [
-            Op(action: .inc, obj: .root, key: "counter", value: 1.0, pred: ["1@actor1"])
+            Op(action: .inc, obj: .root, key: "counter", value: 1, pred: ["1@actor1"])
         ])
         XCTAssertEqual(applyPatch.callCount, 1)
         XCTAssertEqual(applyPatch.value, MapDiff(
@@ -1184,7 +1184,7 @@ class ContextTest: XCTestCase {
             type: .map,
             props: [
                 "counter": [
-                    "1@\(actor)": .value(.init(value: 1.0, datatype: .counter))
+                    "1@\(actor)": .value(.init(value: 1, datatype: .counter))
                 ]
             ]
         ))

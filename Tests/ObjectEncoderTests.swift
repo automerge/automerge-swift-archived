@@ -73,7 +73,7 @@ final class ObjectEncoderTests: XCTestCase {
         
         let result = try encoder.encode(value)
         
-        XCTAssertEqual(result, .primitive(.number(2.0)))
+        XCTAssertEqual(result, .primitive(.float64(2.0)))
     }
 
 
@@ -83,7 +83,7 @@ final class ObjectEncoderTests: XCTestCase {
 
         let result = try encoder.encode(value)
 
-        XCTAssertEqual(result, .primitive(.number(2)))
+        XCTAssertEqual(result, .primitive(.int(2)))
     }
 
     func testIntInArray() throws {
@@ -185,7 +185,7 @@ final class ObjectEncoderTests: XCTestCase {
 
         let result: Object = try encoder.encode(value)
 
-        XCTAssertEqual(result, .map(["birds": .map(Map(objectId: "", mapValues: ["wrens": 1.0, "magpies": 1.0]))]))
+        XCTAssertEqual(result, .map(["birds": .map(Map(objectId: "", mapValues: ["wrens": 1, "magpies": 1]))]))
     }
 
     func testObjectInObjectWithEmptyList() throws {
@@ -227,7 +227,7 @@ final class ObjectEncoderTests: XCTestCase {
 
         let result: Object = try encoder.encode(value)
 
-        XCTAssertEqual(result, .map(["deepObjList": .list([1.0])]))
+        XCTAssertEqual(result, .map(["deepObjList": .list([1])]))
     }
 
     func testListInListInObject() throws {

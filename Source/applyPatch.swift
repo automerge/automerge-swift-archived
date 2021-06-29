@@ -317,12 +317,12 @@ func getValue(patch: Diff, object: Object?, updated: inout [ObjectId: Object]) -
     case .list(let listDiff):
         return interpretPatch(patch: listDiff, obj: object, updated: &updated)
     case .value(let valueDiff) where valueDiff.datatype == .counter:
-        if case .number(let counterValue) = valueDiff.value {
-            return .counter(Counter(Int(counterValue)))
+        if case .int(let counterValue) = valueDiff.value {
+            return .counter(Counter(counterValue))
         }
         fatalError()
     case .value(let valueDiff) where valueDiff.datatype == .timestamp:
-        if case .number(let timeIntervalSince1970) = valueDiff.value {
+        if case .float64(let timeIntervalSince1970) = valueDiff.value {
             return .date(Date(timeIntervalSince1970: timeIntervalSince1970 / 1000))
         }
         fatalError()

@@ -82,7 +82,7 @@ class DocumentTest: XCTestCase {
             seq: 1,
             ops: [
                 Op(action: .makeMap, obj: .root, key: "birds", insert: false, pred: []),
-                Op(action: .set, obj: birds!, key: "wrens", insert: false, value: 3.0, pred: [])
+                Op(action: .set, obj: birds!, key: "wrens", insert: false, value: 3, datatype: .int, pred: [])
             ]
         ))
     }
@@ -90,7 +90,7 @@ class DocumentTest: XCTestCase {
     // should apply updates inside nested maps
     func testPerformingChanges4() {
         struct Schema: Codable, Equatable {
-            struct Birds: Codable, Equatable { let wrens: Int; var sparrows: Int? }
+            struct Birds: Codable, Equatable { let wrens: Int; var sparrows: Double? }
             var birds: Birds?
         }
         var doc1 = Document(Schema(birds: nil))
@@ -100,7 +100,7 @@ class DocumentTest: XCTestCase {
         let birds = doc2.rootProxy().birds?.objectId
 
         XCTAssertEqual(doc1.content, Schema(birds: .init(wrens: 3, sparrows: nil)))
-        XCTAssertEqual(doc2.content, Schema(birds: .init(wrens: 3, sparrows: 15)))
+        XCTAssertEqual(doc2.content, Schema(birds: .init(wrens: 3, sparrows: 15.0)))
         XCTAssertEqual(req, Request(
                         startOp: 3,
                         deps: [],
@@ -109,7 +109,7 @@ class DocumentTest: XCTestCase {
                         actor: doc1.actor,
                         seq: 2,
                         ops: [
-                            Op(action: .set, obj: birds!, key: "sparrows", insert: false, value: 15.0, pred: [])
+                            Op(action: .set, obj: birds!, key: "sparrows", insert: false, value: 15.0, datatype: .float64, pred: [])
                         ]))
     }
 
@@ -228,7 +228,7 @@ class DocumentTest: XCTestCase {
                             actor: doc1.actor,
                             seq: 1,
                             ops: [
-                                Op(action: .set, obj: .root, key: "now", insert: false, value: .number(now.timeIntervalSince1970 * 1000), datatype: .timestamp, pred: [])
+                                Op(action: .set, obj: .root, key: "now", insert: false, value: .float64(now.timeIntervalSince1970 * 1000), datatype: .timestamp, pred: [])
             ]))
         }
 
@@ -252,7 +252,7 @@ class DocumentTest: XCTestCase {
                         actor: actor,
                         seq: 1,
                         ops: [
-                            Op(action: .set, obj: .root, key: "wrens", value: 0.0, datatype: .counter, pred: [])
+                            Op(action: .set, obj: .root, key: "wrens", value: 0, datatype: .counter, pred: [])
                         ]))
         XCTAssertEqual(req2, Request(
                         startOp: 2,
@@ -262,7 +262,7 @@ class DocumentTest: XCTestCase {
                         actor: actor,
                         seq: 2,
                         ops: [
-                            Op(action: .inc, obj: .root, key: "wrens", value: 1.0, pred: ["1@\(actor)"])
+                            Op(action: .inc, obj: .root, key: "wrens", value: 1, pred: ["1@\(actor)"])
                         ]))
     }
 
@@ -295,7 +295,7 @@ class DocumentTest: XCTestCase {
                         seq: 1,
                         ops: [
                             Op(action: .makeList, obj: .root, key: "counts", insert: false, pred: []),
-                            Op(action: .set, obj: counts!, elemId: .head, insert: true, value: 1.0, datatype: .counter, pred: [])
+                            Op(action: .set, obj: counts!, elemId: .head, insert: true, value: 1, datatype: .counter, pred: [])
                         ]))
         XCTAssertEqual(req2, Request(
                         startOp: 3,
@@ -305,7 +305,7 @@ class DocumentTest: XCTestCase {
                         actor: actor,
                         seq: 2,
                         ops: [
-                            Op(action: .inc, obj: counts!, elemId: "2@\(actor)", insert: false, value: 2.0, pred: ["2@\(actor)"])
+                            Op(action: .inc, obj: counts!, elemId: "2@\(actor)", insert: false, value: 2, pred: ["2@\(actor)"])
                         ]))
     }
 
