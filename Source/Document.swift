@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// A Document does something interesting.
 public struct Document<T: Codable> {
 
     private struct State {
