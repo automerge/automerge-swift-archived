@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  Table.swift
 //  
 //
 //  Created by Lukas Schmidt on 19.04.20.
@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// A model that represents a table of rows.
 public struct Table<RowValue: Codable>: Codable {
 
     public struct Row<T: Codable> {

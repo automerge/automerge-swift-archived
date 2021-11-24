@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  Proxy.swift
 //  
 //
 //  Created by Lukas Schmidt on 24.04.20.
@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// A wrapper around your model that a document uses to track changes the model instance.
 @dynamicMemberLookup
 public final class Proxy<Wrapped> {
 
@@ -100,7 +101,7 @@ public final class Proxy<Wrapped> {
             value: self.valueResolver()?[keyPath: dynamicMember]
         )
     }
-
+    
     func set(newValue: Object) {
         guard let lastPathKey = path.last?.key else {
             if case .map(let root) = newValue {
@@ -117,7 +118,7 @@ public final class Proxy<Wrapped> {
             context.setListIndex(path: path, index: index, value: newValue)
         }
     }
-
+    
     func set(rootObject: Map) {
         for (key, value) in rootObject {
             context.setMapKey(path: path, key: key, value: value)

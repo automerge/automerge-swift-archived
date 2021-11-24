@@ -13,3 +13,16 @@ For some of the details of how Automerge manages the complexities of implementin
 ### Getting Started
 
 - <doc:AutomergeBasics>
+
+### Tracking collaborative changes
+
+- ``Document``
+- ``Proxy``
+- ``Actor``
+- ``Patch``
+
+## Built in models
+
+- ``Text``
+- ``Counter``
+- ``Table``

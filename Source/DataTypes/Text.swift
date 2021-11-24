@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  Text.swift
 //  
 //
 //  Created by Lukas Schmidt on 21.04.20.
@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// A model that represents text.
 public struct Text: Equatable {
 
     struct Character: Codable, Equatable {

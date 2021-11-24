@@ -7,6 +7,10 @@
 
 import Foundation
 
+/// A struct that represents a collaborator for making changes to a document.
+///
+/// All changes to an automerge ``Document`` are identified by an Actor.
+/// Use the default constructor to craete a random collaborator identity.
 public struct Actor: Equatable, Hashable, Codable {
 
     public init(actorId: String = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()) {
