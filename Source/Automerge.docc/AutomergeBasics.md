@@ -129,7 +129,8 @@ History(doc1).map { ($0.change.message, $0.snapshot.cards.count) }
 ### Initializing a document
 
 
-``Document/init(_:actor:)`` creates a new Automerge document and populates it with the contents of the object. The value passed must always be an object.
+``Document/init(_:actor:)`` creates a new Automerge document and populates it with the contents of the object. 
+The value passed must always be an object.
 
 ```swift
 var doc = Automerge.Document(Cards(cards: []))
@@ -144,7 +145,7 @@ Don't attempt to change an automerge document directly, instead use the ``Docume
 
  The change function you pass to `change(message:_:)` is called with a mutable version of doc, as shown below.
 
- The optional message argument allows you to attach an arbitrary string to the change, which is not interpreted by Automerge, but saved as part of the change history
+ The optional message argument allows you to include a string describing the change, not interpreted by Automerge, and saved in the change history.
 
 ```swift
 
@@ -157,7 +158,8 @@ currentDoc.change() { doc in
     doc.numberValue.set(1)
     doc.boolValue.set(true)
 
-    doc.nestedObject.set(NestedObject(property: "val")) // creates a nested object
+    doc.nestedObject.set(NestedObject(property: "val")) 
+    // creates a nested object
     doc.nestedObject.property.set("value")
 
     // Arrays are fully supported
@@ -178,9 +180,10 @@ currentDoc.change() { doc in
 
 ### Persisting a document
 
-``Document/save()`` serializes the state of Automerge document doc to binary, which you can write to disk. The binary contains an encoding of the full change history of the document (a bit like a git repository).
+``Document/save()`` serializes the state of Automerge document doc to binary, which you can write to disk. 
+The binary contains an encoding of the full change history of the document (a bit like a git repository).
 
-``Document/init(data:actor:)`` unserializes an Automerge document from binary that was produced by `save()`.
+``Document/init(data:actor:)`` unserializes an Automerge document from binary that was produced by ``Document/save()``.
 
 Note: Specifying actor
 
@@ -192,13 +195,16 @@ let doc2 = Document(Cards(cards: []), actor: actor)
 let doc3 = Document(data: binary, actor: actor)
 ```
 
-The actor ID is a string that uniquely identifies the current node; if you omit actor ID, a random ID is generated. If you pass in your own actor ID, you must ensure that there can never be two different processes with the same actor ID. Even if you have two different processes running on the same machine, they must have distinct actor IDs.
+The actor ID is a string that uniquely identifies the current node; if you omit actor ID, a random ID is generated. 
+If you pass in your own actor ID, you must ensure that there can never be two different processes with the same actor ID. 
+Even if you have two different processes running on the same machine, they must have distinct actor IDs.
 
 Unless you know what you are doing, you should stick with the default, and let actor ID be auto-generated.
 
 ### Sending and receiving changes
 
-The Automerge library itself is agnostic to the network layer — that is, you can use whatever communication mechanism you like to get changes from one node to another. There are currently a few options, with more under development:
+The Automerge library itself is agnostic to the network layer — that is, you can use whatever communication mechanism you like to get changes from one node to another. 
+There are currently a few options, with more under development.
 
 Use ``Document/getChanges(between:)`` and ``Document/apply(changes:)`` to manually capture changes on one node and apply them on another.
 
@@ -218,19 +224,30 @@ let changes = network.receive()
 currentDoc.apply(changes: changes)
 ```
 
-Note that ``Document/getChanges(between:)`` takes an old document state as argument. It then returns a list of all the changes that were made in newDoc since oldDoc. If you want a list of all the changes ever made in doc, call ``Document/allChanges()``.
+Note that ``Document/getChanges(between:)`` takes an old document state as argument. 
+It then returns a list of all the changes that were made in newDoc since oldDoc. 
+If you want a list of all the changes ever made in doc, call ``Document/allChanges()``.
 
-The counterpart, ``Document/apply(changes:)`` applies the list of changes to the document. Automerge guarantees that whenever any two documents have applied the same set of changes — even if the changes were applied in a different order — then those two documents are equal. That property is called convergence, and it is the essence of what Automerge is all about.
+The counterpart, ``Document/apply(changes:)`` applies the list of changes to the document. 
+Automerge guarantees that whenever any two documents have applied the same set of changes — even if the changes were applied in a different order — then those two documents are equal. 
+That property is called convergence, and it is the essence of what Automerge is all about.
 
-``Document/merge(_:)`` is a related function that is useful for testing. It looks for any changes that appear in doc2 but not in doc1, and applies them to doc1. This function requires that doc1 and doc2 have different actor IDs (that is, they originated from different calls to Document.init()). See the Usage section above for an example using `Document.merge()`.
+``Document/merge(_:)`` is a related function that is useful for testing. 
+It looks for any changes that appear in doc2 but not in doc1, and applies them to doc1. 
+This function requires that doc1 and doc2 have different actor IDs (that is, they originated from different calls to Document.init()). 
+See the Usage section above for an example using ``Document/merge(_:)``
 
 ### Conflicting changes
 
-Automerge allows different nodes to independently make arbitrary changes to their respective copies of a document. In most cases, those changes can be combined without any trouble. For example, if users modify two different objects, or two different properties in the same object, then it is straightforward to combine those changes.
+Automerge allows different nodes to independently make arbitrary changes to their respective copies of a document. 
+In most cases, those changes can be combined without any trouble. 
+For example, if users modify two different objects, or two different properties in the same object, then it is straightforward to combine those changes.
 
-If users concurrently insert or delete items in a list (or characters in a text document), Automerge preserves all the insertions and deletions. If two users concurrently insert at the same position, Automerge will arbitrarily place one of the insertions first and the other second, while ensuring that the final order is the same on all nodes.
+If users concurrently insert or delete items in a list (or characters in a text document), Automerge preserves all the insertions and deletions. 
+If two users concurrently insert at the same position, Automerge will arbitrarily place one of the insertions first and the other second, while ensuring that the final order is the same on all nodes.
 
-The only case Automerge cannot handle automatically, because there is no well-defined resolution, is when users concurrently update the same property in the same object (or, similarly, the same index in the same list). In this case, Automerge arbitrarily picks one of the concurrently written values as the "winner":
+The only case Automerge cannot handle automatically, because there is no well-defined resolution, is when users concurrently update the same property in the same object (or, similarly, the same index in the same list). 
+In this case, Automerge arbitrarily picks one of the concurrently written values as the "winner":
 
 ```swift
 // Initialize documents with known actor IDs
@@ -252,7 +269,9 @@ doc2.merge(doc1)
 // chosen as winner.
 doc1.content.x == doc2.content.x
 ```
-Although only one of the concurrently written values shows up in the object, the other values are not lost. They are merely relegated to a conflicts object. Suppose doc.x = 2 is chosen as the "winning" value:
+
+Although only one of the concurrently written values shows up in the object, the other values are not lost. 
+They are merely relegated to a conflicts object. Suppose doc.x = 2 is chosen as the "winning" value:
 
 ```swift
 doc1 
@@ -266,6 +285,9 @@ doc1.rootProxy().conflicts(dynamicMember: \.x))
 doc2.rootProxy().conflicts(dynamicMember: \.x)) 
 // {'actor-1': 1}
 ```
-Here, we've recorded a conflict on property x. The key actor-1 is the actor ID that "lost" the conflict. The associated value is the value actor-1 assigned to the property x. You might use the information in the conflicts object to show the conflict in the user interface.
+Here, we've recorded a conflict on property x. 
+The key actor-1 is the actor ID that "lost" the conflict. 
+The associated value is the value actor-1 assigned to the property x. 
+You might use the information in the conflicts object to show the conflict in the user interface.
 
 The next time you assign to a conflicting property, the conflict is automatically considered to be resolved, and the conflict disappears from the object returned by Automerge.getConflicts().

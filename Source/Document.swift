@@ -120,7 +120,8 @@ public struct Document<T: Codable> {
     public func save() -> [UInt8] {
         return backend.save()
     }
-
+    
+    /// Returns a proxy wrapper for the model document.
     public func rootProxy() -> Proxy<T> {
         let context = Context(cache: cache, actorId: actor, maxOp: state.maxOp)
         return .rootProxy(context: context)
@@ -138,20 +139,27 @@ public struct Document<T: Codable> {
         let patch = writableBackend().apply(changes: changes)
         applyPatch(patch: patch)
     }
-
+    
+    /// Merges the change history from a document that shares the same model object into the current document.
+    /// - Parameter remoteDocument: A ``Document`` from a collaborator.
     public mutating func merge(_ remoteDocument: Document<T>) {
         precondition(actor != remoteDocument.actor, "Cannot merge an actor with itself")
         apply(changes: remoteDocument.allChanges())
     }
-
+    
+    /// Returns the list of missing dependencies.
     public func getMissingsDeps() -> [String] {
         return backend.getMissingDeps()
     }
-
+    
+    /// Returns a list of the identifiers for changes in the document's history.
     public func getHeads() -> [String] {
         return backend.getHeads()
     }
-
+    
+    /// Returns a list of changes between the current document and the document provided.
+    /// - Parameter oldDocument: A ``Document`` from a collaborator or an earlier saved version.
+    /// - Returns: A list of changes between the two documents.
     public func getChanges(between oldDocument: Document<T>) -> [[UInt8]] {
         return backend.getChanges(heads: oldDocument.backend.getHeads())
     }
