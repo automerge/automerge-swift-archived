@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  Document.swift
 //  
 //
 //  Created by Lukas Schmidt on 07.04.20.
@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// A Document does something interesting.
+/// A wrapper around your codable model that tracks collaborative changes and provides an immutable views of the model's history.
 public struct Document<T: Codable> {
 
     private struct State {
@@ -17,8 +17,10 @@ public struct Document<T: Codable> {
         var clock: Clock
     }
 
-    /// Returns the Automerge actor ID of the given document.
+    /// The identity of the collaborator responsible for this document.
     public let actor: Actor
+    
+    /// The current state of the wrapped model.
     public var content: T {
         let context = Context(cache: cache, actorId: actor, maxOp: state.maxOp)
 
@@ -37,7 +39,11 @@ public struct Document<T: Codable> {
         self.cache = [.root: .map(root)]
         self.state = State(seq: 0, maxOp: 0, deps: [], clock: [:])
     }
-
+    
+    /// Creates a new document with the provided instance of a model.
+    /// - Parameters:
+    ///   - initialState: The initial state of a collaborative model.
+    ///   - actor: The identity of the collaborator that owns this document.
     public init(_ initialState: T, actor: Actor = Actor()) {
         var newDocument = Document<T>(actor: actor, backend: RSBackend())
         newDocument.change(message: "Initialization", { doc in
@@ -45,7 +51,11 @@ public struct Document<T: Codable> {
         })
         self = newDocument
     }
-
+    
+    /// Creates a new document from an encoded change history.
+    /// - Parameters:
+    ///   - data: A byte buffer of the encoded change history of the model.
+    ///   - actor: The identity of the collaborator that owns this document.
     public init(data: [UInt8], actor: Actor = Actor()) {
         let backend = RSBackend(data: data)
         var doc = Document<T>(actor: actor, backend: backend)
@@ -54,7 +64,11 @@ public struct Document<T: Codable> {
         doc.applyPatch(patch: patch)
         self = doc
     }
-
+    
+    /// Creates a new document from the encoded list of changes.
+    /// - Parameters:
+    ///   - changes: A list of byte buffers that represent the changes to the model.
+    ///   - actor: The identity of the collaborator that owns this document.
     public init(changes: [[UInt8]], actor: Actor = Actor()) {
         let backend = RSBackend()
         let patch = backend.apply(changes: changes)
@@ -64,19 +78,22 @@ public struct Document<T: Codable> {
         self = doc
     }
 
-    /**
-     * Changes a document `doc` according to actions taken by the local user.
-     * `options` is an object that can contain the following properties:
-     *  - `message`: an optional descriptive string that is attached to the change.
-     *  - `undoable`: false if the change should not affect the undo history.
-     * If `options` is a string, it is treated as `message`.
-     *
-     * The actual change is made within the callback function `callback`, which is
-     * given a mutable version of the document as argument. Returns a two-element
-     * array `[doc, request]` where `doc` is the updated document, and `request`
-     * is the change request to send to the backend. If nothing was actually
-     * changed, returns the original `doc` and a `null` change request.
-     */
+    /// Provide updates to the document by changing your model object within the provided closure.
+    /// - Parameters:
+    ///   - message: An optional message describing the change or reasons for the change
+    ///   - execute: A closure that provides a proxy of the current instance of your model to update.
+    /// - Returns: A change request to send to other collaborators, nil if the model wasn't updated.
+    ///
+    /// ```swift
+    /// struct Model: Codable, Equatable {
+    ///     var bird: String?
+    /// }
+    /// // Create a model with an initial empty state.
+    /// var doc = Document(Model(bird: nil))
+    /// // Update the model to set a value.
+    /// doc.change { proxy in
+    ///     proxy.bird?.set(newValue: "magpie")
+    /// }
     @discardableResult
     public mutating func change(message: String = "", _ execute: (Proxy<T>) -> Void) -> Request? {
         let context = Context(cache: cache, actorId: actor, maxOp: state.maxOp)
@@ -87,17 +104,19 @@ public struct Document<T: Codable> {
             return nil
         }
     }
-
-    /**
-     * Applies `patch` to the document root object `doc`. This patch must come
-     * from the backend; it may be the result of a local change or a remote change.
-     * If it is the result of a local change, the `seq` field from the change
-     * request should be included in the patch, so that we can match them up here.
-     */
+    
+    /// Updates the document by applying the provided patch.
+    /// - Parameter patch: A patch provided by a remote collaborator.
+    ///
+    /// The patch may be a result of a local change or a remote change.
+    /// If it is the result of a local change, the `seq` field from  the change request
+    /// should be included in the patch, so that the changes can be matched.
     public mutating func applyPatch(patch: Patch) {
         applyPatchToDoc(patch: patch, fromBackend: true, context: nil)
     }
 
+    /// Returns a byte buffer that represents the change history of the document
+    /// - Returns: An encoded change history of the document.
     public func save() -> [UInt8] {
         return backend.save()
     }
@@ -106,11 +125,15 @@ public struct Document<T: Codable> {
         let context = Context(cache: cache, actorId: actor, maxOp: state.maxOp)
         return .rootProxy(context: context)
     }
-
+    
+    /// Returns a list of byte buffers that represent the change history of the document.
+    /// - Returns: A list of the changes to the document.
     public func allChanges() -> [[UInt8]] {
         return backend.getChanges()
     }
-
+    
+    /// Updates the document by applying the provided list of changes
+    /// - Parameter changes: A list of byte buffers that represent the changes to the document.
     public mutating func apply(changes: [[UInt8]]) {
         let patch = writableBackend().apply(changes: changes)
         applyPatch(patch: patch)
