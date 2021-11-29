@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// A struct that represents a collaborator for making changes to a document.
+/// Represents a collaborator that makes changes to a document.
 ///
 /// All changes to an automerge ``Document`` are identified by an Actor.
 /// Use the default constructor to craete a random collaborator identity.

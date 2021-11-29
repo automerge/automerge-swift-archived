@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// A model that represents text.
+/// A data structure that represents text.
 public struct Text: Equatable {
 
     struct Character: Codable, Equatable {

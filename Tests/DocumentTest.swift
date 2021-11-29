@@ -232,20 +232,6 @@ class DocumentTest: XCTestCase {
             ]))
         }
     
-    // Code snippet in Document.change overview.
-    func testDocSnippetExample() {
-        struct Model: Codable, Equatable {
-             var bird: String?
-         }
-        // Create a model with an initial empty state.
-        var doc = Document(Model(bird: nil))
-        // Update the model to set a value.
-        doc.change { proxy in
-            proxy.bird?.set(newValue: "magpie")
-        }
-        XCTAssertEqual(doc.content, Model(bird: "magpie"))
-    }
-    
     // should handle counters inside maps
     func testCounters1() {
         struct Schema: Codable, Equatable {

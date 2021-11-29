@@ -13,6 +13,7 @@ extension Proxy {
     }
 }
 
+/// A type-erased wrapper around your model.
 @dynamicMemberLookup
 public final class AnyProxy {
 

@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// A model that represents a counter.
+/// A data structure that represents a counter.
 public struct Counter: Codable, Equatable {
     public let value: Int
 

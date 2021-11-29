@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// A model that represents a table of rows.
+/// A data structure that represents a table of rows.
 public struct Table<RowValue: Codable>: Codable {
 
     public struct Row<T: Codable> {

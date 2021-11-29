@@ -4,9 +4,10 @@ Automerge helps you build collaborative applications by tracking changes and ena
 
 ## Overview
 
-Automerge is an implementation of [CRDTs](https://crdt.tech), that enables you define model objects, update them, and share changes between different instances that update that model. Automerge provides the serialization for the combined change history for models, but doesn't provide any I/O - saving to disk, or transfering content over a network.
+Automerge is an implementation of [CRDTs](https://crdt.tech), that enables you define model objects, update them, and share changes between different instances that update that model. 
+Automerge provides the serialization for the combined change history for models, but doesn't provide any I/O - saving to disk, or transfering content over a network.
 
-For some of the details of how Automerge manages the complexities of implementing CRDTs, watch the July 2020 video [CRDTs: The Hard Parts](https://www.youtube.com/watch?v=x7drE24geUw).
+For an overview of Automerge, watch the November 2021 video [Automerge: a new foundation for collaboration software](https://www.youtube.com/watch?v=Qytg0Ibet2E).
 
 ## Topics
 
@@ -21,7 +22,7 @@ For some of the details of how Automerge manages the complexities of implementin
 - ``Actor``
 - ``Patch``
 
-## Built in models
+## Built in data structures
 
 - ``Text``
 - ``Counter``

@@ -9,6 +9,7 @@ import Foundation
 import AutomergeBackend
 import ZippyJSON
 
+/// A class that wraps the Automerge-rs core library.
 public final class RSBackend {
 
     private var automerge: OpaquePointer

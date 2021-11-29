@@ -7,6 +7,8 @@
 
 import Foundation
 
+
+/// A class that represents the collection of changes and current change state of a document.
 public final class Patch: Codable {
 
     init(
