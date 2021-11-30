@@ -8,6 +8,75 @@
 import Foundation
 
 /// A wrapper around your codable model that tracks collaborative changes and provides an immutable views of the model's history.
+///
+/// Use a document by creating a document around your model using ``Document/init(_:actor:)``, and update your model within a trailing closure provided by ``Document/change(message:_:)``.
+///
+/// The initializer takes an optional ``Actor`` parameter.
+/// An actor has a ``Actor/actorId``, a string that uniquely identifies the collaborator.
+/// if you omit the actor, an actor with a random ID is generated.
+/// If you pass in your own actor ID, ensure that there can never be two different collaborators with the same actor ID.
+/// Even if you have two different processes running on the same machine, they must have distinct actor IDs.
+/// Unless you intend otherwise, don't provode an actor and let the actor be auto-generated.
+///
+/// Persist your document using ``Document/save()``, which writes a compact version of the change history that you can write to disk.
+/// Create a new document from the binary data created from ``Document/save()`` with the initializer ``Document/init(data:actor:)``.
+///
+/// With a document representing the state of your model, and another document representing a collaborator's model state, get the changes using ``Document/getChanges(between:)``, and selectively apply them to either document using ``Document/apply(changes:)``.
+/// The Automerge library is agnostic to the network layer.
+/// Use whatever communication mechanism you like to get changes from one collaborator to another.
+/// Note that ``Document/getChanges(between:)`` takes an old document state as argument and returns a list of all the changes that are different between the new and old document.
+/// If you want a list of all the changes ever made in doc, call ``Document/allChanges()``.
+///
+/// The counterpart, ``Document/apply(changes:)`` applies the list of changes to the document.
+/// Automerge guarantees that when two documents have applied the same set of changes — even if the changes were applied in a different order — the two documents are equal.
+/// This property is known as convergence, and it is at the core of what Automerge provides.
+///
+/// You can instantiate a document from another collaborator with its encoded change history using ``Document/init(data:actor:)``, or using a list of changes with the ``Document/init(changes:actor:)`` initializer.
+/// You can merge the collaborator's change history into your document using ``Document/merge(_:)``.
+///
+/// You can inspect the details of the change history by initializing ``History`` with your document.
+///
+/// ## Topics
+///
+/// ### Creating a Document
+///
+/// - ``Document/init(_:actor:)``
+/// - ``Document/init(data:actor:)``
+/// - ``Document/init(changes:actor:)``
+///
+/// ### Updating a Document
+///
+/// - ``Document/change(message:_:)``
+///
+/// ### Getting and Applying Changes from a Collaborator
+///
+/// - ``Document/getChanges(between:)``
+/// - ``Document/apply(changes:)``
+///
+/// ### Merging Documents
+///
+/// - ``Document/merge(_:)``
+///
+/// ### Inspecting a Document
+///
+/// - ``Document/content``
+/// - ``Document/actor``
+/// - ``Document/rootProxy()``
+///
+/// ### Saving a Document
+///
+/// - ``save()``
+///
+/// ### Applying a Patch
+///
+/// - ``Document/applyPatch(patch:)``
+///
+/// ### Inspecting the Change History
+///
+/// - ``Document/allChanges()``
+/// - ``Document/getHeads()``
+/// - ``Document/getMissingsDeps()``
+///
 public struct Document<T: Codable> {
 
     private struct State {
@@ -79,10 +148,13 @@ public struct Document<T: Codable> {
     }
 
     /// Provide updates to the document by changing your model object within the provided closure.
+    ///
     /// - Parameters:
-    ///   - message: An optional message describing the change or reasons for the change
+    ///   - message: An optional message describing the change or reasons for the change. The change message isn't interpreted by Automerge, and is saved in the change history.
     ///   - execute: A closure that provides a proxy of the current instance of your model to update.
     /// - Returns: A change request to send to other collaborators, nil if the model wasn't updated.
+    ///
+    /// The optional message argument allows you to include a string describing the change, not interpreted by Automerge, and saved in the change history.
     ///
     /// ```swift
     /// struct Model: Codable, Equatable {
@@ -94,6 +166,14 @@ public struct Document<T: Codable> {
     /// doc.change { proxy in
     ///     proxy.bird?.set(newValue: "magpie")
     /// }
+    /// ```
+    ///
+    /// Within the closure provided by this method, use `set` to update a value, or `set` a nil value to remove a property.
+    /// All primitive data types are supported, as well as arrays.
+    /// ```swift
+    ///
+    /// ```
+    ///
     @discardableResult
     public mutating func change(message: String = "", _ execute: (Proxy<T>) -> Void) -> Request? {
         let context = Context(cache: cache, actorId: actor, maxOp: state.maxOp)
@@ -142,6 +222,9 @@ public struct Document<T: Codable> {
     
     /// Merges the change history from a document that shares the same model object into the current document.
     /// - Parameter remoteDocument: A ``Document`` from a collaborator.
+    ///
+    /// This function requires that the current document the remote document provided have different actor IDs (that is, they originated from different calls to ``Document/init(_:actor:)``).
+    /// It inspects the provided document for any changes that aren't in the current document, and applies them.
     public mutating func merge(_ remoteDocument: Document<T>) {
         precondition(actor != remoteDocument.actor, "Cannot merge an actor with itself")
         apply(changes: remoteDocument.allChanges())

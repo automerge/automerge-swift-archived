@@ -14,6 +14,7 @@ For an overview of Automerge, watch the November 2021 video [Automerge: a new fo
 ### Getting Started
 
 - <doc:AutomergeBasics>
+- <doc:ConflictingChanges>
 
 ### Tracking Collaborative Changes
 
