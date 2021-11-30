@@ -283,7 +283,14 @@ Starting Local Preview Server
 To analyze and generate hints from DocC about the documentation, run the following command:
 
 ```bash
-xcrun docc convert Source/Automerge.docc --fallback-display-name Automerge --fallback-bundle-identifier org.automerge.Automerge-swift --fallback-bundle-version 0.1.6 --additional-symbol-graph-dir .build/symbol-graphs  --diagnostic-level hint --enable-inherited-docs --analyze --experimental-documentation-coverage
+xcrun docc convert Source/Automerge.docc \
+--fallback-display-name Automerge \
+--fallback-bundle-identifier org.automerge.Automerge-swift \
+--fallback-bundle-version 0.1.6 \
+--additional-symbol-graph-dir .build/symbol-graphs  \
+--analyze \
+--diagnostic-level hint \
+--enable-inherited-docs
 ```
 
 To generate a documentation archive, run the following command:
@@ -294,8 +301,49 @@ xcrun docc convert Source/Automerge.docc \
 --fallback-bundle-identifier org.automerge.Automerge-swift \
 --fallback-bundle-version 0.1.6 \
 --additional-symbol-graph-dir .build/symbol-graphs \
+--default-code-listing-language swift \
 --output-path Automerge.doccarchive \
 --diagnostic-level warning \
---enable-inherited-docs \
---experimental-documentation-coverage
+--enable-inherited-docs
 ```
+
+To get basic documentation coverage synopsis:
+
+```bash
+# exclude ZippyJSON symbols from analysis
+rm -f .build/symbol-graphs/ZippyJSON.symbols.json
+
+xcrun docc convert Source/Automerge.docc \
+--fallback-display-name Automerge \
+--fallback-bundle-identifier org.automerge.Automerge-swift \
+--fallback-bundle-version 0.1.6 \
+--additional-symbol-graph-dir .build/symbol-graphs \
+--experimental-documentation-coverage \
+--level brief
+```
+
+example: 
+```bash
+   --- Experimental coverage output enabled. ---
+                | Abstract        | Curated         | Code Listing
+Types           | 40% (10/25)     | 96% (24/25)     | 0.0% (0/25)
+Members         | 3.2% (16/507)   | 74% (374/507)   | 0.20% (1/507)
+Globals         | 2.9% (1/35)     | 97% (34/35)     | 0.0% (0/35)
+```
+
+And detailed documentation coverage report:
+
+```bash
+# exclude ZippyJSON symbols from analysis
+rm -f .build/symbol-graphs/ZippyJSON.symbols.json
+
+xcrun docc convert Source/Automerge.docc \
+--fallback-display-name Automerge \
+--fallback-bundle-identifier org.automerge.Automerge-swift \
+--fallback-bundle-version 0.1.6 \
+--additional-symbol-graph-dir .build/symbol-graphs \
+--experimental-documentation-coverage \
+--level detailed > report.txt
+```
+
+
