@@ -238,3 +238,33 @@ doc2.rootProxy().conflicts(dynamicMember: \.x)) // {'actor-1': 1}
 Here, we've recorded a conflict on property x. The key actor-1 is the actor ID that "lost" the conflict. The associated value is the value actor-1 assigned to the property x. You might use the information in the conflicts object to show the conflict in the user interface.
 
 The next time you assign to a conflicting property, the conflict is automatically considered to be resolved, and the conflict disappears from the object returned by Automerge.getConflicts().
+
+## Generating the Documentation
+
+Using Xcode:
+
+- open the `Package.swift` file using Xcode
+- choose Product > Build Documentation
+
+An archive of the documentation can be exported from the Documentation window in Xcode by selecting Automerge under automerge-swift in Workspace Documentation, then clicking on the ... to expose an Export... menu.
+
+![A screenshot of a portion of the Xcode documentation window that displays the Workspace Documentation with a workspace named automerge-swift. The workspace has an enabled disclosure arrow to the left of its name, showing a highlighted documentation set named Automerge with an ellipsis within a circular button to the right of the Automerge.](.img/Xcode_doc_export.png)
+
+Building on the command line:
+
+```bash
+mkdir -p .build/symbol-graphs
+swift build --target Automerge -Xswiftc -emit-symbol-graph -Xswiftc -emit-symbol-graph-dir -Xswiftc .build/symbol-graphs
+xcrun docc preview Source/Automerge.docc --fallback-display-name Automerge --fallback-bundle-identifier org.automerge.Automerge-swift --fallback-bundle-version 0.1.6 --additional-symbol-graph-dir .build/symbol-graphs
+```
+
+The documentation is then hosted locally, accessible at [http://localhost:8000/documentation/automerge](http://localhost:8000/documentation/automerge).
+When you invoke `xcrun docc preview`, DocC runs a local webserver to temporarily host the documentation and shows you the available URLs, such as:
+
+```
+========================================
+Starting Local Preview Server
+	 Address: http://localhost:8000/documentation/zippyjson
+	          http://localhost:8000/documentation/automerge
+========================================
+```
