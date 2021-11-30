@@ -196,6 +196,7 @@ network.broadcast(changes)
 let changes = network.receive()
 currentDoc.apply(changes: changes)
 ```
+
 Note that `newDoc.getChanges(between: currentDoc)` takes  an old  document state as argument. It then returns a list of all the changes that were made in newDoc since oldDoc. If you want a list of all the changes ever made in doc, you can call `Document.getAllChanges()`.
 
 The counterpart, `Document.apply(chnages:)` applies the list of changes to the document. Automerge guarantees that whenever any two documents have applied the same set of changes — even if the changes were applied in a different order — then those two documents are equal. That property is called convergence, and it is the essence of what Automerge is all about.
@@ -227,6 +228,7 @@ doc2.merge(doc1)
 // However, doc2 will be the same, whichever value is chosen as winner.
 doc1.coontent.x == doc2.coontent.x
 ```
+
 Although only one of the concurrently written values shows up in the object, the other values are not lost. They are merely relegated to a conflicts object. Suppose doc.x = 2 is chosen as the "winning" value:
 
 ```swift
@@ -235,6 +237,7 @@ doc2 // {x: 2}
 doc1.rootProxy().conflicts(dynamicMember: \.x)) // {'actor-1': 1}
 doc2.rootProxy().conflicts(dynamicMember: \.x)) // {'actor-1': 1}
 ```
+
 Here, we've recorded a conflict on property x. The key actor-1 is the actor ID that "lost" the conflict. The associated value is the value actor-1 assigned to the property x. You might use the information in the conflicts object to show the conflict in the user interface.
 
 The next time you assign to a conflicting property, the conflict is automatically considered to be resolved, and the conflict disappears from the object returned by Automerge.getConflicts().
@@ -254,17 +257,45 @@ Building on the command line:
 
 ```bash
 mkdir -p .build/symbol-graphs
-swift build --target Automerge -Xswiftc -emit-symbol-graph -Xswiftc -emit-symbol-graph-dir -Xswiftc .build/symbol-graphs
-xcrun docc preview Source/Automerge.docc --fallback-display-name Automerge --fallback-bundle-identifier org.automerge.Automerge-swift --fallback-bundle-version 0.1.6 --additional-symbol-graph-dir .build/symbol-graphs
+
+swift build --target Automerge \
+-Xswiftc -emit-symbol-graph \
+-Xswiftc -emit-symbol-graph-dir -Xswiftc .build/symbol-graphs
+
+xcrun docc preview Source/Automerge.docc \
+--fallback-display-name Automerge \
+--fallback-bundle-identifier org.automerge.Automerge-swift \
+--fallback-bundle-version 0.1.6 \
+--additional-symbol-graph-dir .build/symbol-graphs
 ```
 
 The documentation is then hosted locally, accessible at [http://localhost:8000/documentation/automerge](http://localhost:8000/documentation/automerge).
 When you invoke `xcrun docc preview`, DocC runs a local webserver to temporarily host the documentation and shows you the available URLs, such as:
 
-```
+```bash
 ========================================
 Starting Local Preview Server
 	 Address: http://localhost:8000/documentation/zippyjson
 	          http://localhost:8000/documentation/automerge
 ========================================
+```
+
+To analyze and generate hints from DocC about the documentation, run the following command:
+
+```bash
+xcrun docc convert Source/Automerge.docc --fallback-display-name Automerge --fallback-bundle-identifier org.automerge.Automerge-swift --fallback-bundle-version 0.1.6 --additional-symbol-graph-dir .build/symbol-graphs  --diagnostic-level hint --enable-inherited-docs --analyze --experimental-documentation-coverage
+```
+
+To generate a documentation archive, run the following command:
+
+```bash
+xcrun docc convert Source/Automerge.docc \
+--fallback-display-name Automerge \
+--fallback-bundle-identifier org.automerge.Automerge-swift \
+--fallback-bundle-version 0.1.6 \
+--additional-symbol-graph-dir .build/symbol-graphs \
+--output-path Automerge.doccarchive \
+--diagnostic-level warning \
+--enable-inherited-docs \
+--experimental-documentation-coverage
 ```
