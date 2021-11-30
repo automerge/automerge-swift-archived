@@ -7,6 +7,9 @@
 
 import Foundation
 
+/// A struct that wraps a document to represent it as a collection of changes.
+///
+/// Each indexed position of the history collection provides a ``Commit`` that encapsulates a snapshot of your model at that change and a ``Change`` to represent the differences included within the commit.
 public struct History<T: Codable> {
 
     public init(document: Document<T>) {

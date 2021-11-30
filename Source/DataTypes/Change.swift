@@ -8,6 +8,7 @@
 import Foundation
 import AutomergeBackend
 
+/// A change to a document.
 public struct Change: Codable {
     let time: Double
     public let seq: Int

@@ -15,15 +15,37 @@ For an overview of Automerge, watch the November 2021 video [Automerge: a new fo
 
 - <doc:AutomergeBasics>
 
-### Tracking collaborative changes
+### Tracking Collaborative Changes
 
 - ``Document``
 - ``Proxy``
 - ``Actor``
 - ``Patch``
 
-## Built in data structures
+### Constructing Models with Built-in Data Structures
 
 - ``Text``
 - ``Counter``
 - ``Table``
+
+### Inspecting the Collaborative Changes
+
+- ``History``
+- ``Commit``
+- ``Change``
+
+### Supporting Classes
+
+- ``RSBackend``
+- ``AnyProxy``
+- ``MutableProxy``
+
+### Supporting Data Structures
+
+- ``Request``
+- ``ObjectId``
+- ``Op``
+- ``OpAction``
+- ``DataType``
+- ``Key``
+- ``Primitive``

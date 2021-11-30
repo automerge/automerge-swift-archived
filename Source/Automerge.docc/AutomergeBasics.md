@@ -4,7 +4,12 @@ Getting started using Automerge in your App
 
 ## Overview
 
-The following code sample gives a quick overview of how to use Automerge.
+The following content walks you through creating a model that collaborators update.
+With your model, you create an Automerge document, update that document, and inspect it.
+Then you can replicate the document to represent another collaborator, update the two models independently, and merge the results.
+The content then shows how to get and display the change history for your model that is encoded into the Automerge document.
+
+### Creating a Model for Automerge
 
 ```swift
 import Automerge
@@ -26,6 +31,11 @@ struct Card: Codable {
 // We initialize the document to initially contain an 
 // empty list of cards.
 var doc1 = Automerge.Document(Cards(cards: []))
+```
+
+### Updating your Model through the Automerge Document
+
+```swift
 
 // The doc1 object is treated as immutable -- you must 
 // never change it directly. To change it, call 
@@ -64,7 +74,11 @@ doc1.change(message: "Add card") { doc in
 //        done: false },
 //      { title: 'Rewrite everything in Obj-C', 
 //        done: false } ] }
+```
 
+### Sharing Automerge Documents between Collaborators
+
+```swift
 // Now let's simulate another device, whose application 
 // state is doc2. doc2 has a copy of all the cards 
 // in doc1.
@@ -90,7 +104,12 @@ doc2.change(message: "Delete card") { doc in
 
 // { cards: [ { title: 'Rewrite everything in Swift', 
 //              done: false } ] }
+```
 
+
+### Merging Changes Between Collaborators
+
+```swift
 
 // Now comes the moment of truth. Let's merge the 
 // changes from device 2 back into device 1. You can 
@@ -103,7 +122,11 @@ doc1.merge(doc2)
 
 // { cards: [ { title: 'Rewrite everything in Swift', 
 //              done: true } ] }
+```
 
+### Displaying the Change History of an Automerge Document
+
+```swift
 // As our final trick, we can inspect the change 
 // history. Automerge automatically keeps track of every
 // change, along with the "commit message" that you 
@@ -121,7 +144,6 @@ History(doc1).map { ($0.change.message, $0.snapshot.cards.count) }
 //   ('Mark card as done', 2),
 //   ('Delete card', 1)
 //  ]
-
 ```
 
 ## Automerge document lifecycle
