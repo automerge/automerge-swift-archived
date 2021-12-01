@@ -1,6 +1,6 @@
-# Changes in an Automerge Document
+# Conflicts in the Automerge Change History
 
-Dealing with conflicting changes
+Expose and highlight conflicting changes within a document.
 
 ## Overview
 

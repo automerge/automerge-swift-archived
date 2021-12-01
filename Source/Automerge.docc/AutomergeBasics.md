@@ -1,6 +1,6 @@
 # Automerge Basics
 
-Getting started using Automerge in your App
+Getting started using Automerge in your app.
 
 ## Overview
 

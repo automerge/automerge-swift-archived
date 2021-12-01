@@ -27,7 +27,7 @@ extension Proxy: Collection, Sequence where Wrapped: Collection, Wrapped.Element
         }
     }
 
-    // Method that returns the next index when iterating
+    // Returns the next index for an existing index that you provide.
     public func index(after i: Index) -> Index {
         return list.index(after: i)
     }
@@ -62,7 +62,7 @@ extension MutableProxy: Collection, Sequence where Wrapped: Collection, Wrapped.
         }
     }
 
-    // Method that returns the next index when iterating
+    // Returns the next index for an existing index that you provide.
     public func index(after i: Index) -> Index {
         return list.index(after: i)
     }

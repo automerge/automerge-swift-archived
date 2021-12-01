@@ -322,7 +322,8 @@ xcrun docc convert Source/Automerge.docc \
 --level brief
 ```
 
-example: 
+example:
+
 ```bash
    --- Experimental coverage output enabled. ---
                 | Abstract        | Curated         | Code Listing
@@ -345,5 +346,3 @@ xcrun docc convert Source/Automerge.docc \
 --experimental-documentation-coverage \
 --level detailed > report.txt
 ```
-
-
