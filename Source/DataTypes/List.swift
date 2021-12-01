@@ -1,6 +1,6 @@
 //
-//  File.swift
-//  
+//  List.swift
+//  Automerge
 //
 //  Created by Lukas Schmidt on 22.04.21.
 //

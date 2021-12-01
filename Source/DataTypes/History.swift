@@ -26,10 +26,13 @@ public struct History<T: Codable> {
 }
 
 extension History: Collection, Sequence, BidirectionalCollection {
-
+    
+    /// The index at the start of the collection of changes.
     public var startIndex: Int { binaryChanges.startIndex }
+    /// The index at the end of the collection of changes.
     public var endIndex: Int { binaryChanges.endIndex }
 
+    /// Returns the commit at the index position of the change collection.
     public subscript(position: Int) -> Commit<T> {
         get {
             let binaryChange = binaryChanges[position]
@@ -39,11 +42,12 @@ extension History: Collection, Sequence, BidirectionalCollection {
         }
     }
 
-    // Method that returns the next index when iterating
+    /// Returns the index following the index provided.
     public func index(after i: Int) -> Index {
         return binaryChanges.index(after: i)
     }
 
+    /// Returns the index position prior to the index provided.
     public func index(before i: Int) -> Int {
         return binaryChanges.index(before: i)
     }

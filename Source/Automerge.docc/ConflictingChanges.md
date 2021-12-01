@@ -1,4 +1,4 @@
-# Conflicts in the Automerge Change History
+# Conflicts in the Change History
 
 Expose and highlight conflicting changes within a document.
 
@@ -21,11 +21,13 @@ struct Coordinate: Codable, Equatable {
     var x: Int?
 }
 
+// Create the two collaborators
+let actor1 = Actor()
+let actor2 = Actor()
+
 // Initialize documents with known actor IDs.
-var doc1 = Document(Coordinate(), 
-                    actor: Actor(actorId: "actor-1"))
-var doc2 = Document(Coordinate(), 
-                    actor: Actor(actorId: "actor-2"))
+var doc1 = Document(Coordinate(), actor: actor1)
+var doc2 = Document(Coordinate(), actor: actor2)
 
 // Set values independently.
 doc1.change { proxy in
@@ -59,12 +61,12 @@ doc2
 // {x: 2}
 
 doc1.rootProxy().conflicts(dynamicMember: \.x)) 
-// {'actor-1': 1}
+// ex: Optional([1@40d336cdd6044c2f9886d5240b7ba91c: Optional(1), 1@554560f135b14f18b8fa37ed999624c2: Optional(2)])
 
 doc2.rootProxy().conflicts(dynamicMember: \.x)) 
-// {'actor-1': 1}
+// ex: Optional([1@554560f135b14f18b8fa37ed999624c2: Optional(2), 1@40d336cdd6044c2f9886d5240b7ba91c: Optional(1)])
 ```
 
-Use the information from ``Proxy/conflicts(dynamicMember:)`` or ``Proxy/conflicts(index:)`` to hint that the current value over-wrote another value.
+Use the information from ``Proxy/conflicts(dynamicMember:)`` (or ``Proxy/conflicts(index:)``, used when the model is a list) to hint that the current value over-wrote another value.
 
-The change to a property that is listed in the conflicts, automerge considers it resolved, and the conflict disappears from the change history.
+The change to a property that is listed in the conflicts, Automerge considers it resolved, and the conflict disappears from the change history.

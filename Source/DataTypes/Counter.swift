@@ -1,6 +1,6 @@
 //
-//  File.swift
-//  
+//  Counter.swift
+//  Automerge
 //
 //  Created by Lukas Schmidt on 07.04.20.
 //

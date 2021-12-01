@@ -1,6 +1,6 @@
 //
-//  File.swift
-//  
+//  Map.swift
+//  Automerge
 //
 //  Created by Lukas Schmidt on 22.04.21.
 //

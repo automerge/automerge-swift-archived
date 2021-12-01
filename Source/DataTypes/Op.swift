@@ -1,12 +1,13 @@
 //
-//  File.swift
-//  
+//  Op.swift
+//  Automerge
 //
 //  Created by Lukas Schmidt on 07.04.20.
 //
 
 import Foundation
 
+// The dats type associated with the operation.
 public enum DataType: String, Equatable, Codable {
     case counter
     case timestamp
@@ -53,6 +54,7 @@ public struct Op: Equatable, Codable {
     public var multiOp: Int?
 }
 
+// The kind of automerge operation to perform.
 public enum OpAction: String, Codable {
     case del
     case inc

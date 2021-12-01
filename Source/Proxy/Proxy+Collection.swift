@@ -9,10 +9,14 @@ import Foundation
 
 extension Proxy: Collection, Sequence where Wrapped: Collection, Wrapped.Element: Codable, Wrapped.Index == Int {
 
+    /// The type to use for the index location in the collection.
     public typealias Index = Int
+    /// The type of the element of the collection.
     public typealias Element = Proxy<Wrapped.Element>
     
+    /// The index to the start of the collection.
     public var startIndex: Index { list.startIndex }
+    /// The index at the end of the collection.
     public var endIndex: Index { list.endIndex }
 
     public subscript(position: Int) -> Proxy<Wrapped.Element> {
@@ -44,10 +48,15 @@ extension Proxy: Collection, Sequence where Wrapped: Collection, Wrapped.Element
 
 extension MutableProxy: Collection, Sequence where Wrapped: Collection, Wrapped.Element: Codable, Wrapped.Index == Int {
 
+    
+    /// The type to use for the index location in the collection.
     public typealias Index = Int
+    /// The type of the element of the collection.
     public typealias Element = MutableProxy<Wrapped.Element>
 
+    /// The index to the start of the collection.
     public var startIndex: Index { list.startIndex }
+    /// The index at the end of the collection.
     public var endIndex: Index { list.endIndex }
 
     public subscript(position: Int) -> MutableProxy<Wrapped.Element> {

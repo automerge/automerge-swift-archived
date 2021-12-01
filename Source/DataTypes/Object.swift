@@ -1,6 +1,6 @@
 //
-//  File 2.swift
-//  
+//  Object.swift
+//  Automerge
 //
 //  Created by Lukas Schmidt on 22.04.21.
 //
