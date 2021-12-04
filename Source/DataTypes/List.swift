@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// A representation of a List object within Automerge.
 struct List: Equatable, Codable {
 
     let objectId: ObjectId

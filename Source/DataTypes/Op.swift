@@ -16,6 +16,7 @@ public enum DataType: String, Equatable, Codable {
     case float64
 }
 
+/// A struct that represents a unique operation that makes up the change history of an Automerge document.
 public struct Op: Equatable, Codable {
 
     init(
@@ -54,7 +55,7 @@ public struct Op: Equatable, Codable {
     public var multiOp: Int?
 }
 
-// The kind of automerge operation to perform.
+// The kind of operation that Automerge performs maintaining the state of a Document.
 public enum OpAction: String, Codable {
     case del
     case inc

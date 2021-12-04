@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// A representation of a Map object within Automerge.
 struct Map: Equatable, Codable {
 
     init(objectId: ObjectId = "", mapValues: [String: Object] = [:], conflicts: [String: [ObjectId: Object]] = [:]) {
