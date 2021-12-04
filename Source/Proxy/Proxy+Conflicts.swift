@@ -9,7 +9,7 @@ import Foundation
 
 extension Proxy {
 
-    public func conflicts<Y: Codable>(dynamicMember: KeyPath<Wrapped, Y>) -> [Actor: Y]? {
+    public func conflicts<Y: Codable>(dynamicMember: KeyPath<Wrapped, Y>) -> [ObjectId: Y]? {
         guard let objectId = objectId else {
             return nil
         }
@@ -25,7 +25,7 @@ extension Proxy {
             }
 
             let typedObjects: [String: Y] = try! objectDecoder.decode(realConflicts.compactMapKeys({ $0.objectId }))
-            return typedObjects.compactMapKeys({ Actor(actorId: $0) })
+            return typedObjects.compactMapKeys({ ObjectId($0) })
         default:
             fatalError()
         }
@@ -36,7 +36,7 @@ extension Proxy {
 
 extension Proxy where Wrapped: Collection, Wrapped.Index == Int, Wrapped.Element: Codable {
 
-    public func conflicts(index: Int) -> [Actor: Wrapped.Element]? {
+    public func conflicts(index: Int) -> [ObjectId: Wrapped.Element]? {
         guard let objectId = objectId else {
             return nil
         }
@@ -49,7 +49,7 @@ extension Proxy where Wrapped: Collection, Wrapped.Index == Int, Wrapped.Element
         }
 
         let typedObjects: [String: Wrapped.Element] = try! objectDecoder.decode(realConflicts.compactMapKeys({ $0.objectId }))
-        return typedObjects.compactMapKeys({ Actor(actorId: $0) })
+        return typedObjects.compactMapKeys({ ObjectId($0) })
     }
 }
 
