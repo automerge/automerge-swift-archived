@@ -10,6 +10,7 @@ import Foundation
 public struct Actor: Equatable, Hashable, Codable {
 
     public init(actorId: String = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()) {
+        precondition(actorId.allSatisfy { $0.isHexDigit }, "An actorId must be represented with only hexadecimal characters.")
         self.actorId = actorId
     }
 
@@ -45,6 +46,7 @@ extension Actor: CustomStringConvertible {
 extension Actor: ExpressibleByStringLiteral {
 
     public init(stringLiteral value: StringLiteralType) {
+        precondition(value.allSatisfy { $0.isHexDigit }, "An actorId must be represented with only hexadecimal characters.")
         self.init(actorId: value)
     }
 }
