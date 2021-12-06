@@ -24,10 +24,6 @@ import Foundation
 /// - ``Actor/actorId``
 /// - ``Actor/description``
 ///
-/// ### Comparing Actors
-///
-/// - ``Actor/<(lhs:rhs:)
-///
 /// ### Encoding and Decoding Actors
 ///
 /// - ``Actor/encode(to:)``

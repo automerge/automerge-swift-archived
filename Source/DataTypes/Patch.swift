@@ -33,7 +33,9 @@ public final class Patch: Codable {
     let deps: [ObjectId]
     let maxOp: Int
     let diffs: MapDiff
-
+    
+    /// Creates a new Patch by decoding from the provided decoder.
+    /// - Parameter decoder: The decoder to read data from.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.actor = try container.decodeIfPresent(Actor.self, forKey: .actor)

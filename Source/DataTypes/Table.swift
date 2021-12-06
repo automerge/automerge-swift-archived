@@ -9,15 +9,18 @@ import Foundation
 
 /// A data structure that represents a table of rows.
 public struct Table<RowValue: Codable>: Codable {
-
+    
+    /// A data structure that represents a row within a table.
     public struct Row<T: Codable> {
 
         init(id: ObjectId, object: Object) {
             self.id = id
             self.object = object
         }
-
+        
+        /// The ID of the row.
         public let id: ObjectId
+        /// The value of the row.
         public var value: T {
             let encoder = JSONEncoder()
             let decoder = JSONDecoder()
@@ -27,7 +30,8 @@ public struct Table<RowValue: Codable>: Codable {
         }
         private let object: Object
     }
-
+    
+    /// Creates a new, empty row.
     public init () {
         self.entries = [:]
         self.objectId = ""
@@ -49,18 +53,23 @@ public struct Table<RowValue: Codable>: Codable {
     private var entries: [ObjectId: Object]
     let objectId: ObjectId
     var opIds: [ObjectId: ObjectId]
-
+    
+    /// Returns a row for a table with the object ID you provide.
+    /// - Parameter id: The ObjectId of the row.
+    /// - Returns: Returns the row, or nil if the ObjectId you provided doesn't exist.
     public func row(by id: ObjectId) -> Row<RowValue>? {
         guard let row = entries[id] else {
             return nil
         }
         return Row(id: id, object: row)
     }
-
+    
+    /// The number of entries in the row.
     public var count: Int {
         return entries.count
     }
-
+    
+    /// A set of the objectIds contained within the row.
     public var ids: Set<ObjectId> {
         return Set(entries.keys)
     }

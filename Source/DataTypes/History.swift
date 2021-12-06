@@ -11,11 +11,17 @@ import Foundation
 ///
 /// Each indexed position of the history collection provides a ``Commit`` that encapsulates a snapshot of your model at that change and a ``Change`` to represent the differences included within the commit.
 public struct History<T: Codable> {
-
+    
+    /// Creates a history of the provided Automerge document.
+    /// - Parameter document: The document to inspect for the change history.
     public init(document: Document<T>) {
         self.init(actor: document.actor, binaryChanges: document.allChanges())
     }
-
+    
+    /// Creates a history of an Automerge document from the list binary changes that you provide.
+    /// - Parameters:
+    ///   - actor: An actor that represents the current collaborator viewing the changes.
+    ///   - binaryChanges: An array of byte buffers that represent the changes.
     public init(actor: Actor, binaryChanges: [[UInt8]]) {
         self.actor = actor
         self.binaryChanges = binaryChanges

@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// An object, or structure of objects, managed within an Automerge document.
 enum Object: Equatable, Codable {
 
     case text(Text)

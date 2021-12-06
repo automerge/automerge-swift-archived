@@ -55,6 +55,7 @@ public struct ObjectId: Equatable, Hashable, Codable, ExpressibleByStringLiteral
 
 extension ObjectId: Comparable {
 
+    /// Returns a Boolean value that indicates whether the value of the first objectId is less than that of the second.
     public static func < (lhs: ObjectId, rhs: ObjectId) -> Bool {
         return lhs.objectId < rhs.objectId
     }
