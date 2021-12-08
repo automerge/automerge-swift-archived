@@ -68,7 +68,7 @@ class DocumentationSnippetsTest: XCTestCase {
 //        print(actor1)
 //        print(actor2)
 //        print(doc1_conflicts as Any)
-        print(doc2_conflicts as Any)
+//        print(doc2_conflicts as Any)
         
         // There will definitely be conflicts listed
         XCTAssertNotNil(doc1_conflicts)
@@ -78,8 +78,9 @@ class DocumentationSnippetsTest: XCTestCase {
         XCTAssertEqual(doc1_conflicts?.count, 2)
         
         if let doc1_conflicts = doc1_conflicts {
-            doc1_conflicts.keys.forEach { actor in
-                XCTAssertTrue([actor1, actor2].contains(actor))
+            doc1_conflicts.keys.forEach { objectId in
+                let (_, actorId) = objectId.parseOpId()!
+                XCTAssertTrue([actor1.actorId, actor2.actorId].contains(actorId))
             }
         }
     }
