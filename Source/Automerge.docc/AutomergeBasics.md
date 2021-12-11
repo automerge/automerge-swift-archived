@@ -40,7 +40,7 @@ var doc1 = Automerge.Document(Cards(cards: []))
 ### Updating your Model through the Automerge Document
 
 Treat your document an an immutable view of your current model's state. 
-Don't change it directly, instead call the ``Document/change(message:_:)`` method with a closure, and update your model's state within that closure.
+To change a document, call the ``Document/change(message:_:)`` method with a closure, and update your model's state within that closure.
 You can also include a human-readable description of the change, similar to a commit message, which automerge stores in the change history.
 
 The following snippet shows an example of adding a new card into your document:

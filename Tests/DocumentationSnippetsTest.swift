@@ -43,8 +43,8 @@ class DocumentationSnippetsTest: XCTestCase {
         //        var doc2 = Document(Coordinate(), actor: actor2)
 
         // Set the values independently.
-        doc1.change { proxy in
-            proxy.x.set(1)
+        doc1.change { doc in
+            doc.x.set(1)
         }
         
         doc2.change { doc in
