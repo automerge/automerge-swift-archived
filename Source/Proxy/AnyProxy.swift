@@ -8,11 +8,14 @@
 import Foundation
 
 extension Proxy {
+    /// Returns a type erased proxy to your model.
+    /// - Returns: The type-erased proxy to your model.
     public func toAny() -> AnyProxy {
         return AnyProxy(context: context, objectId: objectId, path: path)
     }
 }
 
+/// A type-erased wrapper around your model.
 @dynamicMemberLookup
 public final class AnyProxy {
 

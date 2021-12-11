@@ -231,7 +231,7 @@ class DocumentTest: XCTestCase {
                                 Op(action: .set, obj: .root, key: "now", insert: false, value: .float64(now.timeIntervalSince1970 * 1000), datatype: .timestamp, pred: [])
             ]))
         }
-
+    
     // should handle counters inside maps
     func testCounters1() {
         struct Schema: Codable, Equatable {

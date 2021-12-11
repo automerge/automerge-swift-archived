@@ -1,12 +1,13 @@
 //
-//  File 2.swift
-//  
+//  Object.swift
+//  Automerge
 //
 //  Created by Lukas Schmidt on 22.04.21.
 //
 
 import Foundation
 
+/// An object, or structure of objects, managed within an Automerge document.
 enum Object: Equatable, Codable {
 
     case text(Text)

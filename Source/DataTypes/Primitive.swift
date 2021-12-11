@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// The set of primitive types, and their associated values, for internal primitive types that Automerge represents.
 public enum Primitive: Equatable, Codable {
 
     case string(String)

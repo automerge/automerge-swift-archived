@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// A mutable wrapper around your model.
 public final class MutableProxy<Wrapped> {
 
     init(

@@ -9,6 +9,8 @@ import Foundation
 
 extension Proxy {
 
+    /// Returns the conflicts that Automerge has registered while it applied changes to your model.
+    /// - Returns: An optional map keyed by the ``ObjectId`` with the conflicting change and the value that it proposed.
     public func conflicts<Y: Codable>(dynamicMember: KeyPath<Wrapped, Y>) -> [ObjectId: Y]? {
         guard let objectId = objectId else {
             return nil
@@ -36,6 +38,8 @@ extension Proxy {
 
 extension Proxy where Wrapped: Collection, Wrapped.Index == Int, Wrapped.Element: Codable {
 
+    /// Returns the conflict at the index location you provide that Automerge has registered while it applied changes to your model.
+    /// - Returns: An optional map keyed by the ``ObjectId`` with the conflicting change and the value that it proposed.
     public func conflicts(index: Int) -> [ObjectId: Wrapped.Element]? {
         guard let objectId = objectId else {
             return nil
