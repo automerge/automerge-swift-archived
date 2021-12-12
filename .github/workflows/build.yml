@@ -2,8 +2,8 @@ on: push
 name: Build
 jobs:
   test:
-    name: Build
-    runs-on: macOS-latest
+    name: build
+    runs-on: macOS-11
     steps:
       - name: Checkout
         uses: actions/checkout@v2

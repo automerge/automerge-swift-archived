@@ -3,11 +3,11 @@
     "pins": [
       {
         "package": "AutomergeBackend",
-        "repositoryURL": "https://github.com/lightsprint09/automerge-swift-backend",
+        "repositoryURL": "https://github.com/automerge/automerge-swift-backend",
         "state": {
           "branch": null,
-          "revision": "5c1f3c58d078b4c2d64197129c30d2a7429aa44a",
-          "version": "0.1.6"
+          "revision": "3fc30ea417e1d38a3b7b07417c381fa649bcff00",
+          "version": "0.1.10"
         }
       },
       {
