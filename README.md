@@ -128,8 +128,8 @@ var doc = Automerge.Document(Cards(cards: []))
 ```swift
 
 currentDoc.change() { doc in 
-    doc.proberty.set("value") // assigns a string value to a property
-    doc.proberty.set(nil) // removes a property
+    doc.property.set("value") // assigns a string value to a property
+    doc.property.set(nil) // removes a property
 
     // all primitive datatypes are supported
     doc.stringValue.set("value")
