@@ -10,10 +10,23 @@ import XCTest
 @testable import Automerge
 
 class ProxyCounterTests: XCTestCase {
-    func testAssignmentExpressions() {
+    func testAdditionAssignmentOperator() {
+        struct Schema: Codable, Equatable {
+            var counter: Counter = 1
+        }
+        
+        var doc1 = Document(Schema())
+        let _ = doc1.change {
+            $0.counter += 1
+            XCTAssertEqual($0.counter.get(), 2)
+        }
+        
+        XCTAssertEqual(doc1.content, Schema(counter: 2))
+    }
+    
+    func testAdditionAssignmentOperatorOnOptional() {
         struct Schema: Codable, Equatable {
             var counter: Counter?
-            var notOptionalCounter: Counter = 3
         }
         
         var doc1 = Document(Schema())
@@ -23,26 +36,43 @@ class ProxyCounterTests: XCTestCase {
         }
         
         let _ = doc1.change {
-            $0.counter -= 1
-            $0.notOptionalCounter -= 1
-            XCTAssertEqual($0.counter?.get(), 2)
-            XCTAssertEqual($0.notOptionalCounter.get(), 2)
-        }
-        
-        let _ = doc1.change {
             $0.counter += 2
-            $0.notOptionalCounter += 2
-            XCTAssertEqual($0.counter?.get(), 4)
-            XCTAssertEqual($0.notOptionalCounter.get(), 4)
+            XCTAssertEqual($0.counter?.get(), 5)
+        }
+        
+        XCTAssertEqual(doc1.content, Schema(counter: 5))
+    }
+    
+    func testSubstractionAssignmentOperator() {
+        struct Schema: Codable, Equatable {
+            var counter: Counter = 1
+        }
+        
+        var doc1 = Document(Schema())
+        let _ = doc1.change {
+            $0.counter -= 1
+            XCTAssertEqual($0.counter.get(), 0)
+        }
+        
+        XCTAssertEqual(doc1.content, Schema(counter: 0))
+    }
+    
+    func testSubstractionAssignmentOperatorOnOptional() {
+        struct Schema: Codable, Equatable {
+            var counter: Counter?
+        }
+        
+        var doc1 = Document(Schema())
+        let _ = doc1.change {
+            $0.counter?.set(3)
+            XCTAssertEqual($0.counter?.get(), 3)
         }
         
         let _ = doc1.change {
-            $0.counter += -2
-            $0.notOptionalCounter -= 2
-            XCTAssertEqual($0.counter?.get(), 2)
-            XCTAssertEqual($0.notOptionalCounter.get(), 2)
+            $0.counter -= 2
+            XCTAssertEqual($0.counter?.get(), 1)
         }
         
-        XCTAssertEqual(doc1.content, Schema(counter: 2, notOptionalCounter: 2))
+        XCTAssertEqual(doc1.content, Schema(counter: 1))
     }
 }
