@@ -247,6 +247,11 @@ public struct Document<T: Codable> {
         return backend.getChanges(heads: oldDocument.backend.getHeads())
     }
 
+    /// Returns a binary representation of the last change which was made to this doc.
+    public func getLastLocalChange() -> [UInt8] {
+        return backend.getLastLocalChange()
+    }
+
     /**
      * Adds a new change request to the list of pending requests, and returns an
      * updated document root object. `requestType` is a string indicating the type

@@ -1583,6 +1583,21 @@ class AutomergeTest: XCTestCase {
         XCTAssertEqual(heads.count, 1)
     }
 
+    func testGetLastLocalChange() {
+        struct Scheme: Codable, Equatable {
+            var birds: [String]
+        }
+        var s1 = Document(Scheme(birds: ["Chaffinch"]))
+        var s2 = s1
+        s1.change({ $0.birds.append("Goldfinch") })
+        let allChanges = s1.allChanges()
+        let lastChange = s1.getLastLocalChange()
+        XCTAssertEqual(allChanges.last, lastChange)
+
+        s2.apply(changes: [lastChange])
+        XCTAssertEqual(s1.content, s2.content)
+    }
+
     func testGetChangesBetween1() {
         struct Scheme: Codable, Equatable {
             var birds: [String]
