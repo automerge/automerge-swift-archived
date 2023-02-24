@@ -132,4 +132,12 @@ public final class RSBackend {
 
         return heads.map { $0.toHexString() }
     }
+
+    public func getLastLocalChange() -> [UInt8] {
+        let length = automerge_get_last_local_change(automerge)
+        var data = Array<UInt8>(repeating: 0, count: length)
+        automerge_read_binary(automerge, &data)
+
+        return data
+    }
 }
